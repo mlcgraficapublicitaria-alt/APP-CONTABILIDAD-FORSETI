@@ -19,6 +19,11 @@ export default async function Home() {
           <p className="text-sm uppercase tracking-[0.24em] text-cyan-300">APP CONTABILIDAD MLCDESIGN</p>
           <h1 className="text-3xl font-semibold">Dashboard inicial</h1>
           <p className="text-zinc-400">Fuente actual: Google Sheet HORAS TRABAJO 2026 - FORSETI · Mes: {data.month}</p>
+          {data.notice ? (
+            <p className="max-w-3xl rounded-lg border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+              {data.notice}
+            </p>
+          ) : null}
         </header>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
