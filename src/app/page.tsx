@@ -105,18 +105,96 @@ function ClientBillingCard({
   );
 }
 
+function parseEuroValue(value: string) {
+  const normalized = value.replace(/\s/g, "").replace("€", "").replace(/\./g, "").replace(",", ".");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function MonthlyComparisonChart({
+  year,
+  previousYear,
+  entries,
+  previousEntries,
+}: {
+  year: string;
+  previousYear?: string;
+  entries: Array<{ month: string; value: string }>;
+  previousEntries?: Array<{ month: string; value: string }>;
+}) {
+  if (!previousYear || !previousEntries?.length) {
+    return (
+      <div className="rounded-2xl border border-white/10 bg-slate-950/30 p-4 text-sm text-zinc-400">
+        Sin año anterior disponible para comparar.
+      </div>
+    );
+  }
+
+  const chartRows = entries.map((entry) => {
+    const previousEntry = previousEntries.find((item) => item.month === entry.month);
+    return {
+      month: entry.month.slice(0, 3),
+      current: parseEuroValue(entry.value),
+      previous: parseEuroValue(previousEntry?.value ?? "0"),
+    };
+  });
+  const maxValue = Math.max(...chartRows.flatMap((entry) => [entry.current, entry.previous]), 1);
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-base font-semibold text-white">
+          {previousYear} VS {year}
+        </p>
+        <div className="flex gap-4 text-xs font-medium text-zinc-400">
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-sm bg-violet-300" />
+            {previousYear}
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-sm bg-cyan-300" />
+            {year}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-5 grid h-44 grid-cols-12 items-end gap-2">
+        {chartRows.map((entry) => (
+          <div key={`${year}-${entry.month}-chart`} className="flex h-full min-w-0 flex-col items-center justify-end gap-2">
+            <div className="flex h-32 w-full items-end justify-center gap-1">
+              <div
+                className="w-full max-w-3 rounded-t bg-violet-300/80"
+                style={{ height: `${Math.max((entry.previous / maxValue) * 100, entry.previous > 0 ? 4 : 0)}%` }}
+              />
+              <div
+                className="w-full max-w-3 rounded-t bg-cyan-300"
+                style={{ height: `${Math.max((entry.current / maxValue) * 100, entry.current > 0 ? 4 : 0)}%` }}
+              />
+            </div>
+            <p className="text-[10px] font-medium text-zinc-500">{entry.month}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function AnnualIncomeHistoryCard({
   year,
   total,
   average,
   comparison,
   entries,
+  previousYear,
+  previousEntries,
 }: {
   year: string;
   total: string;
   average: string;
   comparison: string;
   entries: Array<{ month: string; value: string }>;
+  previousYear?: string;
+  previousEntries?: Array<{ month: string; value: string }>;
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
@@ -136,6 +214,10 @@ function AnnualIncomeHistoryCard({
           <p className="text-base font-semibold text-cyan-200">COMPARACION</p>
           <p className="mt-3 text-2xl font-semibold text-white">{comparison}</p>
         </div>
+      </div>
+
+      <div className="mt-5">
+        <MonthlyComparisonChart year={year} previousYear={previousYear} entries={entries} previousEntries={previousEntries} />
       </div>
 
       <details className="mt-5 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
@@ -162,12 +244,17 @@ function getSelectedSection(section?: string) {
   return SECTIONS.some((item) => item.id === section) ? section : "mes";
 }
 
+function normalizeClientName(client: string) {
+  return client.replace(/[^a-z0-9]/gi, "").toUpperCase();
+}
+
 export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
   const selectedMonth = getSelectedMonth(params?.mes);
   const selectedSection = getSelectedSection(params?.seccion);
   const data = await getDashboardData(selectedMonth);
-  const billingClients = data.clientSummary.filter((item) => ["SPANISH-CHEESE", "GRUPO DIM"].includes(item.client));
+  const billingClientNames = ["SPANISHCHEESE", "GRUPODIM", "MLCDESIGN", "MLCDESING"];
+  const billingClients = data.clientSummary.filter((item) => billingClientNames.includes(normalizeClientName(item.client)));
 
   return (
     <div className="min-h-screen bg-[#0b1020] text-white">
@@ -268,16 +355,22 @@ export default async function Home({ searchParams }: HomeProps) {
             </div>
 
             <div className="grid gap-4 xl:grid-cols-2">
-              {data.annualIncomeHistory.map((item) => (
-                <AnnualIncomeHistoryCard
-                  key={item.year}
-                  year={item.year}
-                  total={item.total}
-                  average={item.average}
-                  comparison={item.comparison}
-                  entries={item.entries}
-                />
-              ))}
+              {data.annualIncomeHistory.map((item, index) => {
+                const previousItem = data.annualIncomeHistory[index - 1];
+
+                return (
+                  <AnnualIncomeHistoryCard
+                    key={item.year}
+                    year={item.year}
+                    total={item.total}
+                    average={item.average}
+                    comparison={item.comparison}
+                    entries={item.entries}
+                    previousYear={previousItem?.year}
+                    previousEntries={previousItem?.entries}
+                  />
+                );
+              })}
             </div>
           </section>
         ) : null}
