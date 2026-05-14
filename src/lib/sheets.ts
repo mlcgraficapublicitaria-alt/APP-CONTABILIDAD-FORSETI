@@ -23,6 +23,7 @@ type DashboardData = {
     ocio: string;
   };
   clientSummary: Array<{ client: string; actual: string; hours: string; prevision: string; previsionHours: string; diff: string; diffHours: string }>;
+  freelanceProjects: Array<{ client: string; project: string; price: string }>;
   annualIncomeHistory: Array<{
     year: string;
     total: string;
@@ -55,6 +56,9 @@ const demoDashboardData: DashboardData = {
     { client: "Forseti", actual: "3.200 EUR", hours: "36 h", prevision: "3.100 EUR", previsionHours: "34 h", diff: "+100 EUR", diffHours: "+2 h" },
     { client: "Soporte", actual: "2.460 EUR", hours: "28 h", prevision: "2.800 EUR", previsionHours: "32 h", diff: "-340 EUR", diffHours: "-4 h" },
     { client: "Interno", actual: "2.000 EUR", hours: "16 h", prevision: "1.750 EUR", previsionHours: "14 h", diff: "+250 EUR", diffHours: "+2 h" },
+  ],
+  freelanceProjects: [
+    { client: "Cliente demo", project: "Proyecto demo", price: "180 EUR" },
   ],
   annualIncomeHistory: [
     {
@@ -301,6 +305,27 @@ function findIncomeSplit(rows: string[][], month: string) {
   };
 }
 
+function findFreelanceProjects(rows: string[][]) {
+  const headerRowIndex = rows.findIndex((row) => row.some((item) => normalize(item) === "CLIENTE") && row.some((item) => normalize(item) === "TRABAJOS"));
+  const headerRow = rows[headerRowIndex];
+
+  if (!headerRow) return [];
+
+  const clientIndex = headerRow.findIndex((item) => normalize(item) === "CLIENTE");
+  const projectIndex = headerRow.findIndex((item) => normalize(item) === "TRABAJOS");
+
+  return rows
+    .slice(headerRowIndex + 1)
+    .map((row) => {
+      const client = row[clientIndex]?.trim() ?? "";
+      const project = row[projectIndex]?.trim() ?? "";
+      const price = row.slice(projectIndex + 1).find((value) => isMoneyValue(value) && parseMoney(value) > 0)?.trim() ?? "";
+
+      return { client, project, price };
+    })
+    .filter((item) => item.client && item.project && item.price);
+}
+
 const MONTH_NAMES = [
   "ENERO",
   "FEBRERO",
@@ -363,13 +388,15 @@ export async function getDashboardData(month = DEFAULT_MONTH): Promise<Dashboard
   let finance: string[][];
   let incomeSplit: string[][];
   let annualIncomeHistoryRows: string[][];
+  let monthlyRows: string[][];
 
   try {
-    [summary, finance, incomeSplit, annualIncomeHistoryRows] = await Promise.all([
+    [summary, finance, incomeSplit, annualIncomeHistoryRows, monthlyRows] = await Promise.all([
       getRange(`${month}!A10:H80`),
       getRange(`${month}!AA1:AV66`),
       getRange("REPARTO INGRESOS!A1:Z80"),
       getRange("SEGUIMIENTO INGRESOS!A1:Z140"),
+      getRange(`${month}!A1:AV90`),
     ]);
   } catch {
     return { ...demoDashboardData, month };
@@ -403,6 +430,7 @@ export async function getDashboardData(month = DEFAULT_MONTH): Promise<Dashboard
     ahorro: findColumnValue(finance, "AHORRO", "TOTAL"),
     repartoBeneficio: findIncomeSplit(incomeSplit, month),
     clientSummary,
+    freelanceProjects: findFreelanceProjects(monthlyRows),
     annualIncomeHistory: findAnnualIncomeHistory(annualIncomeHistoryRows),
   };
 }

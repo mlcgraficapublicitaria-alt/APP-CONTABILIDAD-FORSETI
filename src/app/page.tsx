@@ -105,6 +105,48 @@ function ClientBillingCard({
   );
 }
 
+function MlcdProjectBillingCard({ projects }: { projects: Array<{ client: string; project: string; price: string }> }) {
+  const total = projects.reduce((sum, project) => sum + parseEuroValue(project.price), 0);
+  const formattedTotal = new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: Number.isInteger(total) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(total);
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur lg:col-span-2">
+      <p className="text-base font-semibold text-white">MLC DESING</p>
+      <p className="mt-1 min-h-10 text-sm leading-5 text-zinc-400">Facturación por proyecto registrada para trabajos freelance del mes.</p>
+
+      <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-slate-950/40">
+        <div className="grid grid-cols-[1fr_2.4fr_auto] gap-4 border-b border-white/10 px-4 py-3 text-xs font-semibold text-cyan-200">
+          <p>CLIENTE</p>
+          <p>PROYECTO</p>
+          <p className="text-right">PRECIO</p>
+        </div>
+        <div className="divide-y divide-white/10 text-sm">
+          {projects.length > 0 ? (
+            projects.map((project) => (
+              <div key={`${project.client}-${project.project}-${project.price}`} className="grid grid-cols-[1fr_2.4fr_auto] gap-4 px-4 py-3">
+                <p className="font-medium text-white">{project.client}</p>
+                <p className="text-zinc-300">{project.project}</p>
+                <p className="text-right font-semibold text-white">{project.price}</p>
+              </div>
+            ))
+          ) : (
+            <p className="px-4 py-3 text-zinc-500">Sin proyectos facturados en este mes.</p>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-4 border-t border-white/10 bg-slate-950/60 px-4 py-4">
+          <p className="text-sm font-semibold text-cyan-200">TOTAL FACTURACION NETA</p>
+          <p className="text-xl font-semibold text-white">{formattedTotal}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function parseEuroValue(value: string) {
   const normalized = value.replace(/\s/g, "").replace("€", "").replace(/\./g, "").replace(",", ".");
   const parsed = Number.parseFloat(normalized);
@@ -253,7 +295,7 @@ export default async function Home({ searchParams }: HomeProps) {
   const selectedMonth = getSelectedMonth(params?.mes);
   const selectedSection = getSelectedSection(params?.seccion);
   const data = await getDashboardData(selectedMonth);
-  const billingClientNames = ["SPANISHCHEESE", "GRUPODIM", "MLCDESIGN", "MLCDESING"];
+  const billingClientNames = ["SPANISHCHEESE", "GRUPODIM"];
   const billingClients = data.clientSummary.filter((item) => billingClientNames.includes(normalizeClientName(item.client)));
 
   return (
@@ -344,6 +386,7 @@ export default async function Home({ searchParams }: HomeProps) {
                     diffHours={item.diffHours}
                   />
                 ))}
+                <MlcdProjectBillingCard projects={data.freelanceProjects} />
               </div>
             </section>
           </>
