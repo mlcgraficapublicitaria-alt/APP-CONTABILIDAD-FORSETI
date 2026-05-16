@@ -1,5 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
+import { redirect } from "next/navigation";
 import { MonthSelect } from "./month-select";
+import { hasValidSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/sheets";
 
 const MONTHS_2026 = [
@@ -29,12 +32,36 @@ type HomeProps = {
   }>;
 };
 
-function KpiCard({ title, description, value }: { title: string; description: string; value: string }) {
+const KPI_ACCENTS = {
+  mist: "border-cyan-200/20 bg-[#123345] text-cyan-100",
+  ice: "border-cyan-300/20 bg-[#153b4d] text-cyan-100",
+  aqua: "border-sky-300/20 bg-[#174154] text-sky-100",
+  teal: "border-teal-300/20 bg-[#16483f] text-teal-100",
+  sea: "border-cyan-400/20 bg-[#0f4a57] text-cyan-100",
+  deep: "border-sky-400/20 bg-[#123a5a] text-sky-100",
+  glass: "border-teal-200/20 bg-[#1a4a47] text-teal-100",
+  glow: "border-cyan-100/20 bg-[#1b5261] text-cyan-100",
+  pastelBlue: "border-blue-200/30 bg-[#d7ecff] text-blue-950",
+  pastelYellow: "border-yellow-200/40 bg-[#fff0b8] text-yellow-950",
+  pastelRed: "border-red-200/35 bg-[#ffd8d8] text-red-950",
+};
+
+function KpiCard({
+  title,
+  description,
+  value,
+  accent = "cyan",
+}: {
+  title: string;
+  description: string;
+  value: string;
+  accent?: keyof typeof KPI_ACCENTS;
+}) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
-      <p className="text-base font-semibold text-white">{title}</p>
-      <p className="mt-1 min-h-10 text-sm leading-5 text-zinc-400">{description}</p>
-      <p className="mt-4 text-2xl font-semibold text-white">{value}</p>
+    <div className={`rounded-2xl border p-5 shadow-sm ${KPI_ACCENTS[accent]}`}>
+      <p className="text-base font-semibold">{title}</p>
+      <p className="mt-1 min-h-10 text-sm leading-5 opacity-70">{description}</p>
+      <p className="mt-4 text-2xl font-semibold">{value}</p>
     </div>
   );
 }
@@ -47,6 +74,7 @@ function ClientBillingCard({
   diff,
   diffHours,
   previsionHours,
+  tone = "default",
 }: {
   client: string;
   actual: string;
@@ -55,48 +83,65 @@ function ClientBillingCard({
   previsionHours: string;
   diff: string;
   diffHours: string;
+  tone?: "default" | "spanishCheese" | "grupoDim";
 }) {
+  const toneClasses = {
+    default: "border-white/10 bg-white/5 text-white",
+    spanishCheese: "border-yellow-200/40 bg-[#ffe172] text-yellow-950",
+    grupoDim: "border-[#6f8dff]/25 bg-[#04277f] text-blue-50",
+  };
+  const panelClasses =
+    tone === "spanishCheese"
+      ? "border-[#fff9e7]/60 bg-[#fff9e7]"
+      : tone === "grupoDim"
+        ? "border-[#bac9f0]/60 bg-[#bac9f0]"
+        : "border-white/10 bg-slate-950/40";
+  const labelClasses = tone === "spanishCheese" ? "text-yellow-950" : tone === "grupoDim" ? "text-[#04277f]" : "text-cyan-200";
+  const mutedClasses = tone === "spanishCheese" ? "text-yellow-950/70" : tone === "grupoDim" ? "text-blue-100/75" : "text-zinc-400";
+  const termClasses = tone === "spanishCheese" ? "text-yellow-950/60" : tone === "grupoDim" ? "text-[#04277f]/65" : "text-zinc-500";
+  const valueClasses = tone === "spanishCheese" ? "text-yellow-950" : tone === "grupoDim" ? "text-[#04277f]" : "text-white";
+
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
-      <p className="text-base font-semibold text-white">{client}</p>
-      <p className="mt-1 min-h-10 text-sm leading-5 text-zinc-400">Facturación y horas del cliente en el mes seleccionado.</p>
+    <div className={`rounded-2xl border p-5 shadow-sm ${toneClasses[tone]}`}>
+      <p className="text-base font-semibold">{client}</p>
+      <p className={`mt-1 min-h-10 text-sm leading-5 ${mutedClasses}`}>Facturación y horas del cliente en el mes seleccionado.</p>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-slate-950/40 p-3">
-          <p className="text-xs font-semibold text-cyan-200">ACTUAL</p>
+        <div className={`rounded-xl border p-3 ${panelClasses}`}>
+          <p className={`text-xs font-semibold ${labelClasses}`}>ACTUAL</p>
           <dl className="mt-3 space-y-2 text-sm">
             <div>
-              <dt className="text-zinc-500">Facturación</dt>
-              <dd className="mt-1 font-medium text-white">{actual || "—"}</dd>
+              <dt className={termClasses}>Facturación</dt>
+              <dd className={`mt-1 font-medium ${valueClasses}`}>{actual || "—"}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Horas</dt>
-              <dd className="mt-1 font-medium text-white">{hours || "—"}</dd>
+              <dt className={termClasses}>Horas</dt>
+              <dd className={`mt-1 font-medium ${valueClasses}`}>{hours || "—"}</dd>
             </div>
           </dl>
         </div>
-        <div className="rounded-xl border border-white/10 bg-slate-950/40 p-3">
-          <p className="text-xs font-semibold text-cyan-200">PREVISION</p>
+        <div className={`rounded-xl border p-3 ${panelClasses}`}>
+          <p className={`text-xs font-semibold ${labelClasses}`}>PREVISION</p>
           <dl className="mt-3 space-y-2 text-sm">
             <div>
-              <dt className="text-zinc-500">Facturación</dt>
-              <dd className="mt-1 font-medium text-white">{prevision || "—"}</dd>
+              <dt className={termClasses}>Facturación</dt>
+              <dd className={`mt-1 font-medium ${valueClasses}`}>{prevision || "—"}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Horas</dt>
-              <dd className="mt-1 font-medium text-white">{previsionHours || "—"}</dd>
+              <dt className={termClasses}>Horas</dt>
+              <dd className={`mt-1 font-medium ${valueClasses}`}>{previsionHours || "—"}</dd>
             </div>
           </dl>
         </div>
-        <div className="rounded-xl border border-white/10 bg-slate-950/40 p-3">
-          <p className="text-xs font-semibold text-cyan-200">DIFERENCIA</p>
+        <div className={`rounded-xl border p-3 ${panelClasses}`}>
+          <p className={`text-xs font-semibold ${labelClasses}`}>DIFERENCIA</p>
           <dl className="mt-3 space-y-2 text-sm">
             <div>
-              <dt className="text-zinc-500">Facturación</dt>
-              <dd className="mt-1 font-medium text-white">{diff || "—"}</dd>
+              <dt className={termClasses}>Facturación</dt>
+              <dd className={`mt-1 font-medium ${valueClasses}`}>{diff || "—"}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Horas</dt>
-              <dd className="mt-1 font-medium text-white">{diffHours || "—"}</dd>
+              <dt className={termClasses}>Horas</dt>
+              <dd className={`mt-1 font-medium ${valueClasses}`}>{diffHours || "—"}</dd>
             </div>
           </dl>
         </div>
@@ -291,6 +336,10 @@ function normalizeClientName(client: string) {
 }
 
 export default async function Home({ searchParams }: HomeProps) {
+  if (!(await hasValidSession())) {
+    redirect("/login");
+  }
+
   const params = await searchParams;
   const selectedMonth = getSelectedMonth(params?.mes);
   const selectedSection = getSelectedSection(params?.seccion);
@@ -301,15 +350,23 @@ export default async function Home({ searchParams }: HomeProps) {
   return (
     <div className="min-h-screen bg-[#0b1020] text-white">
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10">
-        <header className="flex flex-col gap-2">
-          <p className="text-sm uppercase tracking-[0.24em] text-cyan-300">APP CONTABILIDAD MLCDESIGN</p>
-          <h1 className="text-3xl font-semibold">Dashboard inicial</h1>
-          <p className="text-zinc-400">Fuente actual: Google Sheet HORAS TRABAJO 2026 - FORSETI · Mes: {data.month}</p>
-          {data.notice ? (
-            <p className="max-w-3xl rounded-lg border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
-              {data.notice}
-            </p>
-          ) : null}
+        <header className="relative flex flex-col gap-4 pt-10 md:pt-0">
+          <form action="/api/logout" method="post" className="absolute right-0 top-0">
+            <button className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:bg-white/10 hover:text-white">
+              Salir
+            </button>
+          </form>
+
+          <div className="flex flex-col items-center gap-2 text-center">
+            <Image src="/logo-forseti.png" alt="Forseti" width={220} height={78} priority className="h-auto w-44" />
+            <h1 className="text-[22px] font-semibold">Administracion y contabilidad</h1>
+            {data.notice ? (
+              <p className="max-w-3xl rounded-lg border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+                {data.notice}
+              </p>
+            ) : null}
+          </div>
+
         </header>
 
         <section className="flex flex-col gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
@@ -343,15 +400,19 @@ export default async function Home({ searchParams }: HomeProps) {
               <h2 className="text-4xl font-semibold text-white">{selectedMonth}</h2>
             </section>
 
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <KpiCard title="TOTAL HORAS" description="Suma de horas trabajadas en el mes seleccionado." value={data.totalHours} />
-              <KpiCard title="HORAS AL DÍA" description="Media diaria registrada para el mes seleccionado." value={data.hoursPerDay} />
-              <KpiCard title="TOTAL FACTURADO" description="Importe total facturado antes restar retenciones de IVA y IRPF." value={data.totalFactura} />
-              <KpiCard title="TOTAL NETO" description="Ingresos netos del mes antes de sumar pasivos adicionales." value={data.totalNeto} />
-              <KpiCard title="NETO CON PASIVOS" description="Total neto incluyendo ingresos pasivos del mes." value={data.netoConPasivos} />
-              <KpiCard title="GASTOS TOTALES" description="Suma total de gastos registrados para el mes." value={data.gastosTotales} />
-              <KpiCard title="IVA TOTAL" description="Resultado total de IVA facturado menos IVA desgrabado." value={data.ivaTotal} />
-              <KpiCard title="BENEFICIO TOTAL" description="Resultado neto después de descontar gastos." value={data.beneficioNeto} />
+            <section className="flex flex-col gap-4">
+              <h2 className="text-xl font-semibold">RESUMEN</h2>
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <KpiCard accent="mist" title="TOTAL HORAS" description="Suma de horas trabajadas en el mes seleccionado." value={data.totalHours} />
+                <KpiCard accent="ice" title="HORAS AL DÍA" description="Media diaria registrada para el mes seleccionado." value={data.hoursPerDay} />
+                <KpiCard accent="aqua" title="TOTAL FACTURADO" description="Importe total facturado antes restar retenciones de IVA y IRPF." value={data.totalFactura} />
+                <KpiCard accent="teal" title="TOTAL NETO" description="Ingresos netos del mes antes de sumar pasivos adicionales." value={data.totalNeto} />
+                <KpiCard accent="sea" title="NETO CON PASIVOS" description="Total neto incluyendo ingresos pasivos del mes." value={data.netoConPasivos} />
+                <KpiCard accent="deep" title="GASTOS TOTALES" description="Suma total de gastos registrados para el mes." value={data.gastosTotales} />
+                <KpiCard accent="glass" title="IVA TOTAL" description="Resultado total de IVA facturado menos IVA desgrabado." value={data.ivaTotal} />
+                <KpiCard accent="glow" title="BENEFICIO TOTAL" description="Resultado neto después de descontar gastos." value={data.beneficioNeto} />
+              </div>
             </section>
 
             <section className="flex flex-col gap-4">
@@ -361,9 +422,9 @@ export default async function Home({ searchParams }: HomeProps) {
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
-                <KpiCard title="AHORRO" description="Parte destinada a reserva del beneficio total." value={data.repartoBeneficio.ahorro} />
-                <KpiCard title="INVERSION" description="Parte destinada a inversión del beneficio total." value={data.repartoBeneficio.inversion} />
-                <KpiCard title="OCIO" description="Parte destinada a ocio del beneficio total." value={data.repartoBeneficio.ocio} />
+                <KpiCard accent="pastelBlue" title="AHORRO" description="Parte destinada a reserva del beneficio total." value={data.repartoBeneficio.ahorro} />
+                <KpiCard accent="pastelYellow" title="INVERSION" description="Parte destinada a inversión del beneficio total." value={data.repartoBeneficio.inversion} />
+                <KpiCard accent="pastelRed" title="OCIO" description="Parte destinada a ocio del beneficio total." value={data.repartoBeneficio.ocio} />
               </div>
             </section>
 
@@ -378,6 +439,7 @@ export default async function Home({ searchParams }: HomeProps) {
                   <ClientBillingCard
                     key={item.client}
                     client={item.client}
+                    tone={normalizeClientName(item.client) === "SPANISHCHEESE" ? "spanishCheese" : "grupoDim"}
                     actual={item.actual}
                     hours={item.hours}
                     prevision={item.prevision}
