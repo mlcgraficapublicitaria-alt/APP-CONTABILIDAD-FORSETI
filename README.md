@@ -23,6 +23,12 @@ Local login defaults:
 
 Override them with `APP_LOGIN_USER`, `APP_LOGIN_PASSWORD`, and optionally `APP_SESSION_SECRET`.
 
+Password recovery email requires:
+
+- `RESEND_API_KEY`
+- `APP_RECOVERY_EMAIL`
+- `APP_FROM_EMAIL` (optional)
+
 You can start editing the dashboard by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 ## Learn More

@@ -10,8 +10,12 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [recoveryStatus, setRecoveryStatus] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRecovering, setIsRecovering] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,6 +37,29 @@ export function LoginForm() {
 
     router.push("/");
     router.refresh();
+  }
+
+  async function handleRecoverySubmit() {
+    setRecoveryStatus("");
+    setIsRecovering(true);
+
+    const response = await fetch("/api/recover-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: recoveryEmail, message: recoveryMessage }),
+    });
+    const result = await response.json().catch(() => null);
+
+    setIsRecovering(false);
+
+    if (!response.ok) {
+      setRecoveryStatus(result?.message ?? "No se pudo enviar la solicitud. Intentalo de nuevo.");
+      return;
+    }
+
+    setRecoveryEmail("");
+    setRecoveryMessage("");
+    setRecoveryStatus(result?.message ?? "Solicitud enviada.");
   }
 
   return (
@@ -102,9 +129,40 @@ export function LoginForm() {
         {showRecovery ? (
           <div className="rounded-lg border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-cyan-50">
             <p className="font-semibold">Recuperar acceso</p>
-            <p className="mt-1 text-cyan-50/80">
-              Por seguridad, la contrasena no se muestra desde la app. Para cambiarla, actualiza `APP_LOGIN_PASSWORD` en las variables del hosting y vuelve a desplegar.
-            </p>
+            <p className="mt-1 text-cyan-50/80">Envia una solicitud al administrador para revisar o restablecer el acceso.</p>
+
+            <label className="mt-3 flex flex-col gap-2 font-medium text-cyan-50">
+              Email de contacto
+              <input
+                value={recoveryEmail}
+                onChange={(event) => setRecoveryEmail(event.target.value)}
+                className="rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none transition placeholder:text-zinc-600 focus:border-cyan-300"
+                type="email"
+                autoComplete="email"
+                placeholder="tu@email.com"
+              />
+            </label>
+
+            <label className="mt-3 flex flex-col gap-2 font-medium text-cyan-50">
+              Mensaje
+              <textarea
+                value={recoveryMessage}
+                onChange={(event) => setRecoveryMessage(event.target.value)}
+                className="min-h-24 resize-y rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none transition placeholder:text-zinc-600 focus:border-cyan-300"
+                placeholder="Explica brevemente que necesitas recuperar el acceso."
+              />
+            </label>
+
+            {recoveryStatus ? <p className="mt-3 rounded-lg border border-white/10 bg-slate-950/40 px-3 py-2 text-cyan-50/90">{recoveryStatus}</p> : null}
+
+            <button
+              type="button"
+              onClick={handleRecoverySubmit}
+              disabled={isRecovering || !recoveryEmail}
+              className="mt-3 w-full rounded-lg bg-cyan-300 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isRecovering ? "Enviando..." : "Enviar solicitud"}
+            </button>
           </div>
         ) : null}
       </div>
