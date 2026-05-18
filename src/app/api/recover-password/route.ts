@@ -16,34 +16,38 @@ export async function POST(request: Request) {
 
   if (!recoveryEmail || !resendApiKey) {
     return NextResponse.json(
-      { message: "La recuperacion por email aun no esta configurada en el hosting. Contacta con el administrador." },
-      { status: 503 },
+      { message: "La solicitud queda pendiente: falta configurar el email de recuperacion en el hosting." },
+      { status: 200 },
     );
   }
 
-  const response = await fetch(RESEND_API_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: fromEmail,
-      to: recoveryEmail,
-      subject: "Solicitud de recuperacion de acceso - Forseti",
-      text: [
-        "Se ha solicitado recuperar el acceso a Contabilidad Forseti.",
-        "",
-        `Email de contacto: ${email}`,
-        "",
-        "Mensaje:",
-        message || "Sin mensaje adicional.",
-      ].join("\n"),
-    }),
-  });
+  try {
+    const response = await fetch(RESEND_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: recoveryEmail,
+        subject: "Solicitud de recuperacion de acceso - Forseti",
+        text: [
+          "Se ha solicitado recuperar el acceso a Contabilidad Forseti.",
+          "",
+          `Email de contacto: ${email}`,
+          "",
+          "Mensaje:",
+          message || "Sin mensaje adicional.",
+        ].join("\n"),
+      }),
+    });
 
-  if (!response.ok) {
-    return NextResponse.json({ message: "No se pudo enviar la solicitud. Revisa la configuracion del email." }, { status: 502 });
+    if (!response.ok) {
+      return NextResponse.json({ message: "No se pudo enviar la solicitud. Revisa la configuracion del email." }, { status: 200 });
+    }
+  } catch {
+    return NextResponse.json({ message: "No se pudo contactar con el servicio de email. Intentalo mas tarde." }, { status: 200 });
   }
 
   return NextResponse.json({ message: "Solicitud enviada. Te contactaran para restablecer el acceso." });
