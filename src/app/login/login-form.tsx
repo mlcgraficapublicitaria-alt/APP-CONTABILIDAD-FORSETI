@@ -8,6 +8,7 @@ export function LoginForm() {
   const router = useRouter();
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,14 +55,37 @@ export function LoginForm() {
 
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-200">
         Contrasena
-        <input
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none transition placeholder:text-zinc-600 focus:border-cyan-300"
-          type="password"
-          autoComplete="current-password"
-          required
-        />
+        <span className="relative">
+          <input
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="w-full rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 pr-12 text-white outline-none transition placeholder:text-zinc-600 focus:border-cyan-300"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((current) => !current)}
+            className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-zinc-400 transition hover:bg-white/10 hover:text-white"
+            aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+            title={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+          >
+            {showPassword ? (
+              <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+                <path d="M3 3l18 18" />
+                <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                <path d="M9.9 4.3A10.3 10.3 0 0 1 12 4c5 0 8.7 4 10 8a13.2 13.2 0 0 1-3.1 4.8" />
+                <path d="M6.1 6.2A13.4 13.4 0 0 0 2 12c1.3 4 5 8 10 8 1.5 0 2.9-.4 4.1-1" />
+              </svg>
+            ) : (
+              <svg aria-hidden="true" className="h-5 w-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+                <path d="M2 12s3.8-8 10-8 10 8 10 8-3.8 8-10 8-10-8-10-8Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            )}
+          </button>
+        </span>
       </label>
 
       {error ? <p className="rounded-lg border border-red-300/30 bg-red-300/10 px-4 py-3 text-sm text-red-100">{error}</p> : null}
