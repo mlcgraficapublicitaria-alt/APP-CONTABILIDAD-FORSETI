@@ -4,6 +4,35 @@ const HOURS_PER_DAY_CELLS: Record<string, string> = {
   "MAYO 2026": "AF62",
 };
 
+const PASSIVE_FORMULA_CELLS: Record<string, string> = {
+  "ENERO 2026": "AJ62",
+  "FEBRERO 2026": "AH57",
+  "MARZO 2026": "AH62",
+  "ABRIL 2026": "AH61",
+  "MAYO 2026": "AH61",
+  "JUNIO 2026": "AF60",
+  "JULIO 2026": "AG63",
+  "AGOSTO 2026": "AE60",
+  "SEPTIEMBRE 2026": "AE60",
+  "OCTUBRE 2026": "AF62",
+  "NOVIEMBRE 2026": "AG60",
+  "DICIEMBRE 2026": "AG62",
+};
+
+const PASSIVE_BREAKDOWN_RANGES: Record<string, string[]> = {
+  "ENERO 2026": ["INGRESOS_PASIVOS!AH17:AK17", "INGRESOS_PASIVOS!AH19:AK19"],
+  "MARZO 2026": ["CUPONES MANTENIMIENTO!G11:J11", "MARZO 2026!X66:AD66"],
+  "MAYO 2026": ["INGRESOS_PASIVOS!AH16:AK16", "MAYO 2026!X15:AC15", "INGRESOS_PASIVOS!AH18:AK18"],
+  "JULIO 2026": ["INGRESOS_PASIVOS!AH10:AK10"],
+  "OCTUBRE 2026": [
+    "INGRESOS_PASIVOS!AH19:AK19",
+    "INGRESOS_PASIVOS!AH20:AK20",
+    "INGRESOS_PASIVOS!AH22:AK22",
+    "INGRESOS_PASIVOS!AH23:AK23",
+    "INGRESOS_PASIVOS!AH24:AK24",
+  ],
+};
+
 type DashboardData = {
   month: string;
   isDemoData: boolean;
@@ -13,6 +42,9 @@ type DashboardData = {
   totalFactura: string;
   totalNeto: string;
   netoConPasivos: string;
+  ingresosPasivos: string;
+  pasivosDetalle: Array<{ concepto: string; origen: string; importe: string }>;
+  pasivosDetalleNota: string;
   gastosTotales: string;
   ivaTotal: string;
   beneficioNeto: string;
@@ -42,6 +74,9 @@ const demoDashboardData: DashboardData = {
   totalFactura: "12.480 EUR",
   totalNeto: "9.860 EUR",
   netoConPasivos: "8.940 EUR",
+  ingresosPasivos: "—",
+  pasivosDetalle: [],
+  pasivosDetalleNota: "Desglose no disponible en datos de muestra.",
   gastosTotales: "3.200 EUR",
   ivaTotal: "540 EUR",
   beneficioNeto: "4.120 EUR",
@@ -167,6 +202,122 @@ function formatMoney(value: number) {
     minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function formatPassiveMoney(value: number) {
+  return new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function parseMoneyOrNull(value: string) {
+  if (!value || !isMoneyValue(value)) return null;
+
+  const normalized = value.replace(/\s/g, "").replace("€", "").replace(/\./g, "").replace(",", ".");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function subtractMoneyValues(total: string, base: string) {
+  const totalAmount = parseMoneyOrNull(total);
+  const baseAmount = parseMoneyOrNull(base);
+
+  if (totalAmount === null || baseAmount === null) return "—";
+
+  return formatPassiveMoney(totalAmount - baseAmount);
+}
+
+function normalizePassiveAmount(value: string) {
+  const amount = parseMoneyOrNull(value);
+  return amount === null ? value || "—" : formatPassiveMoney(amount);
+}
+
+function joinLabel(parts: string[]) {
+  return parts.map((part) => part.trim()).filter(Boolean).join(" · ") || "Pasivo";
+}
+
+function getSheetFromRange(range: string) {
+  return range.slice(0, range.lastIndexOf("!"));
+}
+
+function getCellFromRange(range: string) {
+  const cells = range.slice(range.lastIndexOf("!") + 1);
+  return cells.split(":").at(-1) ?? cells;
+}
+
+function formatRangeOrigin(range: string) {
+  return `${getSheetFromRange(range)}!${getCellFromRange(range)}`;
+}
+
+function buildPassiveItem(range: string, row: string[]) {
+  const sheet = getSheetFromRange(range);
+
+  if (sheet === "INGRESOS_PASIVOS") {
+    return {
+      concepto: joinLabel([pick(row, 0), pick(row, 2)]),
+      origen: formatRangeOrigin(range),
+      importe: normalizePassiveAmount(pick(row, 3)),
+    };
+  }
+
+  if (sheet === "CUPONES MANTENIMIENTO") {
+    return {
+      concepto: joinLabel([pick(row, 1), "Cupon mantenimiento"]),
+      origen: formatRangeOrigin(range),
+      importe: normalizePassiveAmount(pick(row, 3)),
+    };
+  }
+
+  return {
+    concepto: joinLabel([sheet, "Ajuste de pasivos"]),
+    origen: formatRangeOrigin(range),
+    importe: normalizePassiveAmount(row.findLast((value) => parseMoneyOrNull(value) !== null) ?? "—"),
+  };
+}
+
+async function getPassiveBreakdown(month: string, totalPassive: string) {
+  const formulaCell = PASSIVE_FORMULA_CELLS[month];
+  const ranges = PASSIVE_BREAKDOWN_RANGES[month] ?? [];
+
+  if (ranges.length === 0) {
+    return {
+      note: "Mes sin pasivos desglosados actualmente.",
+      items: [],
+    };
+  }
+
+  try {
+    const rows = await Promise.all(ranges.map((range) => getRange(range)));
+    const items = rows
+      .map((rangeRows, index) => buildPassiveItem(ranges[index], rangeRows[0] ?? []))
+      .filter((item) => parseMoneyOrNull(item.importe) !== null && parseMoneyOrNull(item.importe) !== 0);
+    const totalAmount = parseMoneyOrNull(totalPassive);
+    const listedAmount = items.reduce((sum, item) => sum + (parseMoneyOrNull(item.importe) ?? 0), 0);
+    const missingAmount = totalAmount === null ? 0 : totalAmount - listedAmount;
+
+    if (Math.abs(missingAmount) >= 0.01) {
+      items.push({
+        concepto: "Otros pasivos o ajustes incluidos en la formula",
+        origen: formulaCell ? `${month}!${formulaCell}` : month,
+        importe: formatPassiveMoney(missingAmount),
+      });
+    }
+
+    return {
+      note: `Desglose de pasivos mes de ${month}.`,
+      items,
+    };
+  } catch {
+    return {
+      note: formulaCell
+        ? `Columna MAS INGRESOS PASIVOS localizada en ${month}!${formulaCell}; no se pudo leer el desglose.`
+        : "Total calculado por diferencia. No se pudo leer el desglose rastreado para este mes.",
+      items: [],
+    };
+  }
 }
 
 function parseTimeToSeconds(value: string) {
@@ -415,6 +566,10 @@ export async function getDashboardData(month = DEFAULT_MONTH): Promise<Dashboard
     };
   });
   const netValues = findValuesBelowHeader(finance, "TOTAL INGRESOS NETOS");
+  const totalNeto = netValues[0] ?? "—";
+  const netoConPasivos = netValues[1] ?? totalNeto;
+  const ingresosPasivos = subtractMoneyValues(netoConPasivos, totalNeto);
+  const pasivosBreakdown = await getPassiveBreakdown(month, ingresosPasivos);
 
   return {
     month,
@@ -422,8 +577,11 @@ export async function getDashboardData(month = DEFAULT_MONTH): Promise<Dashboard
     totalHours: pick(summaryTotalRow, 3),
     hoursPerDay: await getHoursPerDay(month, finance),
     totalFactura: pick(summaryTotalRow, 2),
-    totalNeto: netValues[0] ?? "—",
-    netoConPasivos: netValues[1] ?? netValues[0] ?? "—",
+    totalNeto,
+    netoConPasivos,
+    ingresosPasivos,
+    pasivosDetalle: pasivosBreakdown.items,
+    pasivosDetalleNota: pasivosBreakdown.note,
     gastosTotales: findTotalExpenses(finance),
     ivaTotal: findColumnValue(finance, "TOTAL IVA", "TOTAL"),
     beneficioNeto: findColumnValue(finance, "BENEFICIO NETO", "TOTAL"),

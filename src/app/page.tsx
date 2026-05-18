@@ -22,6 +22,7 @@ const MONTHS_2026 = [
 
 const SECTIONS = [
   { id: "mes", label: "RESUMEN DEL MES" },
+  { id: "pasivos", label: "PASIVOS" },
   { id: "historial", label: "HISTORIAL DE INGRESOS ANUALES" },
 ];
 
@@ -46,22 +47,159 @@ const KPI_ACCENTS = {
   pastelRed: "border-red-200/35 bg-[#ffd8d8] text-red-950",
 };
 
+const SUMMARY_CARD_TONE = "border-slate-700/80 bg-[#112436] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_8px_20px_rgba(0,0,0,0.18)] [&_.kpi-value]:text-white";
+
+const SUMMARY_MONTH_ACCENTS: Record<string, string[]> = {
+  "ENERO 2026": [
+    "border-sky-200/25 bg-slate-900/85 text-white bg-sky-200 [&_.kpi-value]:text-sky-100",
+    "border-sky-200/25 bg-slate-900/85 text-white bg-sky-300 [&_.kpi-value]:text-sky-100",
+    "border-sky-200/25 bg-slate-900/85 text-white bg-sky-400 [&_.kpi-value]:text-sky-100",
+    "border-sky-300/25 bg-slate-900/85 text-white bg-sky-200 [&_.kpi-value]:text-sky-100",
+    "border-sky-300/25 bg-slate-900/85 text-white bg-sky-300 [&_.kpi-value]:text-sky-100",
+    "border-sky-300/25 bg-slate-900/85 text-white bg-sky-400 [&_.kpi-value]:text-sky-100",
+    "border-sky-400/25 bg-slate-900/85 text-white bg-sky-200 [&_.kpi-value]:text-sky-100",
+    "border-sky-400/25 bg-slate-900/85 text-white bg-sky-300 [&_.kpi-value]:text-sky-100",
+  ],
+  "FEBRERO 2026": [
+    "border-rose-200/25 bg-slate-900/85 text-white bg-rose-200 [&_.kpi-value]:text-rose-100",
+    "border-rose-200/25 bg-slate-900/85 text-white bg-rose-300 [&_.kpi-value]:text-rose-100",
+    "border-rose-200/25 bg-slate-900/85 text-white bg-rose-400 [&_.kpi-value]:text-rose-100",
+    "border-rose-300/25 bg-slate-900/85 text-white bg-rose-200 [&_.kpi-value]:text-rose-100",
+    "border-rose-300/25 bg-slate-900/85 text-white bg-rose-300 [&_.kpi-value]:text-rose-100",
+    "border-rose-300/25 bg-slate-900/85 text-white bg-rose-400 [&_.kpi-value]:text-rose-100",
+    "border-rose-400/25 bg-slate-900/85 text-white bg-rose-200 [&_.kpi-value]:text-rose-100",
+    "border-rose-400/25 bg-slate-900/85 text-white bg-rose-300 [&_.kpi-value]:text-rose-100",
+  ],
+  "MARZO 2026": [
+    "border-emerald-200/25 bg-slate-900/85 text-white bg-emerald-200 [&_.kpi-value]:text-emerald-100",
+    "border-emerald-200/25 bg-slate-900/85 text-white bg-emerald-300 [&_.kpi-value]:text-emerald-100",
+    "border-emerald-200/25 bg-slate-900/85 text-white bg-emerald-400 [&_.kpi-value]:text-emerald-100",
+    "border-emerald-300/25 bg-slate-900/85 text-white bg-emerald-200 [&_.kpi-value]:text-emerald-100",
+    "border-emerald-300/25 bg-slate-900/85 text-white bg-emerald-300 [&_.kpi-value]:text-emerald-100",
+    "border-emerald-300/25 bg-slate-900/85 text-white bg-emerald-400 [&_.kpi-value]:text-emerald-100",
+    "border-emerald-400/25 bg-slate-900/85 text-white bg-emerald-200 [&_.kpi-value]:text-emerald-100",
+    "border-emerald-400/25 bg-slate-900/85 text-white bg-emerald-300 [&_.kpi-value]:text-emerald-100",
+  ],
+  "ABRIL 2026": [
+    "border-violet-200/25 bg-slate-900/85 text-white bg-violet-200 [&_.kpi-value]:text-violet-100",
+    "border-violet-200/25 bg-slate-900/85 text-white bg-violet-300 [&_.kpi-value]:text-violet-100",
+    "border-violet-200/25 bg-slate-900/85 text-white bg-violet-400 [&_.kpi-value]:text-violet-100",
+    "border-violet-300/25 bg-slate-900/85 text-white bg-violet-200 [&_.kpi-value]:text-violet-100",
+    "border-violet-300/25 bg-slate-900/85 text-white bg-violet-300 [&_.kpi-value]:text-violet-100",
+    "border-violet-300/25 bg-slate-900/85 text-white bg-violet-400 [&_.kpi-value]:text-violet-100",
+    "border-violet-400/25 bg-slate-900/85 text-white bg-violet-200 [&_.kpi-value]:text-violet-100",
+    "border-violet-400/25 bg-slate-900/85 text-white bg-violet-300 [&_.kpi-value]:text-violet-100",
+  ],
+  "MAYO 2026": [
+    "border-orange-200/25 bg-slate-900/85 text-white bg-orange-200 [&_.kpi-value]:text-orange-100",
+    "border-orange-200/25 bg-slate-900/85 text-white bg-orange-300 [&_.kpi-value]:text-orange-100",
+    "border-orange-200/25 bg-slate-900/85 text-white bg-orange-400 [&_.kpi-value]:text-orange-100",
+    "border-orange-300/25 bg-slate-900/85 text-white bg-orange-200 [&_.kpi-value]:text-orange-100",
+    "border-orange-300/25 bg-slate-900/85 text-white bg-orange-300 [&_.kpi-value]:text-orange-100",
+    "border-orange-300/25 bg-slate-900/85 text-white bg-orange-400 [&_.kpi-value]:text-orange-100",
+    "border-orange-400/25 bg-slate-900/85 text-white bg-orange-200 [&_.kpi-value]:text-orange-100",
+    "border-orange-400/25 bg-slate-900/85 text-white bg-orange-300 [&_.kpi-value]:text-orange-100",
+  ],
+  "JUNIO 2026": [
+    "border-yellow-200/25 bg-slate-900/85 text-white bg-yellow-200 [&_.kpi-value]:text-yellow-100",
+    "border-yellow-200/25 bg-slate-900/85 text-white bg-yellow-300 [&_.kpi-value]:text-yellow-100",
+    "border-yellow-200/25 bg-slate-900/85 text-white bg-yellow-400 [&_.kpi-value]:text-yellow-100",
+    "border-yellow-300/25 bg-slate-900/85 text-white bg-yellow-200 [&_.kpi-value]:text-yellow-100",
+    "border-yellow-300/25 bg-slate-900/85 text-white bg-yellow-300 [&_.kpi-value]:text-yellow-100",
+    "border-yellow-300/25 bg-slate-900/85 text-white bg-yellow-400 [&_.kpi-value]:text-yellow-100",
+    "border-yellow-400/25 bg-slate-900/85 text-white bg-yellow-200 [&_.kpi-value]:text-yellow-100",
+    "border-yellow-400/25 bg-slate-900/85 text-white bg-yellow-300 [&_.kpi-value]:text-yellow-100",
+  ],
+  "JULIO 2026": [
+    "border-cyan-200/25 bg-slate-900/85 text-white bg-cyan-200 [&_.kpi-value]:text-cyan-100",
+    "border-cyan-200/25 bg-slate-900/85 text-white bg-cyan-300 [&_.kpi-value]:text-cyan-100",
+    "border-cyan-200/25 bg-slate-900/85 text-white bg-cyan-400 [&_.kpi-value]:text-cyan-100",
+    "border-cyan-300/25 bg-slate-900/85 text-white bg-cyan-200 [&_.kpi-value]:text-cyan-100",
+    "border-cyan-300/25 bg-slate-900/85 text-white bg-cyan-300 [&_.kpi-value]:text-cyan-100",
+    "border-cyan-300/25 bg-slate-900/85 text-white bg-cyan-400 [&_.kpi-value]:text-cyan-100",
+    "border-cyan-400/25 bg-slate-900/85 text-white bg-cyan-200 [&_.kpi-value]:text-cyan-100",
+    "border-cyan-400/25 bg-slate-900/85 text-white bg-cyan-300 [&_.kpi-value]:text-cyan-100",
+  ],
+  "AGOSTO 2026": [
+    "border-red-200/25 bg-slate-900/85 text-white bg-red-200 [&_.kpi-value]:text-red-100",
+    "border-red-200/25 bg-slate-900/85 text-white bg-red-300 [&_.kpi-value]:text-red-100",
+    "border-red-200/25 bg-slate-900/85 text-white bg-red-400 [&_.kpi-value]:text-red-100",
+    "border-red-300/25 bg-slate-900/85 text-white bg-red-200 [&_.kpi-value]:text-red-100",
+    "border-red-300/25 bg-slate-900/85 text-white bg-red-300 [&_.kpi-value]:text-red-100",
+    "border-red-300/25 bg-slate-900/85 text-white bg-red-400 [&_.kpi-value]:text-red-100",
+    "border-red-400/25 bg-slate-900/85 text-white bg-red-200 [&_.kpi-value]:text-red-100",
+    "border-red-400/25 bg-slate-900/85 text-white bg-red-300 [&_.kpi-value]:text-red-100",
+  ],
+  "SEPTIEMBRE 2026": [
+    "border-lime-200/25 bg-slate-900/85 text-white bg-lime-200 [&_.kpi-value]:text-lime-100",
+    "border-lime-200/25 bg-slate-900/85 text-white bg-lime-300 [&_.kpi-value]:text-lime-100",
+    "border-lime-200/25 bg-slate-900/85 text-white bg-lime-400 [&_.kpi-value]:text-lime-100",
+    "border-lime-300/25 bg-slate-900/85 text-white bg-lime-200 [&_.kpi-value]:text-lime-100",
+    "border-lime-300/25 bg-slate-900/85 text-white bg-lime-300 [&_.kpi-value]:text-lime-100",
+    "border-lime-300/25 bg-slate-900/85 text-white bg-lime-400 [&_.kpi-value]:text-lime-100",
+    "border-lime-400/25 bg-slate-900/85 text-white bg-lime-200 [&_.kpi-value]:text-lime-100",
+    "border-lime-400/25 bg-slate-900/85 text-white bg-lime-300 [&_.kpi-value]:text-lime-100",
+  ],
+  "OCTUBRE 2026": [
+    "border-amber-200/25 bg-slate-900/85 text-white bg-amber-200 [&_.kpi-value]:text-amber-100",
+    "border-amber-200/25 bg-slate-900/85 text-white bg-amber-300 [&_.kpi-value]:text-amber-100",
+    "border-amber-200/25 bg-slate-900/85 text-white bg-amber-400 [&_.kpi-value]:text-amber-100",
+    "border-amber-300/25 bg-slate-900/85 text-white bg-amber-200 [&_.kpi-value]:text-amber-100",
+    "border-amber-300/25 bg-slate-900/85 text-white bg-amber-300 [&_.kpi-value]:text-amber-100",
+    "border-amber-300/25 bg-slate-900/85 text-white bg-amber-400 [&_.kpi-value]:text-amber-100",
+    "border-amber-400/25 bg-slate-900/85 text-white bg-amber-200 [&_.kpi-value]:text-amber-100",
+    "border-amber-400/25 bg-slate-900/85 text-white bg-amber-300 [&_.kpi-value]:text-amber-100",
+  ],
+  "NOVIEMBRE 2026": [
+    "border-fuchsia-200/25 bg-slate-900/85 text-white bg-fuchsia-200 [&_.kpi-value]:text-fuchsia-100",
+    "border-fuchsia-200/25 bg-slate-900/85 text-white bg-fuchsia-300 [&_.kpi-value]:text-fuchsia-100",
+    "border-fuchsia-200/25 bg-slate-900/85 text-white bg-fuchsia-400 [&_.kpi-value]:text-fuchsia-100",
+    "border-fuchsia-300/25 bg-slate-900/85 text-white bg-fuchsia-200 [&_.kpi-value]:text-fuchsia-100",
+    "border-fuchsia-300/25 bg-slate-900/85 text-white bg-fuchsia-300 [&_.kpi-value]:text-fuchsia-100",
+    "border-fuchsia-300/25 bg-slate-900/85 text-white bg-fuchsia-400 [&_.kpi-value]:text-fuchsia-100",
+    "border-fuchsia-400/25 bg-slate-900/85 text-white bg-fuchsia-200 [&_.kpi-value]:text-fuchsia-100",
+    "border-fuchsia-400/25 bg-slate-900/85 text-white bg-fuchsia-300 [&_.kpi-value]:text-fuchsia-100",
+  ],
+  "DICIEMBRE 2026": [
+    "border-slate-200/25 bg-slate-900/85 text-white bg-slate-200 [&_.kpi-value]:text-slate-100",
+    "border-slate-200/25 bg-slate-900/85 text-white bg-slate-300 [&_.kpi-value]:text-slate-100",
+    "border-slate-200/25 bg-slate-900/85 text-white bg-slate-400 [&_.kpi-value]:text-slate-100",
+    "border-slate-300/25 bg-slate-900/85 text-white bg-slate-200 [&_.kpi-value]:text-slate-100",
+    "border-slate-300/25 bg-slate-900/85 text-white bg-slate-300 [&_.kpi-value]:text-slate-100",
+    "border-slate-300/25 bg-slate-900/85 text-white bg-slate-400 [&_.kpi-value]:text-slate-100",
+    "border-slate-400/25 bg-slate-900/85 text-white bg-slate-200 [&_.kpi-value]:text-slate-100",
+    "border-slate-400/25 bg-slate-900/85 text-white bg-slate-300 [&_.kpi-value]:text-slate-100",
+  ],
+};
+
 function KpiCard({
   title,
   description,
   value,
   accent = "aqua",
+  toneClass,
+  shadowClass,
 }: {
   title: string;
   description: string;
   value: string;
   accent?: keyof typeof KPI_ACCENTS;
+  toneClass?: string;
+  shadowClass?: string;
 }) {
   return (
-    <div className={`rounded-2xl border p-5 shadow-sm ${KPI_ACCENTS[accent]}`}>
-      <p className="text-base font-semibold">{title}</p>
-      <p className="mt-1 min-h-10 text-sm leading-5 opacity-70">{description}</p>
-      <p className="mt-4 text-2xl font-semibold">{value}</p>
+    <div className="relative">
+      {shadowClass ? (
+        <div
+          aria-hidden="true"
+          className={`absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl opacity-90 ${shadowClass}`}
+        />
+      ) : null}
+      <div className={`relative rounded-2xl border p-5 shadow-sm ${toneClass ?? KPI_ACCENTS[accent]}`}>
+        <p className="text-base font-semibold">{title}</p>
+        <p className="mt-1 min-h-10 text-sm leading-5 opacity-70">{description}</p>
+        <p className="kpi-value mt-4 text-2xl font-semibold">{value}</p>
+      </div>
     </div>
   );
 }
@@ -87,8 +225,13 @@ function ClientBillingCard({
 }) {
   const toneClasses = {
     default: "border-white/10 bg-white/5 text-white",
-    spanishCheese: "border-yellow-200/40 bg-[#ffe172] text-yellow-950",
-    grupoDim: "border-[#6f8dff]/25 bg-[#04277f] text-blue-50",
+    spanishCheese: "border-yellow-200/60 bg-[#fff9e7] text-yellow-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]",
+    grupoDim: "border-[#6f8dff]/30 bg-[#bac9f0] text-[#04277f] shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]",
+  };
+  const shadowClasses = {
+    default: "",
+    spanishCheese: "bg-[#ffe172]",
+    grupoDim: "bg-[#04277f]",
   };
   const panelClasses =
     tone === "spanishCheese"
@@ -97,53 +240,58 @@ function ClientBillingCard({
         ? "border-[#bac9f0]/60 bg-[#bac9f0]"
         : "border-white/10 bg-slate-950/40";
   const labelClasses = tone === "spanishCheese" ? "text-yellow-950" : tone === "grupoDim" ? "text-[#04277f]" : "text-cyan-200";
-  const mutedClasses = tone === "spanishCheese" ? "text-yellow-950/70" : tone === "grupoDim" ? "text-blue-100/75" : "text-zinc-400";
+  const mutedClasses = tone === "spanishCheese" ? "text-yellow-950/70" : tone === "grupoDim" ? "text-[#04277f]/70" : "text-zinc-400";
   const termClasses = tone === "spanishCheese" ? "text-yellow-950/60" : tone === "grupoDim" ? "text-[#04277f]/65" : "text-zinc-500";
   const valueClasses = tone === "spanishCheese" ? "text-yellow-950" : tone === "grupoDim" ? "text-[#04277f]" : "text-white";
 
   return (
-    <div className={`rounded-2xl border p-5 shadow-sm ${toneClasses[tone]}`}>
-      <p className="text-base font-semibold">{client}</p>
-      <p className={`mt-1 min-h-10 text-sm leading-5 ${mutedClasses}`}>Facturación y horas del cliente en el mes seleccionado.</p>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <div className={`rounded-xl border p-3 ${panelClasses}`}>
-          <p className={`text-xs font-semibold ${labelClasses}`}>ACTUAL</p>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div>
-              <dt className={termClasses}>Facturación</dt>
-              <dd className={`mt-1 font-medium ${valueClasses}`}>{actual || "—"}</dd>
-            </div>
-            <div>
-              <dt className={termClasses}>Horas</dt>
-              <dd className={`mt-1 font-medium ${valueClasses}`}>{hours || "—"}</dd>
-            </div>
-          </dl>
-        </div>
-        <div className={`rounded-xl border p-3 ${panelClasses}`}>
-          <p className={`text-xs font-semibold ${labelClasses}`}>PREVISION</p>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div>
-              <dt className={termClasses}>Facturación</dt>
-              <dd className={`mt-1 font-medium ${valueClasses}`}>{prevision || "—"}</dd>
-            </div>
-            <div>
-              <dt className={termClasses}>Horas</dt>
-              <dd className={`mt-1 font-medium ${valueClasses}`}>{previsionHours || "—"}</dd>
-            </div>
-          </dl>
-        </div>
-        <div className={`rounded-xl border p-3 ${panelClasses}`}>
-          <p className={`text-xs font-semibold ${labelClasses}`}>DIFERENCIA</p>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div>
-              <dt className={termClasses}>Facturación</dt>
-              <dd className={`mt-1 font-medium ${valueClasses}`}>{diff || "—"}</dd>
-            </div>
-            <div>
-              <dt className={termClasses}>Horas</dt>
-              <dd className={`mt-1 font-medium ${valueClasses}`}>{diffHours || "—"}</dd>
-            </div>
-          </dl>
+    <div className="relative">
+      {shadowClasses[tone] ? (
+        <div aria-hidden="true" className={`absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl opacity-90 ${shadowClasses[tone]}`} />
+      ) : null}
+      <div className={`relative rounded-2xl border p-5 shadow-sm ${toneClasses[tone]}`}>
+        <p className="text-base font-semibold">{client}</p>
+        <p className={`mt-1 min-h-10 text-sm leading-5 ${mutedClasses}`}>Facturación y horas del cliente en el mes seleccionado.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className={`rounded-xl border p-3 ${panelClasses}`}>
+            <p className={`text-xs font-semibold ${labelClasses}`}>ACTUAL</p>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div>
+                <dt className={termClasses}>Facturación</dt>
+                <dd className={`mt-1 font-medium ${valueClasses}`}>{actual || "—"}</dd>
+              </div>
+              <div>
+                <dt className={termClasses}>Horas</dt>
+                <dd className={`mt-1 font-medium ${valueClasses}`}>{hours || "—"}</dd>
+              </div>
+            </dl>
+          </div>
+          <div className={`rounded-xl border p-3 ${panelClasses}`}>
+            <p className={`text-xs font-semibold ${labelClasses}`}>PREVISION</p>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div>
+                <dt className={termClasses}>Facturación</dt>
+                <dd className={`mt-1 font-medium ${valueClasses}`}>{prevision || "—"}</dd>
+              </div>
+              <div>
+                <dt className={termClasses}>Horas</dt>
+                <dd className={`mt-1 font-medium ${valueClasses}`}>{previsionHours || "—"}</dd>
+              </div>
+            </dl>
+          </div>
+          <div className={`rounded-xl border p-3 ${panelClasses}`}>
+            <p className={`text-xs font-semibold ${labelClasses}`}>DIFERENCIA</p>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div>
+                <dt className={termClasses}>Facturación</dt>
+                <dd className={`mt-1 font-medium ${valueClasses}`}>{diff || "—"}</dd>
+              </div>
+              <div>
+                <dt className={termClasses}>Horas</dt>
+                <dd className={`mt-1 font-medium ${valueClasses}`}>{diffHours || "—"}</dd>
+              </div>
+            </dl>
+          </div>
         </div>
       </div>
     </div>
@@ -160,32 +308,35 @@ function MlcdProjectBillingCard({ projects }: { projects: Array<{ client: string
   }).format(total);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur lg:col-span-2">
-      <p className="text-base font-semibold text-white">MLC DESING</p>
-      <p className="mt-1 min-h-10 text-sm leading-5 text-zinc-400">Facturación por proyecto registrada para trabajos freelance del mes.</p>
+    <div className="relative lg:col-span-2">
+      <div aria-hidden="true" className="absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl bg-[#a2e0e7] opacity-90" />
+      <div className="relative rounded-2xl border border-[#a2e0e7]/80 bg-[#e8fbfd] p-5 text-sky-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]">
+        <p className="text-base font-semibold">MLC DESING</p>
+        <p className="mt-1 min-h-10 text-sm leading-5 text-sky-950/70">Facturación por proyecto registrada para trabajos freelance del mes.</p>
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-slate-950/40">
-        <div className="grid grid-cols-[1fr_2.4fr_auto] gap-4 border-b border-white/10 px-4 py-3 text-xs font-semibold text-cyan-200">
-          <p>CLIENTE</p>
-          <p>PROYECTO</p>
-          <p className="text-right">PRECIO</p>
-        </div>
-        <div className="divide-y divide-white/10 text-sm">
-          {projects.length > 0 ? (
-            projects.map((project) => (
-              <div key={`${project.client}-${project.project}-${project.price}`} className="grid grid-cols-[1fr_2.4fr_auto] gap-4 px-4 py-3">
-                <p className="font-medium text-white">{project.client}</p>
-                <p className="text-zinc-300">{project.project}</p>
-                <p className="text-right font-semibold text-white">{project.price}</p>
-              </div>
-            ))
-          ) : (
-            <p className="px-4 py-3 text-zinc-500">Sin proyectos facturados en este mes.</p>
-          )}
-        </div>
-        <div className="flex items-center justify-between gap-4 border-t border-white/10 bg-slate-950/60 px-4 py-4">
-          <p className="text-sm font-semibold text-cyan-200">TOTAL FACTURACION NETA</p>
-          <p className="text-xl font-semibold text-white">{formattedTotal}</p>
+        <div className="mt-4 overflow-hidden rounded-xl border border-white/60 bg-[#e8fbfd]">
+          <div className="grid grid-cols-[1fr_2.4fr_auto] gap-4 border-b border-[#a2e0e7]/70 px-4 py-3 text-xs font-semibold text-sky-950">
+            <p>CLIENTE</p>
+            <p>PROYECTO</p>
+            <p className="text-right">PRECIO</p>
+          </div>
+          <div className="divide-y divide-[#a2e0e7]/60 text-sm">
+            {projects.length > 0 ? (
+              projects.map((project) => (
+                <div key={`${project.client}-${project.project}-${project.price}`} className="grid grid-cols-[1fr_2.4fr_auto] gap-4 px-4 py-3">
+                  <p className="font-medium text-sky-950">{project.client}</p>
+                  <p className="text-sky-950/70">{project.project}</p>
+                  <p className="text-right font-semibold text-sky-950">{project.price}</p>
+                </div>
+              ))
+            ) : (
+              <p className="px-4 py-3 text-sky-950/60">Sin proyectos facturados en este mes.</p>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-4 border-t border-[#a2e0e7]/70 bg-[#c8f0f4] px-4 py-4">
+            <p className="text-sm font-semibold text-sky-950">TOTAL FACTURACION NETA</p>
+            <p className="text-xl font-semibold text-sky-950">{formattedTotal}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -335,6 +486,12 @@ function normalizeClientName(client: string) {
   return client.replace(/[^a-z0-9]/gi, "").toUpperCase();
 }
 
+function getSummaryShadow(month: string, index: number) {
+  const tones = SUMMARY_MONTH_ACCENTS[month] ?? SUMMARY_MONTH_ACCENTS["MAYO 2026"];
+  const matches = [...tones[index % tones.length].matchAll(/bg-(sky|rose|emerald|violet|orange|yellow|cyan|red|lime|amber|fuchsia|slate)-\d+/g)];
+  return matches[matches.length - 1]?.[0] ?? "bg-orange-300";
+}
+
 export default async function Home({ searchParams }: HomeProps) {
   if (!(await hasValidSession())) {
     redirect("/login");
@@ -391,7 +548,7 @@ export default async function Home({ searchParams }: HomeProps) {
             })}
           </nav>
 
-          {selectedSection === "mes" ? <MonthSelect months={MONTHS_2026} selectedMonth={selectedMonth} section={selectedSection} /> : null}
+          {selectedSection !== "historial" ? <MonthSelect months={MONTHS_2026} selectedMonth={selectedMonth} section={selectedSection ?? "mes"} /> : null}
         </section>
 
         {selectedSection === "mes" ? (
@@ -404,14 +561,20 @@ export default async function Home({ searchParams }: HomeProps) {
               <h2 className="text-xl font-semibold">RESUMEN</h2>
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <KpiCard accent="mist" title="TOTAL HORAS" description="Suma de horas trabajadas en el mes seleccionado." value={data.totalHours} />
-                <KpiCard accent="ice" title="HORAS AL DÍA" description="Media diaria registrada para el mes seleccionado." value={data.hoursPerDay} />
-                <KpiCard accent="aqua" title="TOTAL FACTURADO" description="Importe total facturado antes restar retenciones de IVA y IRPF." value={data.totalFactura} />
-                <KpiCard accent="teal" title="TOTAL NETO" description="Ingresos netos del mes antes de sumar pasivos adicionales." value={data.totalNeto} />
-                <KpiCard accent="sea" title="NETO CON PASIVOS" description="Total neto incluyendo ingresos pasivos del mes." value={data.netoConPasivos} />
-                <KpiCard accent="deep" title="GASTOS TOTALES" description="Suma total de gastos registrados para el mes." value={data.gastosTotales} />
-                <KpiCard accent="glass" title="IVA TOTAL" description="Resultado total de IVA facturado menos IVA desgrabado." value={data.ivaTotal} />
-                <KpiCard accent="glow" title="BENEFICIO TOTAL" description="Resultado neto después de descontar gastos." value={data.beneficioNeto} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 0)} toneClass={SUMMARY_CARD_TONE} title="TOTAL HORAS" description="Suma de horas trabajadas en el mes seleccionado." value={data.totalHours} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 1)} toneClass={SUMMARY_CARD_TONE} title="HORAS AL DÍA" description="Media diaria registrada para el mes seleccionado." value={data.hoursPerDay} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 2)} toneClass={SUMMARY_CARD_TONE} title="TOTAL FACTURADO" description="Importe total facturado antes restar retenciones de IVA y IRPF." value={data.totalFactura} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 3)} toneClass={SUMMARY_CARD_TONE} title="TOTAL NETO" description="Ingresos netos del mes antes de sumar pasivos adicionales." value={data.totalNeto} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 4)} toneClass={SUMMARY_CARD_TONE} title="NETO CON PASIVOS" description="Total neto incluyendo ingresos pasivos del mes." value={data.netoConPasivos} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 5)} toneClass={SUMMARY_CARD_TONE} title="GASTOS TOTALES" description="Suma total de gastos registrados para el mes." value={data.gastosTotales} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 6)} toneClass={SUMMARY_CARD_TONE} title="IVA TOTAL" description="Resultado total de IVA facturado menos IVA desgrabado." value={data.ivaTotal} />
+                <KpiCard
+                  shadowClass="bg-emerald-400"
+                  toneClass="border-emerald-200/80 bg-[#d7fbe8] text-emerald-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)] [&_.kpi-value]:text-emerald-950"
+                  title="BENEFICIO TOTAL"
+                  description="Resultado neto después de descontar gastos."
+                  value={data.beneficioNeto}
+                />
               </div>
             </section>
 
@@ -422,9 +585,27 @@ export default async function Home({ searchParams }: HomeProps) {
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
-                <KpiCard accent="pastelBlue" title="AHORRO" description="Parte destinada a reserva del beneficio total." value={data.repartoBeneficio.ahorro} />
-                <KpiCard accent="pastelYellow" title="INVERSION" description="Parte destinada a inversión del beneficio total." value={data.repartoBeneficio.inversion} />
-                <KpiCard accent="pastelRed" title="OCIO" description="Parte destinada a ocio del beneficio total." value={data.repartoBeneficio.ocio} />
+                <KpiCard
+                  shadowClass="bg-[#d7ecff]"
+                  toneClass="border-blue-200/50 bg-[#eef7ff] text-blue-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]"
+                  title="AHORRO"
+                  description="Parte destinada a reserva del beneficio total."
+                  value={data.repartoBeneficio.ahorro}
+                />
+                <KpiCard
+                  shadowClass="bg-[#fff0b8]"
+                  toneClass="border-yellow-200/60 bg-[#fff9e7] text-yellow-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]"
+                  title="INVERSION"
+                  description="Parte destinada a inversión del beneficio total."
+                  value={data.repartoBeneficio.inversion}
+                />
+                <KpiCard
+                  shadowClass="bg-[#ffd8d8]"
+                  toneClass="border-red-200/50 bg-[#fff1f1] text-red-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]"
+                  title="OCIO"
+                  description="Parte destinada a ocio del beneficio total."
+                  value={data.repartoBeneficio.ocio}
+                />
               </div>
             </section>
 
@@ -450,6 +631,51 @@ export default async function Home({ searchParams }: HomeProps) {
                 ))}
                 <MlcdProjectBillingCard projects={data.freelanceProjects} />
               </div>
+            </section>
+          </>
+        ) : selectedSection === "pasivos" ? (
+          <>
+            <section>
+              <h2 className="text-4xl font-semibold text-white">PASIVOS · {selectedMonth}</h2>
+            </section>
+
+            <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
+              <div>
+                <h2 className="text-xl font-semibold">DESGLOSE DE PASIVOS</h2>
+                <p className="mt-1 text-sm text-zinc-400">Calculado por diferencia para el mes seleccionado; el desglose solo aparece cuando se ha rastreado la formula concreta de ese mes.</p>
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                <KpiCard accent="mist" title="BASE SIN PASIVOS" description="Total neto usado como punto de partida." value={data.totalNeto} />
+                <KpiCard accent="aqua" title="RESULTADO CON PASIVOS" description="Neto final despues de sumar pasivos." value={data.netoConPasivos} />
+                <KpiCard accent="ice" title="TOTAL PASIVOS" description="Importe detectado por diferencia." value={data.ingresosPasivos} />
+              </div>
+
+              {data.pasivosDetalle.length > 0 ? (
+                <div className="mt-6 overflow-x-auto">
+                  <p className="mb-3 text-sm text-zinc-400">{data.pasivosDetalleNota}</p>
+                  <table className="min-w-full text-sm">
+                    <thead className="text-left text-zinc-400">
+                      <tr className="border-b border-white/10">
+                        <th className="pb-3 pr-4">CONCEPTO</th>
+                        <th className="pb-3 pr-4 text-right">IMPORTE</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.pasivosDetalle.map((item) => (
+                        <tr key={`${item.origen}-${item.concepto}`} className="border-b border-white/5">
+                          <td className="py-3 pr-4 text-zinc-200">{item.concepto}</td>
+                          <td className="py-3 pr-4 text-right font-medium text-white">{item.importe}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="mt-6 rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-zinc-400">
+                  {data.pasivosDetalleNota}
+                </p>
+              )}
             </section>
           </>
         ) : selectedSection === "historial" ? (
