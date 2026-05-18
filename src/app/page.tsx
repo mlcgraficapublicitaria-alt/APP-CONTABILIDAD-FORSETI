@@ -50,7 +50,7 @@ function KpiCard({
   title,
   description,
   value,
-  accent = "cyan",
+  accent = "aqua",
 }: {
   title: string;
   description: string;
