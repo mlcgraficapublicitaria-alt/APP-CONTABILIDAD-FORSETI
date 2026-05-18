@@ -55,7 +55,7 @@ export function LoginForm() {
 
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-200">
         Contrasena
-        <span className="relative">
+        <span className="relative block w-full">
           <input
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -67,7 +67,7 @@ export function LoginForm() {
           <button
             type="button"
             onClick={() => setShowPassword((current) => !current)}
-            className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-zinc-400 transition hover:bg-white/10 hover:text-white"
+            className="absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-zinc-300 transition hover:bg-white/10 hover:text-white"
             aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
             title={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
           >
