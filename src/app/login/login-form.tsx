@@ -93,10 +93,10 @@ export function LoginForm() {
         <button
           type="button"
           onClick={() => setShowRecovery((current) => !current)}
-          className="self-start text-sm font-medium text-cyan-200 transition hover:text-cyan-100"
+          className="w-full rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-center text-sm font-semibold text-cyan-50 transition hover:border-cyan-200/50 hover:bg-cyan-300/15"
           aria-expanded={showRecovery}
         >
-          He olvidado mi contrasena
+          Recuperar contrasena
         </button>
 
         {showRecovery ? (
