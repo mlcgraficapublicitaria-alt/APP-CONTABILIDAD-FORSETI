@@ -9,6 +9,7 @@ export function LoginForm() {
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -87,6 +88,26 @@ export function LoginForm() {
           </button>
         </span>
       </label>
+
+      <div className="flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => setShowRecovery((current) => !current)}
+          className="self-start text-sm font-medium text-cyan-200 transition hover:text-cyan-100"
+          aria-expanded={showRecovery}
+        >
+          He olvidado mi contrasena
+        </button>
+
+        {showRecovery ? (
+          <div className="rounded-lg border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-cyan-50">
+            <p className="font-semibold">Recuperar acceso</p>
+            <p className="mt-1 text-cyan-50/80">
+              Por seguridad, la contrasena no se muestra desde la app. Para cambiarla, actualiza `APP_LOGIN_PASSWORD` en las variables del hosting y vuelve a desplegar.
+            </p>
+          </div>
+        ) : null}
+      </div>
 
       {error ? <p className="rounded-lg border border-red-300/30 bg-red-300/10 px-4 py-3 text-sm text-red-100">{error}</p> : null}
 
