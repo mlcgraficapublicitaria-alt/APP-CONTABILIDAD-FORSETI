@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Contabilidad Forseti",
   description: "Dashboard privado de contabilidad Forseti",
+  icons: {
+    icon: "/faviconforseti.jpg",
+  },
 };
 
 export default function RootLayout({
