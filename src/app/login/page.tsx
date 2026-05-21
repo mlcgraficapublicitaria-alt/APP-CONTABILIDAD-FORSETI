@@ -8,7 +8,7 @@ export default function LoginPage() {
         <header className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/30">
           <div className="relative flex min-h-[360px] items-start px-5 py-5 sm:min-h-[420px] sm:px-7 sm:py-6 md:min-h-48 lg:min-h-56">
             <Image
-              src="/cabecera-forseti-web-movil.jpg"
+              src="/cabecera-forseti-login.jpg"
               alt=""
               fill
               priority
@@ -16,7 +16,7 @@ export default function LoginPage() {
               className="object-cover object-[center_42%] md:hidden"
             />
             <Image
-              src="/cabecera-forseti-web-movil.jpg"
+              src="/cabecera-forseti-login.jpg"
               alt=""
               fill
               priority
