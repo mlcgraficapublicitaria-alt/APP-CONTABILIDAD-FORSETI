@@ -29,6 +29,27 @@ body {
   isolation: isolate;
 }
 
+.forseti-hero-bg-latency {
+  position: absolute;
+  left: 50.4%;
+  top: 27.6%;
+  z-index: 9;
+  width: clamp(170px, 36vw, 275px);
+  height: clamp(170px, 36vw, 275px);
+  border-radius: 9999px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle, transparent 0 28%, rgb(163 230 53 / 0.08) 36%, transparent 48%),
+    radial-gradient(circle, rgb(132 204 22 / 0.09) 0%, transparent 58%);
+  box-shadow:
+    inset 0 0 22px rgb(190 242 100 / 0.08),
+    0 0 32px rgb(132 204 22 / 0.1);
+  mix-blend-mode: screen;
+  opacity: 0.34;
+  animation: forseti-hero-bg-latency 3.8s ease-in-out infinite;
+}
+
 .forseti-hero-eye-core,
 .forseti-hero-eye-aura,
 .forseti-hero-eye-ray {
@@ -92,6 +113,27 @@ body {
   }
 }
 
+@keyframes forseti-hero-bg-latency {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: translate(-50%, -50%) scale(0.985);
+    filter: saturate(0.95) brightness(0.94);
+  }
+
+  38% {
+    opacity: 0.4;
+    transform: translate(-50%, -50%) scale(1.012);
+    filter: saturate(1.08) brightness(1.04);
+  }
+
+  48% {
+    opacity: 0.28;
+    transform: translate(-50%, -50%) scale(0.995);
+    filter: saturate(1) brightness(0.98);
+  }
+}
+
 @keyframes forseti-hero-eye-aura {
   0%,
   100% {
@@ -130,6 +172,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .forseti-hero-bg-latency,
   .forseti-hero-eye-core,
   .forseti-hero-eye-aura,
   .forseti-hero-eye-ray {

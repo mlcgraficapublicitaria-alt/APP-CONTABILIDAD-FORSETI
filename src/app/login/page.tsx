@@ -20,6 +20,7 @@ export default function LoginPage() {
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0b1020] to-transparent sm:h-28 md:h-36" />
             <div className="pointer-events-none absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#0b1020] to-transparent sm:w-24 md:w-32" />
             <div className="pointer-events-none absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-[#0b1020] to-transparent sm:w-24 md:w-32" />
+            <span className="forseti-hero-bg-latency" aria-hidden="true" />
             <span className="forseti-hero-eye-core" aria-hidden="true" />
             <span className="forseti-hero-eye-aura" aria-hidden="true" />
             <span className="forseti-hero-eye-ray" aria-hidden="true" />
