@@ -5,7 +5,13 @@ export const metadata: Metadata = {
   title: "Contabilidad Forseti",
   description: "Dashboard privado de contabilidad Forseti",
   icons: {
-    icon: "/faviconforseti.jpg",
+    icon: [
+      {
+        url: "/faviconforseti.jpg",
+        type: "image/jpeg",
+      },
+    ],
+    shortcut: "/faviconforseti.jpg",
   },
 };
 
