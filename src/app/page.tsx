@@ -508,14 +508,25 @@ export default async function Home({ searchParams }: HomeProps) {
     <div className="min-h-screen bg-[#0b1020] text-white">
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10">
         <header className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/30">
-          <div
-            className="relative flex min-h-48 flex-col justify-between bg-cover bg-center px-5 py-5 sm:min-h-56 sm:px-7 sm:py-6 lg:min-h-64"
-            style={{
-              backgroundImage:
-                "linear-gradient(90deg, rgba(11, 16, 32, 0.96) 0%, rgba(11, 16, 32, 0.72) 34%, rgba(11, 16, 32, 0.22) 68%, rgba(11, 16, 32, 0.08) 100%), url('/cabecera-forseti-web.jpg')",
-            }}
-          >
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0b1020]/70" />
+          <div className="relative flex min-h-[420px] flex-col justify-between px-5 py-5 sm:min-h-[460px] sm:px-7 sm:py-6 md:min-h-56 lg:min-h-64">
+            <Image
+              src="/cabecera-forseti-web-movil.jpg"
+              alt=""
+              fill
+              priority
+              sizes="(max-width: 767px) 100vw, 0px"
+              className="object-cover object-center md:hidden"
+            />
+            <Image
+              src="/cabecera-forseti-web.jpg"
+              alt=""
+              fill
+              priority
+              sizes="(min-width: 768px) 100vw, 0px"
+              className="hidden object-cover object-center md:block"
+            />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0b1020]/55 via-[#0b1020]/18 to-[#0b1020]/82 md:bg-[linear-gradient(90deg,rgba(11,16,32,0.96)_0%,rgba(11,16,32,0.72)_34%,rgba(11,16,32,0.22)_68%,rgba(11,16,32,0.08)_100%)]" />
+            <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-b from-transparent via-transparent to-[#0b1020]/70 md:block" />
 
             <form action="/api/logout" method="post" className="absolute right-5 top-5 z-20 sm:right-6 sm:top-6">
               <button className="rounded-lg border border-white/15 bg-black/25 px-4 py-2 text-sm font-medium text-zinc-200 backdrop-blur transition hover:bg-white/10 hover:text-white">
