@@ -507,23 +507,42 @@ export default async function Home({ searchParams }: HomeProps) {
   return (
     <div className="min-h-screen bg-[#0b1020] text-white">
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10">
-        <header className="relative flex flex-col gap-4 pt-10 md:pt-0">
-          <form action="/api/logout" method="post" className="absolute right-0 top-0">
-            <button className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-300 transition hover:bg-white/10 hover:text-white">
-              Salir
-            </button>
-          </form>
+        <header className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/30">
+          <div
+            className="relative flex min-h-48 flex-col justify-between bg-cover bg-center px-5 py-5 sm:min-h-56 sm:px-7 sm:py-6 lg:min-h-64"
+            style={{
+              backgroundImage:
+                "linear-gradient(90deg, rgba(11, 16, 32, 0.96) 0%, rgba(11, 16, 32, 0.72) 34%, rgba(11, 16, 32, 0.22) 68%, rgba(11, 16, 32, 0.08) 100%), url('/cabecera-forseti-web.jpg')",
+            }}
+          >
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0b1020]/70" />
 
-          <div className="flex flex-col items-center gap-2 text-center">
-            <Image src="/logo-forseti.png" alt="Forseti" width={220} height={78} priority className="h-auto w-44" />
-            <h1 className="text-[22px] font-semibold">Administracion y contabilidad</h1>
+            <form action="/api/logout" method="post" className="absolute right-5 top-5 z-20 sm:right-6 sm:top-6">
+              <button className="rounded-lg border border-white/15 bg-black/25 px-4 py-2 text-sm font-medium text-zinc-200 backdrop-blur transition hover:bg-white/10 hover:text-white">
+                Salir
+              </button>
+            </form>
+
+            <div className="relative z-10 max-w-md pr-24">
+              <Image
+                src="/logo-forseti.png"
+                alt="Forseti"
+                width={220}
+                height={78}
+                priority
+                className="h-auto w-40 drop-shadow-[0_10px_24px_rgba(0,0,0,0.75)] sm:w-48"
+              />
+              <h1 className="mt-4 text-[22px] font-semibold text-white sm:text-2xl">Administracion y contabilidad</h1>
+            </div>
+
             {data.notice ? (
-              <p className="max-w-3xl rounded-lg border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+              <p className="relative z-10 mt-6 max-w-3xl rounded-lg border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100 backdrop-blur">
                 {data.notice}
               </p>
-            ) : null}
+            ) : (
+              <div className="relative z-10" />
+            )}
           </div>
-
         </header>
 
         <section className="flex flex-col gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
