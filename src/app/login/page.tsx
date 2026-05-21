@@ -13,31 +13,23 @@ export default function LoginPage() {
               fill
               priority
               sizes="(max-width: 767px) 100vw, 0px"
-              className="object-cover object-center md:hidden"
+              className="object-cover object-[center_42%] md:hidden"
             />
             <Image
-              src="/cabecera-forseti-web.jpg"
+              src="/cabecera-forseti-web-movil.jpg"
               alt=""
               fill
               priority
               sizes="(min-width: 768px) 100vw, 0px"
-              className="hidden object-cover object-center md:block"
+              className="hidden object-cover object-[center_42%] md:block"
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0b1020]/55 via-[#0b1020]/18 to-[#0b1020]/82 md:bg-[linear-gradient(90deg,rgba(11,16,32,0.96)_0%,rgba(11,16,32,0.72)_34%,rgba(11,16,32,0.24)_68%,rgba(11,16,32,0.08)_100%)]" />
             <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-b from-transparent via-transparent to-[#0b1020]/70 md:block" />
-            <Image
-              src="/logo-forseti.png"
-              alt="Forseti"
-              width={220}
-              height={78}
-              priority
-              className="relative z-10 h-auto w-40 drop-shadow-[0_10px_24px_rgba(0,0,0,0.75)] sm:w-48"
-            />
           </div>
         </header>
 
         <div className="flex justify-center">
-          <LoginForm showBrand={false} />
+          <LoginForm />
         </div>
       </div>
     </main>
