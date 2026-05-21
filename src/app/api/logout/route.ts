@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { AUTH_COOKIE_NAME } from "@/lib/auth";
 
-export async function POST(request: Request) {
-  const response = NextResponse.redirect(new URL("/login", request.url));
+export async function POST() {
+  const response = NextResponse.redirect("/login");
   response.cookies.set(AUTH_COOKIE_NAME, "", {
     httpOnly: true,
     sameSite: "lax",
