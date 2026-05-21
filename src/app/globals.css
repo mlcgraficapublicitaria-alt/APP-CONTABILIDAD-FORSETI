@@ -25,20 +25,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.forseti-portrait {
-  position: relative;
-  width: 128px;
-  height: 128px;
-  overflow: hidden;
-  border-radius: 9999px;
-  border: 1px solid rgb(103 232 249 / 0.28);
-  background: #020617;
-  box-shadow:
-    0 0 0 1px rgb(255 255 255 / 0.05),
-    0 20px 50px rgb(0 0 0 / 0.45),
-    0 0 38px rgb(34 211 238 / 0.14);
-}
-
 .forseti-login-hero {
   isolation: isolate;
 }
@@ -87,69 +73,6 @@ body {
   opacity: 0;
   mix-blend-mode: screen;
   animation: forseti-hero-eye-ray 4s ease-in-out infinite;
-}
-
-.forseti-portrait::after {
-  position: absolute;
-  inset: 0;
-  content: "";
-  background:
-    radial-gradient(circle at 56% 29%, rgb(134 239 172 / 0.24), transparent 7%),
-    linear-gradient(110deg, transparent 18%, rgb(255 255 255 / 0.12) 48%, transparent 66%);
-  mix-blend-mode: screen;
-  opacity: 0.42;
-  pointer-events: none;
-  transform: translateX(-120%);
-  animation: forseti-scan 5.5s ease-in-out infinite;
-}
-
-.forseti-eye-glow,
-.forseti-eye-flare {
-  position: absolute;
-  left: 56%;
-  top: 29%;
-  border-radius: 9999px;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-}
-
-.forseti-eye-glow {
-  width: 13px;
-  height: 13px;
-  background: radial-gradient(circle, #f8ffe8 0%, #a7f432 28%, #38bdf8 58%, transparent 72%);
-  box-shadow:
-    0 0 8px #d9ff63,
-    0 0 18px rgb(132 204 22 / 0.95),
-    0 0 34px rgb(34 211 238 / 0.6);
-  animation: forseti-eye-pulse 2.8s ease-in-out infinite;
-}
-
-.forseti-eye-flare {
-  width: 42px;
-  height: 42px;
-  border: 1px solid rgb(190 242 100 / 0.45);
-  background: radial-gradient(circle, rgb(190 242 100 / 0.32), transparent 58%);
-  filter: blur(0.2px);
-  opacity: 0;
-  animation: forseti-eye-flare 2.8s ease-in-out infinite;
-}
-
-@keyframes forseti-eye-pulse {
-  0%,
-  100% {
-    opacity: 0.72;
-    transform: translate(-50%, -50%) scale(0.82);
-  }
-
-  45% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.28);
-  }
-
-  58% {
-    opacity: 0.9;
-    transform: translate(-50%, -50%) scale(0.96);
-  }
 }
 
 @keyframes forseti-hero-eye-core {
@@ -207,47 +130,7 @@ body {
   }
 }
 
-@keyframes forseti-eye-flare {
-  0%,
-  28%,
-  100% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.4);
-  }
-
-  46% {
-    opacity: 0.72;
-    transform: translate(-50%, -50%) scale(1);
-  }
-
-  68% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1.35);
-  }
-}
-
-@keyframes forseti-scan {
-  0%,
-  64%,
-  100% {
-    transform: translateX(-120%);
-    opacity: 0;
-  }
-
-  72% {
-    opacity: 0.38;
-  }
-
-  86% {
-    transform: translateX(120%);
-    opacity: 0.18;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .forseti-portrait::after,
-  .forseti-eye-glow,
-  .forseti-eye-flare,
   .forseti-hero-eye-core,
   .forseti-hero-eye-aura,
   .forseti-hero-eye-ray {

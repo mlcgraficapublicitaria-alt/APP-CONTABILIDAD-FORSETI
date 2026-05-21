@@ -70,19 +70,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
     <form onSubmit={handleSubmit} className="flex w-full max-w-md flex-col gap-5 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/30 backdrop-blur">
       {showBrand ? (
         <div className="text-center">
-          <div className="forseti-portrait mx-auto">
-            <Image
-              src="/faviconforseti.jpg"
-              alt="Forseti"
-              width={160}
-              height={160}
-              priority
-              className="h-full w-full object-cover"
-            />
-            <span className="forseti-eye-glow" aria-hidden="true" />
-            <span className="forseti-eye-flare" aria-hidden="true" />
-          </div>
-          <Image src="/logo-forseti.png" alt="Forseti" width={220} height={78} priority className="mx-auto mt-3 h-auto w-44" />
+          <Image src="/logo-forseti.png" alt="Forseti" width={220} height={78} priority className="mx-auto h-auto w-44" />
           <h1 className="mt-3 text-[22px] font-semibold text-white">Administracion y contabilidad</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-400">Inicia sesion para consultar la contabilidad y el resumen mensual.</p>
         </div>
