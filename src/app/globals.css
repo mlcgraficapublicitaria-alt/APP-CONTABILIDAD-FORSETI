@@ -31,11 +31,11 @@ body {
 
 .forseti-hero-bg-latency {
   position: absolute;
-  left: 50.4%;
-  top: 27.6%;
+  left: 50%;
+  top: 39%;
   z-index: 9;
-  width: clamp(170px, 36vw, 275px);
-  height: clamp(170px, 36vw, 275px);
+  width: clamp(230px, 47vw, 360px);
+  height: clamp(230px, 47vw, 360px);
   border-radius: 9999px;
   pointer-events: none;
   transform: translate(-50%, -50%);
