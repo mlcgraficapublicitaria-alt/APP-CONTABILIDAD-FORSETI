@@ -54,6 +54,15 @@ type DashboardData = {
     inversion: string;
     ocio: string;
   };
+  annualSavingsSummary: {
+    year: string;
+    totalProfit: string;
+    totalSavings: string;
+    totalInvestment: string;
+    totalLeisure: string;
+    averageSavings: string;
+    entries: Array<{ month: string; profit: string; savings: string; investment: string; leisure: string }>;
+  };
   clientSummary: Array<{ client: string; actual: string; hours: string; prevision: string; previsionHours: string; diff: string; diffHours: string }>;
   freelanceProjects: Array<{ client: string; project: string; price: string }>;
   annualIncomeHistory: Array<{
@@ -85,6 +94,21 @@ const demoDashboardData: DashboardData = {
     ahorro: "1.648 EUR",
     inversion: "1.236 EUR",
     ocio: "1.236 EUR",
+  },
+  annualSavingsSummary: {
+    year: "2026",
+    totalProfit: "15.045,88 €",
+    totalSavings: "6.018,35 €",
+    totalInvestment: "4.513,76 €",
+    totalLeisure: "4.513,76 €",
+    averageSavings: "501,53 €",
+    entries: [
+      { month: "ENERO", profit: "0 €", savings: "0 €", investment: "0 €", leisure: "0 €" },
+      { month: "FEBRERO", profit: "0 €", savings: "0 €", investment: "0 €", leisure: "0 €" },
+      { month: "MARZO", profit: "0 €", savings: "0 €", investment: "0 €", leisure: "0 €" },
+      { month: "ABRIL", profit: "1.032 €", savings: "413 €", investment: "310 €", leisure: "310 €" },
+      { month: "MAYO", profit: "2.003 €", savings: "801 €", investment: "601 €", leisure: "601 €" },
+    ],
   },
   clientSummary: [
     { client: "MLC Design", actual: "4.820 EUR", hours: "48 h", prevision: "5.000 EUR", previsionHours: "50 h", diff: "-180 EUR", diffHours: "-2 h" },
@@ -456,6 +480,38 @@ function findIncomeSplit(rows: string[][], month: string) {
   };
 }
 
+function findAnnualSavingsSummary(rows: string[][]) {
+  const year = rows.flatMap((row) => row.map((item) => item.trim())).find((item) => /^\d{4}$/.test(item)) ?? "2026";
+  const entries = rows
+    .map((row) => {
+      const monthIndex = row.findIndex((item) => MONTH_NAMES.includes(normalize(item)));
+      if (monthIndex < 0) return null;
+
+      return {
+        month: normalize(row[monthIndex]),
+        profit: pick(row, monthIndex + 1),
+        savings: pick(row, monthIndex + 2),
+        investment: pick(row, monthIndex + 4),
+        leisure: pick(row, monthIndex + 6),
+      };
+    })
+    .filter((item): item is { month: string; profit: string; savings: string; investment: string; leisure: string } => item !== null);
+  const totalRow = rows.find((row) => row.some((item) => normalize(item) === "TOTAL"));
+  const totalIndex = totalRow?.findIndex((item) => normalize(item) === "TOTAL") ?? -1;
+  const totalSavings = totalIndex >= 0 ? pick(totalRow, totalIndex + 2) : formatMoney(entries.reduce((sum, entry) => sum + parseMoney(entry.savings), 0));
+  const averageSavings = entries.length > 0 ? formatMoney(parseMoney(totalSavings) / entries.length) : "—";
+
+  return {
+    year,
+    totalProfit: totalIndex >= 0 ? pick(totalRow, totalIndex + 1) : formatMoney(entries.reduce((sum, entry) => sum + parseMoney(entry.profit), 0)),
+    totalSavings,
+    totalInvestment: totalIndex >= 0 ? pick(totalRow, totalIndex + 4) : formatMoney(entries.reduce((sum, entry) => sum + parseMoney(entry.investment), 0)),
+    totalLeisure: totalIndex >= 0 ? pick(totalRow, totalIndex + 6) : formatMoney(entries.reduce((sum, entry) => sum + parseMoney(entry.leisure), 0)),
+    averageSavings,
+    entries,
+  };
+}
+
 function findFreelanceProjects(rows: string[][]) {
   const headerRowIndex = rows.findIndex((row) => row.some((item) => normalize(item) === "CLIENTE") && row.some((item) => normalize(item) === "TRABAJOS"));
   const headerRow = rows[headerRowIndex];
@@ -587,6 +643,7 @@ export async function getDashboardData(month = DEFAULT_MONTH): Promise<Dashboard
     beneficioNeto: findColumnValue(finance, "BENEFICIO NETO", "TOTAL"),
     ahorro: findColumnValue(finance, "AHORRO", "TOTAL"),
     repartoBeneficio: findIncomeSplit(incomeSplit, month),
+    annualSavingsSummary: findAnnualSavingsSummary(incomeSplit),
     clientSummary,
     freelanceProjects: findFreelanceProjects(monthlyRows),
     annualIncomeHistory: findAnnualIncomeHistory(annualIncomeHistoryRows),

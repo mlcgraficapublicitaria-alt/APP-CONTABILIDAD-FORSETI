@@ -396,6 +396,36 @@ function BenefitSplitBar({
   );
 }
 
+function AnnualSavingsRow({
+  month,
+  savings,
+  investment,
+  leisure,
+  total,
+}: {
+  month: string;
+  savings: string;
+  investment: string;
+  leisure: string;
+  total: string;
+}) {
+  const width = Math.min(Math.max(getRatio(savings, total) * 100, 0), 100);
+
+  return (
+    <div className="grid gap-3 border-b border-white/5 py-3 text-sm last:border-b-0 sm:grid-cols-[0.9fr_1.5fr_0.8fr_0.8fr] sm:items-center">
+      <p className="font-medium text-zinc-200">{month}</p>
+      <div>
+        <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full rounded-full bg-blue-300" style={{ width: `${Number.isFinite(width) ? width : 0}%` }} />
+        </div>
+        <p className="mt-1 text-xs text-zinc-500">{savings}</p>
+      </div>
+      <p className="text-zinc-300 sm:text-right">{investment}</p>
+      <p className="text-zinc-300 sm:text-right">{leisure}</p>
+    </div>
+  );
+}
+
 function MonthlyComparisonChart({
   year,
   previousYear,
@@ -794,6 +824,45 @@ export default async function Home({ searchParams }: HomeProps) {
                   <KpiCard accent="mist" title="BENEFICIO TOTAL" description="Resultado neto después de descontar gastos." value={data.beneficioNeto} />
                   <KpiCard accent="ice" title="TOTAL NETO" description="Ingresos netos antes de sumar pasivos adicionales." value={data.totalNeto} />
                   <KpiCard accent="aqua" title="GASTOS TOTALES" description="Suma total de gastos registrados para el mes." value={data.gastosTotales} />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">RESUMEN ANUAL DE AHORRO</h2>
+                  <p className="mt-1 text-sm text-zinc-400">Acumulado del reparto de ingresos de {data.annualSavingsSummary.year}.</p>
+                </div>
+                <p className="text-sm font-medium text-cyan-200">{data.annualSavingsSummary.entries.length} meses registrados</p>
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                <KpiCard accent="mist" title="AHORRO ANUAL" description="Total reservado como ahorro en el año." value={data.annualSavingsSummary.totalSavings} />
+                <KpiCard accent="ice" title="MEDIA MENSUAL" description="Media de ahorro entre los meses registrados." value={data.annualSavingsSummary.averageSavings} />
+                <KpiCard accent="aqua" title="BENEFICIO REPARTIDO" description="Base anual usada para el reparto." value={data.annualSavingsSummary.totalProfit} />
+                <KpiCard accent="teal" title="INVERSION ANUAL" description="Total anual destinado a inversion." value={data.annualSavingsSummary.totalInvestment} />
+                <KpiCard accent="sea" title="OCIO ANUAL" description="Total anual destinado a ocio." value={data.annualSavingsSummary.totalLeisure} />
+              </div>
+
+              <div className="mt-6 overflow-hidden rounded-xl border border-white/10 bg-slate-950/40">
+                <div className="hidden grid-cols-[0.9fr_1.5fr_0.8fr_0.8fr] gap-3 border-b border-white/10 px-4 py-3 text-xs font-semibold text-cyan-200 sm:grid">
+                  <p>MES</p>
+                  <p>AHORRO</p>
+                  <p className="text-right">INVERSION</p>
+                  <p className="text-right">OCIO</p>
+                </div>
+                <div className="px-4">
+                  {data.annualSavingsSummary.entries.map((entry) => (
+                    <AnnualSavingsRow
+                      key={`${data.annualSavingsSummary.year}-${entry.month}`}
+                      month={entry.month}
+                      savings={entry.savings}
+                      investment={entry.investment}
+                      leisure={entry.leisure}
+                      total={data.annualSavingsSummary.totalSavings}
+                    />
+                  ))}
                 </div>
               </div>
             </section>
