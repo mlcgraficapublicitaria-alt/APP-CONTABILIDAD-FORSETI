@@ -23,6 +23,7 @@ const MONTHS_2026 = [
 const SECTIONS = [
   { id: "mes", label: "RESUMEN DEL MES" },
   { id: "pasivos", label: "PASIVOS" },
+  { id: "ahorro", label: "AHORRO" },
   { id: "historial", label: "HISTORIAL DE INGRESOS ANUALES" },
 ];
 
@@ -349,6 +350,52 @@ function parseEuroValue(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function formatPercentage(value: number) {
+  if (!Number.isFinite(value)) return "—";
+
+  return new Intl.NumberFormat("es-ES", {
+    style: "percent",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function getRatio(value: string, total: string) {
+  const valueAmount = parseEuroValue(value);
+  const totalAmount = parseEuroValue(total);
+
+  if (totalAmount <= 0) return Number.NaN;
+  return valueAmount / totalAmount;
+}
+
+function BenefitSplitBar({
+  label,
+  value,
+  total,
+  className,
+}: {
+  label: string;
+  value: string;
+  total: string;
+  className: string;
+}) {
+  const ratio = getRatio(value, total);
+  const width = Number.isFinite(ratio) ? Math.min(Math.max(ratio * 100, 0), 100) : 0;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-4 text-sm">
+        <p className="font-medium text-zinc-200">{label}</p>
+        <p className="text-right font-semibold text-white">{value}</p>
+      </div>
+      <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/10">
+        <div className={`h-full rounded-full ${className}`} style={{ width: `${width}%` }} />
+      </div>
+      <p className="mt-1 text-xs text-zinc-500">{formatPercentage(ratio)} del beneficio total</p>
+    </div>
+  );
+}
+
 function MonthlyComparisonChart({
   year,
   previousYear,
@@ -557,7 +604,7 @@ export default async function Home({ searchParams }: HomeProps) {
         </header>
 
         <section className="flex flex-col gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
-          <nav aria-label="Secciones" className="flex gap-2">
+          <nav aria-label="Secciones" className="flex flex-wrap gap-2">
             {SECTIONS.map((section) => {
               const isActive = section.id === selectedSection;
 
@@ -706,6 +753,60 @@ export default async function Home({ searchParams }: HomeProps) {
                   {data.pasivosDetalleNota}
                 </p>
               )}
+            </section>
+          </>
+        ) : selectedSection === "ahorro" ? (
+          <>
+            <section>
+              <h2 className="text-4xl font-semibold text-white">AHORRO · {selectedMonth}</h2>
+            </section>
+
+            <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="relative">
+                <div aria-hidden="true" className="absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl bg-[#d7ecff] opacity-90" />
+                <div className="relative rounded-2xl border border-blue-200/50 bg-[#eef7ff] p-6 text-blue-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]">
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-950/70">Reserva del mes</p>
+                  <p className="mt-3 text-5xl font-semibold tracking-normal text-blue-950">{data.ahorro}</p>
+                  <p className="mt-3 max-w-xl text-sm leading-6 text-blue-950/70">
+                    Importe de ahorro detectado en el resumen financiero del mes seleccionado.
+                  </p>
+
+                  <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border border-blue-200/60 bg-white/55 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-950/60">Reparto ahorro</p>
+                      <p className="mt-2 text-2xl font-semibold text-blue-950">{data.repartoBeneficio.ahorro}</p>
+                    </div>
+                    <div className="rounded-xl border border-blue-200/60 bg-white/55 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-950/60">Peso sobre beneficio</p>
+                      <p className="mt-2 text-2xl font-semibold text-blue-950">
+                        {formatPercentage(getRatio(data.repartoBeneficio.ahorro, data.beneficioNeto))}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
+                <h2 className="text-xl font-semibold">CONTEXTO FINANCIERO</h2>
+                <p className="mt-1 text-sm text-zinc-400">Lectura rápida del ahorro frente al resultado mensual.</p>
+
+                <div className="mt-5 grid gap-4">
+                  <KpiCard accent="mist" title="BENEFICIO TOTAL" description="Resultado neto después de descontar gastos." value={data.beneficioNeto} />
+                  <KpiCard accent="ice" title="TOTAL NETO" description="Ingresos netos antes de sumar pasivos adicionales." value={data.totalNeto} />
+                  <KpiCard accent="aqua" title="GASTOS TOTALES" description="Suma total de gastos registrados para el mes." value={data.gastosTotales} />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
+              <h2 className="text-xl font-semibold">DISTRIBUCION DEL BENEFICIO</h2>
+              <p className="mt-1 text-sm text-zinc-400">Reparto mensual entre ahorro, inversion y ocio.</p>
+
+              <div className="mt-6 grid gap-5">
+                <BenefitSplitBar label="AHORRO" value={data.repartoBeneficio.ahorro} total={data.beneficioNeto} className="bg-blue-300" />
+                <BenefitSplitBar label="INVERSION" value={data.repartoBeneficio.inversion} total={data.beneficioNeto} className="bg-yellow-300" />
+                <BenefitSplitBar label="OCIO" value={data.repartoBeneficio.ocio} total={data.beneficioNeto} className="bg-red-300" />
+              </div>
             </section>
           </>
         ) : selectedSection === "historial" ? (
