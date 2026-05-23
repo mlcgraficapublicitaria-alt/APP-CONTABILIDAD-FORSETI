@@ -396,32 +396,51 @@ function BenefitSplitBar({
   );
 }
 
-function AnnualSavingsRow({
-  month,
-  savings,
-  investment,
-  leisure,
-  total,
+function AnnualSavingsChart({
+  entries,
 }: {
-  month: string;
-  savings: string;
-  investment: string;
-  leisure: string;
-  total: string;
+  entries: Array<{ month: string; savings: string }>;
 }) {
-  const width = Math.min(Math.max(getRatio(savings, total) * 100, 0), 100);
+  const values = entries.map((entry) => parseEuroValue(entry.savings));
+  const maxValue = Math.max(...values, 1);
 
   return (
-    <div className="grid gap-3 border-b border-white/5 py-3 text-sm last:border-b-0 sm:grid-cols-[0.9fr_1.5fr_0.8fr_0.8fr] sm:items-center">
-      <p className="font-medium text-zinc-200">{month}</p>
-      <div>
-        <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-blue-300" style={{ width: `${Number.isFinite(width) ? width : 0}%` }} />
-        </div>
-        <p className="mt-1 text-xs text-zinc-500">{savings}</p>
+    <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
+      <div className="flex h-72 items-end gap-2 sm:gap-3">
+        {entries.map((entry) => {
+          const amount = parseEuroValue(entry.savings);
+          const height = Math.max((amount / maxValue) * 100, amount > 0 ? 4 : 0);
+
+          return (
+            <div key={`annual-saving-chart-${entry.month}`} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
+              <p className="text-center text-[10px] font-medium text-zinc-500">{entry.savings}</p>
+              <div className="flex h-48 w-full items-end rounded-t-lg bg-white/5">
+                <div
+                  className="w-full rounded-t-lg bg-blue-300 shadow-[0_0_18px_rgba(147,197,253,0.18)]"
+                  style={{ height: `${height}%` }}
+                />
+              </div>
+              <p className="w-full truncate text-center text-[10px] font-semibold text-zinc-400">{entry.month.slice(0, 3)}</p>
+            </div>
+          );
+        })}
       </div>
-      <p className="text-zinc-300 sm:text-right">{investment}</p>
-      <p className="text-zinc-300 sm:text-right">{leisure}</p>
+      <p className="mt-4 text-sm text-zinc-400">Ahorro registrado mes a mes dentro del reparto anual.</p>
+    </div>
+  );
+}
+
+function FeaturedAnnualSavingsCard({ value, year }: { value: string; year: string }) {
+  return (
+    <div className="relative">
+      <div aria-hidden="true" className="absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl bg-[#d7ecff] opacity-90" />
+      <div className="relative rounded-2xl border border-blue-200/50 bg-[#eef7ff] p-6 text-blue-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]">
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-950/70">Ahorro total anual</p>
+        <p className="mt-3 text-5xl font-semibold tracking-normal text-blue-950">{value}</p>
+        <p className="mt-3 max-w-xl text-sm leading-6 text-blue-950/70">
+          Total reservado como ahorro en {year} segun la pestaña Reparto ingresos.
+        </p>
+      </div>
     </div>
   );
 }
@@ -791,42 +810,7 @@ export default async function Home({ searchParams }: HomeProps) {
               <h2 className="text-4xl font-semibold text-white">AHORRO · {selectedMonth}</h2>
             </section>
 
-            <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="relative">
-                <div aria-hidden="true" className="absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl bg-[#d7ecff] opacity-90" />
-                <div className="relative rounded-2xl border border-blue-200/50 bg-[#eef7ff] p-6 text-blue-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-950/70">Reserva del mes</p>
-                  <p className="mt-3 text-5xl font-semibold tracking-normal text-blue-950">{data.ahorro}</p>
-                  <p className="mt-3 max-w-xl text-sm leading-6 text-blue-950/70">
-                    Importe de ahorro detectado en el resumen financiero del mes seleccionado.
-                  </p>
-
-                  <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-xl border border-blue-200/60 bg-white/55 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-950/60">Reparto ahorro</p>
-                      <p className="mt-2 text-2xl font-semibold text-blue-950">{data.repartoBeneficio.ahorro}</p>
-                    </div>
-                    <div className="rounded-xl border border-blue-200/60 bg-white/55 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-950/60">Peso sobre beneficio</p>
-                      <p className="mt-2 text-2xl font-semibold text-blue-950">
-                        {formatPercentage(getRatio(data.repartoBeneficio.ahorro, data.beneficioNeto))}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
-                <h2 className="text-xl font-semibold">CONTEXTO FINANCIERO</h2>
-                <p className="mt-1 text-sm text-zinc-400">Lectura rápida del ahorro frente al resultado mensual.</p>
-
-                <div className="mt-5 grid gap-4">
-                  <KpiCard accent="mist" title="BENEFICIO TOTAL" description="Resultado neto después de descontar gastos." value={data.beneficioNeto} />
-                  <KpiCard accent="ice" title="TOTAL NETO" description="Ingresos netos antes de sumar pasivos adicionales." value={data.totalNeto} />
-                  <KpiCard accent="aqua" title="GASTOS TOTALES" description="Suma total de gastos registrados para el mes." value={data.gastosTotales} />
-                </div>
-              </div>
-            </section>
+            <FeaturedAnnualSavingsCard value={data.annualSavingsSummary.totalSavings} year={data.annualSavingsSummary.year} />
 
             <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -837,33 +821,15 @@ export default async function Home({ searchParams }: HomeProps) {
                 <p className="text-sm font-medium text-cyan-200">{data.annualSavingsSummary.entries.length} meses registrados</p>
               </div>
 
-              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                <KpiCard accent="mist" title="AHORRO ANUAL" description="Total reservado como ahorro en el año." value={data.annualSavingsSummary.totalSavings} />
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <KpiCard accent="ice" title="MEDIA MENSUAL" description="Media de ahorro entre los meses registrados." value={data.annualSavingsSummary.averageSavings} />
                 <KpiCard accent="aqua" title="BENEFICIO REPARTIDO" description="Base anual usada para el reparto." value={data.annualSavingsSummary.totalProfit} />
                 <KpiCard accent="teal" title="INVERSION ANUAL" description="Total anual destinado a inversion." value={data.annualSavingsSummary.totalInvestment} />
                 <KpiCard accent="sea" title="OCIO ANUAL" description="Total anual destinado a ocio." value={data.annualSavingsSummary.totalLeisure} />
               </div>
 
-              <div className="mt-6 overflow-hidden rounded-xl border border-white/10 bg-slate-950/40">
-                <div className="hidden grid-cols-[0.9fr_1.5fr_0.8fr_0.8fr] gap-3 border-b border-white/10 px-4 py-3 text-xs font-semibold text-cyan-200 sm:grid">
-                  <p>MES</p>
-                  <p>AHORRO</p>
-                  <p className="text-right">INVERSION</p>
-                  <p className="text-right">OCIO</p>
-                </div>
-                <div className="px-4">
-                  {data.annualSavingsSummary.entries.map((entry) => (
-                    <AnnualSavingsRow
-                      key={`${data.annualSavingsSummary.year}-${entry.month}`}
-                      month={entry.month}
-                      savings={entry.savings}
-                      investment={entry.investment}
-                      leisure={entry.leisure}
-                      total={data.annualSavingsSummary.totalSavings}
-                    />
-                  ))}
-                </div>
+              <div className="mt-6">
+                <AnnualSavingsChart entries={data.annualSavingsSummary.entries} />
               </div>
             </section>
 
