@@ -98,7 +98,7 @@ body {
 }
 
 .forseti-dashboard-hero .forseti-hero-bg-latency {
-  left: 70.5%;
+  left: 76%;
   top: 28.5%;
   width: clamp(180px, 40vw, 340px);
   height: clamp(180px, 40vw, 340px);
@@ -109,7 +109,7 @@ body {
 .forseti-dashboard-hero .forseti-hero-eye-core,
 .forseti-dashboard-hero .forseti-hero-eye-aura,
 .forseti-dashboard-hero .forseti-hero-eye-ray {
-  left: 70.5%;
+  left: 76%;
   top: 28.5%;
   z-index: 16;
 }
