@@ -74,6 +74,7 @@ type DashboardData = {
     total: string;
     average: string;
     comparison: string;
+    monthlyComparison: string;
     entries: Array<{ month: string; value: string }>;
   }>;
 };
@@ -129,6 +130,7 @@ const demoDashboardData: DashboardData = {
       total: "29.557 EUR",
       average: "2.463 EUR",
       comparison: "-1.887 EUR",
+      monthlyComparison: "-157 EUR",
       entries: [
         { month: "ENERO", value: "2.497 EUR" },
         { month: "FEBRERO", value: "2.527 EUR" },
@@ -463,13 +465,23 @@ function findValuesBelowHeader(rows: string[][], header: string) {
   return values;
 }
 
-function findColumnValue(rows: string[][], header: string, rowLabel: string) {
-  const headerRow = rows.find((row) => row.some((item) => normalize(item) === normalize(header)));
+function findColumnValue(rows: string[][], header: string, rowLabel: string, fallbackToColumnTotal = false) {
+  const headerRowIndex = rows.findIndex((row) => row.some((item) => normalize(item) === normalize(header)));
+  const headerRow = rows[headerRowIndex];
   const row = findRow(rows, rowLabel);
   const index = headerRow?.findIndex((item) => normalize(item) === normalize(header)) ?? -1;
 
   if (index < 0) return "—";
-  return pick(row, index);
+
+  const labeledValue = row?.[index]?.trim();
+  if (labeledValue) return labeledValue;
+  if (!fallbackToColumnTotal) return "—";
+
+  return rows
+    .slice(headerRowIndex + 1)
+    .map((item) => item[index]?.trim() ?? "")
+    .filter((value) => isMoneyValue(value))
+    .at(-1) ?? "—";
 }
 
 function findFirstColumnValue(rows: string[][], headers: string[], rowLabel: string) {
@@ -583,6 +595,7 @@ function findAnnualIncomeHistory(rows: string[][]) {
     total: string;
     average: string;
     comparison: string;
+    monthlyComparison: string;
     entries: Array<{ month: string; value: string }>;
   }> = [];
   let currentYear: (typeof years)[number] | undefined;
@@ -597,6 +610,7 @@ function findAnnualIncomeHistory(rows: string[][]) {
         total: "—",
         average: "—",
         comparison: "—",
+        monthlyComparison: "—",
         entries: [],
       };
       years.push(currentYear);
@@ -613,6 +627,8 @@ function findAnnualIncomeHistory(rows: string[][]) {
       currentYear.average = value;
     } else if (label.startsWith("COMPARACION ANUAL")) {
       currentYear.comparison = value;
+    } else if (label.startsWith("COMPARACION MENSUAL")) {
+      currentYear.monthlyComparison = value;
     }
   }
 
@@ -629,7 +645,7 @@ export async function getDashboardData(month = DEFAULT_MONTH): Promise<Dashboard
   try {
     [summary, finance, incomeSplit, annualIncomeHistoryRows, monthlyRows] = await Promise.all([
       getRange(`${month}!A10:H80`),
-      getRange(`${month}!AA1:AV66`),
+      getRange(`${month}!AA1:AZ90`),
       getRange("REPARTO INGRESOS!A1:Z80"),
       getRange("SEGUIMIENTO INGRESOS!A1:Z140"),
       getRange(`${month}!A1:AV90`),
@@ -669,9 +685,9 @@ export async function getDashboardData(month = DEFAULT_MONTH): Promise<Dashboard
     pasivosDetalle: pasivosBreakdown.items,
     pasivosDetalleNota: pasivosBreakdown.note,
     gastosTotales: findTotalExpenses(finance),
-    ivaTotal: findColumnValue(finance, "TOTAL IVA", "TOTAL"),
-    beneficioNeto: findColumnValue(finance, "BENEFICIO NETO", "TOTAL"),
-    ahorro: findColumnValue(finance, "AHORRO", "TOTAL"),
+    ivaTotal: findColumnValue(finance, "TOTAL IVA", "TOTAL", true),
+    beneficioNeto: findColumnValue(finance, "BENEFICIO NETO", "TOTAL", true),
+    ahorro: findColumnValue(finance, "AHORRO", "TOTAL", true),
     repartoBeneficio: findIncomeSplit(incomeSplit, month),
     annualSavingsSummary: findAnnualSavingsSummary(incomeSplit),
     clientSummary,

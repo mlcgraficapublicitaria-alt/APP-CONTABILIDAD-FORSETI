@@ -79,7 +79,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
     >
       {showBrand ? (
         <div className="text-center">
-          <Image src="/logo-forseti.png" alt="Forseti" width={220} height={78} priority className="mx-auto h-auto w-44" />
+          <Image src="/logos-forseti.png" alt="Forseti" width={220} height={78} priority className="mx-auto h-auto w-44" />
           <h1 className="mt-3 text-[22px] font-semibold text-white">Administracion y contabilidad</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-400">Inicia sesion para consultar la contabilidad y el resumen mensual.</p>
         </div>
@@ -119,7 +119,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
             type="button"
             data-password-toggle="forseti-password"
             onClick={() => setShowPassword((current) => !current)}
-            className="absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-zinc-300 transition hover:bg-white/10 hover:text-white"
+            className="absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-zinc-300 transition hover:bg-[#5ab94e]/15 hover:text-[#5ab94e]"
             aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
             title={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
           >
@@ -144,7 +144,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
         <button
           type="button"
           onClick={() => setShowRecovery((current) => !current)}
-          className="w-full rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-center text-sm font-semibold text-cyan-50 transition hover:border-cyan-200/50 hover:bg-cyan-300/15"
+          className="w-full rounded-lg border border-[#5ab94e]/40 bg-[#5ab94e]/10 px-4 py-3 text-center text-sm font-semibold text-[#eff8ed] transition hover:border-[#5ab94e]/70 hover:bg-[#5ab94e]/20"
           aria-expanded={showRecovery}
         >
           Recuperar contrasena
@@ -183,7 +183,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
               type="button"
               onClick={handleRecoverySubmit}
               disabled={isRecovering || !recoveryEmail}
-              className="mt-3 w-full rounded-lg bg-cyan-300 px-4 py-3 font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-3 w-full rounded-lg bg-[#5ab94e] px-4 py-3 font-semibold text-slate-950 transition hover:bg-[#6dcc62] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isRecovering ? "Enviando..." : "Enviar solicitud"}
             </button>
@@ -196,7 +196,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="rounded-lg bg-cyan-300 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-lg bg-[#5ab94e] px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#6dcc62] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSubmitting ? "Entrando..." : "Entrar"}
       </button>
