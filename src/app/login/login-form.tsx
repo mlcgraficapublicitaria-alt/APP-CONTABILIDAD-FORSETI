@@ -151,11 +151,11 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
         </button>
 
         {showRecovery ? (
-          <div className="rounded-lg border border-cyan-300/25 bg-cyan-300/10 px-4 py-3 text-sm leading-6 text-cyan-50">
+          <div className="rounded-lg border border-[#5ab94e]/25 bg-[#5ab94e]/10 px-4 py-3 text-sm leading-6 text-[#eff8ed]">
             <p className="font-semibold">Recuperar acceso</p>
-            <p className="mt-1 text-cyan-50/80">Envia una solicitud al administrador para revisar o restablecer el acceso.</p>
+            <p className="mt-1 text-[#eff8ed]/80">Envia una solicitud al administrador para revisar o restablecer el acceso.</p>
 
-            <label className="mt-3 flex flex-col gap-2 font-medium text-cyan-50">
+            <label className="mt-3 flex flex-col gap-2 font-medium text-[#eff8ed]">
               Email de contacto
               <input
                 value={recoveryEmail}
@@ -167,7 +167,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
               />
             </label>
 
-            <label className="mt-3 flex flex-col gap-2 font-medium text-cyan-50">
+            <label className="mt-3 flex flex-col gap-2 font-medium text-[#eff8ed]">
               Mensaje
               <textarea
                 value={recoveryMessage}
@@ -177,7 +177,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
               />
             </label>
 
-            {recoveryStatus ? <p className="mt-3 rounded-lg border border-white/10 bg-slate-950/40 px-3 py-2 text-cyan-50/90">{recoveryStatus}</p> : null}
+            {recoveryStatus ? <p className="mt-3 rounded-lg border border-white/10 bg-slate-950/40 px-3 py-2 text-[#eff8ed]/90">{recoveryStatus}</p> : null}
 
             <button
               type="button"

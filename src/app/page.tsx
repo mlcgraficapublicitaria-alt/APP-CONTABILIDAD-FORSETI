@@ -1,7 +1,7 @@
-import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { MonthSelect } from "./month-select";
+import { SectionNav } from "./section-nav";
 import { hasValidSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/sheets";
 
@@ -241,7 +241,7 @@ function ClientBillingCard({
       : tone === "grupoDim"
         ? "border-[#bac9f0]/60 bg-[#bac9f0]"
         : "border-white/10 bg-slate-950/40";
-  const labelClasses = tone === "spanishCheese" ? "text-yellow-950" : tone === "grupoDim" ? "text-[#04277f]" : "text-cyan-200";
+  const labelClasses = tone === "spanishCheese" ? "text-yellow-950" : tone === "grupoDim" ? "text-[#04277f]" : "text-[#5ab94e]";
   const mutedClasses = tone === "spanishCheese" ? "text-yellow-950/70" : tone === "grupoDim" ? "text-[#04277f]/70" : "text-zinc-400";
   const termClasses = tone === "spanishCheese" ? "text-yellow-950/60" : tone === "grupoDim" ? "text-[#04277f]/65" : "text-zinc-500";
   const valueClasses = tone === "spanishCheese" ? "text-yellow-950" : tone === "grupoDim" ? "text-[#04277f]" : "text-white";
@@ -525,28 +525,59 @@ function MonthlyComparisonChart({
         </p>
         <div className="flex gap-4 text-xs font-medium text-zinc-400">
           <span className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-sm bg-violet-300" />
+            <span className="h-2.5 w-2.5 rounded-sm bg-[#1f5f26]" />
             {previousYear}
           </span>
           <span className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-sm bg-cyan-300" />
+            <span className="h-2.5 w-2.5 rounded-sm bg-[#5ab94e]" />
             {year}
           </span>
         </div>
       </div>
 
-      <div className="mt-5 grid h-44 grid-cols-12 items-end gap-2">
+      <div className="mt-5 grid gap-4 sm:hidden">
+        {chartRows.map((entry) => {
+          const previousWidth = Math.max((entry.previous / maxValue) * 100, entry.previous > 0 ? 4 : 0);
+          const currentWidth = Math.max((entry.current / maxValue) * 100, entry.current > 0 ? 4 : 0);
+
+          return (
+            <div key={`${year}-${entry.month}-mobile-chart`} className="grid grid-cols-[2.5rem_1fr] items-center gap-3">
+              <p className="text-xs font-semibold text-zinc-400">{entry.month}</p>
+              <div className="grid gap-2">
+                <div className="h-8 overflow-hidden rounded-full bg-white/10">
+                  <div className="flex h-full min-w-fit items-center rounded-full bg-[#1f5f26] px-2" style={{ width: `${previousWidth}%` }}>
+                    <span className="whitespace-nowrap text-sm font-semibold leading-none text-white">{formatEuroValue(entry.previous)}</span>
+                  </div>
+                </div>
+                <div className="h-8 overflow-hidden rounded-full bg-white/10">
+                  <div className="flex h-full min-w-fit items-center rounded-full bg-[#5ab94e] px-2" style={{ width: `${currentWidth}%` }}>
+                    <span className="whitespace-nowrap text-sm font-semibold leading-none text-slate-950">{formatEuroValue(entry.current)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-5 hidden h-44 grid-cols-12 items-end gap-2 sm:grid">
         {chartRows.map((entry) => (
           <div key={`${year}-${entry.month}-chart`} className="flex h-full min-w-0 flex-col items-center justify-end gap-2">
             <div className="flex h-32 w-full items-end justify-center gap-1">
-              <div
-                className="w-full max-w-3 rounded-t bg-violet-300/80"
-                style={{ height: `${Math.max((entry.previous / maxValue) * 100, entry.previous > 0 ? 4 : 0)}%` }}
-              />
-              <div
-                className="w-full max-w-3 rounded-t bg-cyan-300"
-                style={{ height: `${Math.max((entry.current / maxValue) * 100, entry.current > 0 ? 4 : 0)}%` }}
-              />
+              <div className="flex min-w-0 flex-col items-center gap-1">
+                <p className="text-[9px] font-medium text-zinc-500">{formatEuroValue(entry.previous)}</p>
+                <div
+                  className="w-4 rounded-t bg-[#1f5f26]"
+                  style={{ height: `${Math.max((entry.previous / maxValue) * 100, entry.previous > 0 ? 4 : 0)}px` }}
+                />
+              </div>
+              <div className="flex min-w-0 flex-col items-center gap-1">
+                <p className="text-[9px] font-medium text-zinc-300">{formatEuroValue(entry.current)}</p>
+                <div
+                  className="w-4 rounded-t bg-[#5ab94e]"
+                  style={{ height: `${Math.max((entry.current / maxValue) * 100, entry.current > 0 ? 4 : 0)}px` }}
+                />
+              </div>
             </div>
             <p className="text-[10px] font-medium text-zinc-500">{entry.month}</p>
           </div>
@@ -582,19 +613,19 @@ function AnnualIncomeHistoryCard({
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-          <p className="text-base font-semibold text-cyan-200">TOTAL</p>
+          <p className="text-base font-semibold text-[#5ab94e]">TOTAL</p>
           <p className="mt-3 text-2xl font-semibold text-white">{total}</p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-          <p className="text-base font-semibold text-cyan-200">MEDIA MES</p>
+          <p className="text-base font-semibold text-[#5ab94e]">MEDIA MES</p>
           <p className="mt-3 text-2xl font-semibold text-white">{average}</p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-          <p className="text-base font-semibold text-cyan-200">COMPARACION MENSUAL</p>
+          <p className="text-base font-semibold text-[#5ab94e]">COMPARACION MENSUAL</p>
           <p className="mt-3 text-2xl font-semibold text-white">{monthlyComparison}</p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-          <p className="text-base font-semibold text-cyan-200">COMPARACION ANUAL</p>
+          <p className="text-base font-semibold text-[#5ab94e]">COMPARACION ANUAL</p>
           <p className="mt-3 text-2xl font-semibold text-white">{comparison}</p>
         </div>
       </div>
@@ -604,7 +635,7 @@ function AnnualIncomeHistoryCard({
       </div>
 
       <details className="mt-5 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
-        <summary className="cursor-pointer text-base font-semibold text-cyan-200">DESGLOSE</summary>
+        <summary className="cursor-pointer text-base font-semibold text-[#5ab94e]">DESGLOSE</summary>
         <dl className="mt-3 divide-y divide-white/10 text-sm">
           {entries.map((entry) => (
             <div key={`${year}-${entry.month}`} className="flex items-center justify-between gap-4 py-2">
@@ -654,7 +685,7 @@ export default async function Home({ searchParams }: HomeProps) {
     <div className="min-h-screen bg-[#0b1020] text-white">
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10">
         <header className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-2xl shadow-black/30">
-          <div className="relative flex min-h-[420px] flex-col justify-between px-5 py-5 sm:min-h-[460px] sm:px-7 sm:py-6 md:min-h-56 lg:min-h-64">
+          <div className="forseti-dashboard-hero relative flex min-h-[420px] flex-col justify-between px-5 py-5 sm:min-h-[460px] sm:px-7 sm:py-6 md:min-h-56 lg:min-h-64">
             <Image
               src="/cabecera-forseti-web-movil.jpg"
               alt=""
@@ -673,6 +704,10 @@ export default async function Home({ searchParams }: HomeProps) {
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0b1020]/55 via-[#0b1020]/18 to-[#0b1020]/82 md:bg-[linear-gradient(90deg,rgba(11,16,32,0.96)_0%,rgba(11,16,32,0.72)_34%,rgba(11,16,32,0.22)_68%,rgba(11,16,32,0.08)_100%)]" />
             <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-b from-transparent via-transparent to-[#0b1020]/70 md:block" />
+            <span className="forseti-hero-bg-latency" aria-hidden="true" />
+            <span className="forseti-hero-eye-core" aria-hidden="true" />
+            <span className="forseti-hero-eye-aura" aria-hidden="true" />
+            <span className="forseti-hero-eye-ray" aria-hidden="true" />
 
             <form action="/api/logout" method="post" className="absolute right-5 top-5 z-20 sm:right-6 sm:top-6">
               <button className="rounded-lg border border-[#5ab94e]/70 bg-[#5ab94e] px-4 py-2 text-sm font-medium text-slate-950 backdrop-blur transition hover:bg-[#6dcc62]">
@@ -709,26 +744,7 @@ export default async function Home({ searchParams }: HomeProps) {
         </header>
 
         <section className="flex flex-col gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
-          <nav aria-label="Secciones" className="flex flex-wrap justify-center gap-2 lg:justify-start">
-            {SECTIONS.map((section) => {
-              const isActive = section.id === selectedSection;
-
-              return (
-                <Link
-                  key={section.id}
-                  href={`/?seccion=${section.id}&mes=${encodeURIComponent(selectedMonth)}`}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                    isActive
-                      ? "bg-[#5ab94e] text-slate-950 shadow-sm shadow-[#5ab94e]/20"
-                      : "text-zinc-300 hover:bg-[#5ab94e]/15 hover:text-white"
-                  }`}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  {section.label}
-                </Link>
-              );
-            })}
-          </nav>
+          <SectionNav sections={SECTIONS} selectedMonth={selectedMonth} />
 
           {selectedSection !== "historial" ? <MonthSelect months={MONTHS_2026} selectedMonth={selectedMonth} section={selectedSection ?? "mes"} /> : null}
         </section>
@@ -863,7 +879,7 @@ export default async function Home({ searchParams }: HomeProps) {
                   <h2 className="text-xl font-semibold">RESUMEN ANUAL DE AHORRO</h2>
                   <p className="mt-1 text-sm text-zinc-400">Acumulado del reparto de ingresos de {data.annualSavingsSummary.year}.</p>
                 </div>
-                <p className="text-sm font-medium text-cyan-200">{data.annualSavingsSummary.entries.length} meses registrados</p>
+                <p className="text-sm font-medium text-[#5ab94e]">{data.annualSavingsSummary.entries.length} meses registrados</p>
               </div>
 
               <div className="mt-5">

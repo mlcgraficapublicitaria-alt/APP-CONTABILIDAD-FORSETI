@@ -13,7 +13,7 @@ export function MonthSelect({ months, selectedMonth, section }: MonthSelectProps
 
   return (
     <label className="flex flex-col gap-2 text-sm text-zinc-400 sm:min-w-56">
-      ELEGIR AÑO
+      ELEGIR MES
       <select
         value={selectedMonth}
         onChange={(event) => {

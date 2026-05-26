@@ -29,6 +29,10 @@ body {
   isolation: isolate;
 }
 
+.forseti-dashboard-hero {
+  isolation: isolate;
+}
+
 .forseti-hero-bg-latency {
   position: absolute;
   left: 50%;
@@ -91,6 +95,57 @@ body {
   opacity: 0;
   mix-blend-mode: screen;
   animation: forseti-hero-eye-ray 5.2s ease-in-out infinite;
+}
+
+.forseti-dashboard-hero .forseti-hero-bg-latency {
+  left: 70.5%;
+  top: 28.5%;
+  width: clamp(180px, 40vw, 340px);
+  height: clamp(180px, 40vw, 340px);
+  opacity: 0.72;
+  z-index: 15;
+}
+
+.forseti-dashboard-hero .forseti-hero-eye-core,
+.forseti-dashboard-hero .forseti-hero-eye-aura,
+.forseti-dashboard-hero .forseti-hero-eye-ray {
+  left: 70.5%;
+  top: 28.5%;
+  z-index: 16;
+}
+
+.forseti-dashboard-hero .forseti-hero-eye-core {
+  width: clamp(10px, 2.5vw, 18px);
+  height: clamp(10px, 2.5vw, 18px);
+  box-shadow:
+    0 0 8px rgb(236 252 203 / 0.95),
+    0 0 22px rgb(132 204 22 / 0.78),
+    0 0 42px rgb(74 222 128 / 0.48);
+}
+
+.forseti-dashboard-hero .forseti-hero-eye-aura {
+  width: clamp(36px, 8vw, 66px);
+  height: clamp(36px, 8vw, 66px);
+}
+
+.forseti-dashboard-hero .forseti-hero-eye-ray {
+  width: clamp(70px, 14vw, 112px);
+}
+
+@media (min-width: 768px) {
+  .forseti-dashboard-hero .forseti-hero-bg-latency {
+    left: 77.6%;
+    top: 36%;
+    width: clamp(150px, 18vw, 260px);
+    height: clamp(150px, 18vw, 260px);
+  }
+
+  .forseti-dashboard-hero .forseti-hero-eye-core,
+  .forseti-dashboard-hero .forseti-hero-eye-aura,
+  .forseti-dashboard-hero .forseti-hero-eye-ray {
+    left: 77.6%;
+    top: 36%;
+  }
 }
 
 @keyframes forseti-hero-eye-core {
