@@ -31,6 +31,20 @@ export default function LoginPage() {
           <LoginForm />
         </div>
       </div>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+document.addEventListener("click", function (event) {
+  if (document.documentElement.dataset.forsetiHydrated === "true") return;
+  var toggle = event.target && event.target.closest ? event.target.closest("[data-password-toggle]") : null;
+  if (!toggle) return;
+  var input = document.getElementById(toggle.getAttribute("data-password-toggle"));
+  if (!input) return;
+  input.type = input.type === "password" ? "text" : "password";
+});
+`,
+        }}
+      />
     </main>
   );
 }

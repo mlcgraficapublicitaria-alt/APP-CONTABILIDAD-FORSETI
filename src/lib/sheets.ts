@@ -4,6 +4,10 @@ const HOURS_PER_DAY_CELLS: Record<string, string> = {
   "MAYO 2026": "AF62",
 };
 
+const TOTAL_FACTURADO_CELLS: Record<string, string> = {
+  "MAYO 2026": "AE65",
+};
+
 const PASSIVE_FORMULA_CELLS: Record<string, string> = {
   "ENERO 2026": "AJ62",
   "FEBRERO 2026": "AH57",
@@ -202,7 +206,7 @@ function findRow(rows: string[][], value: string) {
 }
 
 function normalize(value: string) {
-  return value.trim().toUpperCase();
+  return value.trim().replace(/\s+/g, " ").toUpperCase();
 }
 
 function isMoneyValue(value: string) {
@@ -395,6 +399,22 @@ async function getHoursPerDay(month: string, finance: string[][]) {
   }
 }
 
+async function getTotalFacturado(month: string, monthlyRows: string[][], fallback: string) {
+  const cell = TOTAL_FACTURADO_CELLS[month];
+
+  if (cell) {
+    try {
+      const value = pick((await getRange(`${month}!${cell}:${cell}`))[0], 0);
+      if (value !== "—") return value;
+    } catch {
+      return fallback;
+    }
+  }
+
+  const totalFacturado = findFirstColumnValue(monthlyRows, ["TOTAL INGRESOS BRUTOS", "INGRESOS BRUTOS", "TOTAL BRUTOS"], "TOTAL");
+  return totalFacturado !== "—" ? totalFacturado : fallback;
+}
+
 function findSummaryRows(rows: string[][]) {
   const headerIndex = rows.findIndex((row) => {
     const values = row.map(normalize);
@@ -450,6 +470,15 @@ function findColumnValue(rows: string[][], header: string, rowLabel: string) {
 
   if (index < 0) return "—";
   return pick(row, index);
+}
+
+function findFirstColumnValue(rows: string[][], headers: string[], rowLabel: string) {
+  for (const header of headers) {
+    const value = findColumnValue(rows, header, rowLabel);
+    if (value !== "—") return value;
+  }
+
+  return "—";
 }
 
 function findTotalExpenses(rows: string[][]) {
@@ -626,13 +655,14 @@ export async function getDashboardData(month = DEFAULT_MONTH): Promise<Dashboard
   const netoConPasivos = netValues[1] ?? totalNeto;
   const ingresosPasivos = subtractMoneyValues(netoConPasivos, totalNeto);
   const pasivosBreakdown = await getPassiveBreakdown(month, ingresosPasivos);
+  const totalFacturado = await getTotalFacturado(month, monthlyRows, pick(summaryTotalRow, 2));
 
   return {
     month,
     isDemoData: false,
     totalHours: pick(summaryTotalRow, 3),
     hoursPerDay: await getHoursPerDay(month, finance),
-    totalFactura: pick(summaryTotalRow, 2),
+    totalFactura: totalFacturado,
     totalNeto,
     netoConPasivos,
     ingresosPasivos,

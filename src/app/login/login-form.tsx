@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -20,6 +20,10 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
+
+  useEffect(() => {
+    document.documentElement.dataset.forsetiHydrated = "true";
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,7 +71,12 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full max-w-md flex-col gap-5 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/30 backdrop-blur">
+    <form
+      action="/api/login"
+      method="post"
+      onSubmit={handleSubmit}
+      className="flex w-full max-w-md flex-col gap-5 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/30 backdrop-blur"
+    >
       {showBrand ? (
         <div className="text-center">
           <Image src="/logo-forseti.png" alt="Forseti" width={220} height={78} priority className="mx-auto h-auto w-44" />
@@ -84,6 +93,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
       <label className="flex flex-col gap-2 text-sm font-medium text-zinc-200">
         Usuario
         <input
+          name="username"
           value={username}
           onChange={(event) => setUsername(event.target.value)}
           className="rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none transition placeholder:text-zinc-600 focus:border-cyan-300"
@@ -96,6 +106,8 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
         Contrasena
         <span className="relative block w-full">
           <input
+            name="password"
+            id="forseti-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="w-full rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 pr-12 text-white outline-none transition placeholder:text-zinc-600 focus:border-cyan-300"
@@ -105,6 +117,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
           />
           <button
             type="button"
+            data-password-toggle="forseti-password"
             onClick={() => setShowPassword((current) => !current)}
             className="absolute right-3 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-zinc-300 transition hover:bg-white/10 hover:text-white"
             aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
