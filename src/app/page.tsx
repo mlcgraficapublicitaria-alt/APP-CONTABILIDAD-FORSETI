@@ -227,12 +227,12 @@ function ClientBillingCard({
 }) {
   const toneClasses = {
     default: "border-white/10 bg-white/5 text-white",
-    spanishCheese: "border-yellow-300/20 bg-slate-950/50 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_8px_20px_rgba(0,0,0,0.18)]",
+    spanishCheese: "border-yellow-300/35 bg-[#e8c449] text-yellow-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_20px_rgba(0,0,0,0.18)]",
     grupoDim: "border-blue-300/20 bg-slate-950/50 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_8px_20px_rgba(0,0,0,0.18)]",
   };
   const shadowClasses = {
     default: "",
-    spanishCheese: "bg-yellow-300",
+    spanishCheese: "bg-[#d6ad27]",
     grupoDim: "bg-blue-400",
   };
   const headerClasses = {
@@ -245,7 +245,13 @@ function ClientBillingCard({
   const headerMutedClasses = tone === "spanishCheese" ? "text-yellow-950/70" : tone === "grupoDim" ? "text-[#04277f]/70" : "text-zinc-400";
   const termClasses = "text-zinc-400";
   const valueClasses = "text-white";
-  const logoSrc = tone === "spanishCheese" ? "/logo-spanish-cheese.svg" : tone === "grupoDim" ? "/logo-grupo-dim.svg" : null;
+  const logoSrc = tone === "spanishCheese" ? "/logo-spanish-cheese-transparent.png" : tone === "grupoDim" ? "/logo-grupo-dim.jpeg" : null;
+  const description =
+    tone === "spanishCheese"
+      ? "Facturación y horas del cliente en el mes seleccionado de Spanish Cheese, especialista en exportación internacional de quesos y embutidos de calidad."
+      : tone === "grupoDim"
+        ? "Facturación y horas en el mes seleccionado del cliente Grupo Dim, especialista en reformas e interiorismo."
+        : "Facturación y horas del cliente en el mes seleccionado.";
 
   const metricCards = [
     {
@@ -279,14 +285,15 @@ function ClientBillingCard({
       <div className={`relative overflow-hidden rounded-2xl border shadow-sm ${toneClasses[tone]}`}>
         <div className={`flex items-center justify-between gap-4 border-b px-5 py-4 ${headerClasses[tone]}`}>
           <div>
-            <p className="text-base font-semibold">{client}</p>
-            <p className={`mt-1 text-sm leading-5 ${headerMutedClasses}`}>Facturación y horas del cliente en el mes seleccionado.</p>
+            {logoSrc ? (
+              <div className="flex h-[77px] w-[173px] items-center justify-start overflow-hidden">
+                <Image src={logoSrc} alt={`${client} logo`} width={160} height={96} className="max-h-full w-auto object-contain" />
+              </div>
+            ) : (
+              <p className="text-base font-semibold">{client}</p>
+            )}
+            <p className={`mt-1 text-sm leading-5 ${headerMutedClasses}`}>{description}</p>
           </div>
-          {logoSrc ? (
-            <div className="flex h-20 w-28 shrink-0 items-center justify-center overflow-hidden">
-              <Image src={logoSrc} alt={`${client} logo`} width={140} height={100} className="max-h-full w-auto object-contain" />
-            </div>
-          ) : null}
         </div>
         <div className="p-5">
           <div className="grid gap-3 sm:grid-cols-3">
@@ -328,11 +335,10 @@ function MlcdProjectBillingCard({ projects }: { projects: Array<{ client: string
       <div className="relative rounded-2xl border border-[#a2e0e7]/80 bg-[#e8fbfd] p-5 text-sky-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-base font-semibold">MLC DESIGN</p>
-            <p className="mt-1 min-h-10 text-sm leading-5 text-sky-950/70">Facturación por proyecto registrada para trabajos freelance del mes.</p>
-          </div>
-          <div className="flex h-20 w-28 shrink-0 items-center justify-center overflow-hidden">
-            <Image src="/logo-mlc-design.svg" alt="MLC Design logo" width={140} height={100} className="max-h-full w-auto object-contain" />
+            <div className="flex h-[77px] w-[211px] items-center justify-start overflow-hidden">
+              <Image src="/logo-mlc-design.png" alt="MLC Design logo" width={178} height={100} className="max-h-full w-auto object-contain" />
+            </div>
+            <p className="mt-1 min-h-10 text-sm leading-5 text-sky-950/70">Facturación por proyecto de agencia MLCdesign registrada para trabajos freelance del mes.</p>
           </div>
         </div>
 
