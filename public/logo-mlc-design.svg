@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 92" role="img" aria-labelledby="title">
+  <title id="title">MLC Design</title>
+  <g fill="none" stroke="#252c2b" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M86 23a38 38 0 1 0 0 46" stroke-width="7"/>
+    <path d="M86 23h-25l-35 49h24l35-49v49" stroke-width="7"/>
+  </g>
+  <path d="M94 37h12c13 0 21 7 21 18s-8 18-21 18H94z" fill="none" stroke="#8dd8de" stroke-width="3"/>
+  <text x="124" y="66" fill="#80ccd2" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="300" letter-spacing="1">ESIGN</text>
+</svg>

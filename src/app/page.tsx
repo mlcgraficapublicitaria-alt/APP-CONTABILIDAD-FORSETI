@@ -227,72 +227,85 @@ function ClientBillingCard({
 }) {
   const toneClasses = {
     default: "border-white/10 bg-white/5 text-white",
-    spanishCheese: "border-yellow-200/60 bg-[#fff9e7] text-yellow-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]",
-    grupoDim: "border-[#6f8dff]/30 bg-[#bac9f0] text-[#04277f] shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]",
+    spanishCheese: "border-yellow-300/20 bg-slate-950/50 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_8px_20px_rgba(0,0,0,0.18)]",
+    grupoDim: "border-blue-300/20 bg-slate-950/50 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_8px_20px_rgba(0,0,0,0.18)]",
   };
   const shadowClasses = {
     default: "",
-    spanishCheese: "bg-[#ffe172]",
-    grupoDim: "bg-[#04277f]",
+    spanishCheese: "bg-yellow-300",
+    grupoDim: "bg-blue-400",
   };
-  const panelClasses =
-    tone === "spanishCheese"
-      ? "border-[#fff9e7]/60 bg-[#fff9e7]"
-      : tone === "grupoDim"
-        ? "border-[#bac9f0]/60 bg-[#bac9f0]"
-        : "border-white/10 bg-slate-950/40";
-  const labelClasses = tone === "spanishCheese" ? "text-yellow-950" : tone === "grupoDim" ? "text-[#04277f]" : "text-[#5ab94e]";
-  const mutedClasses = tone === "spanishCheese" ? "text-yellow-950/70" : tone === "grupoDim" ? "text-[#04277f]/70" : "text-zinc-400";
-  const termClasses = tone === "spanishCheese" ? "text-yellow-950/60" : tone === "grupoDim" ? "text-[#04277f]/65" : "text-zinc-500";
-  const valueClasses = tone === "spanishCheese" ? "text-yellow-950" : tone === "grupoDim" ? "text-[#04277f]" : "text-white";
+  const headerClasses = {
+    default: "border-white/10 bg-white/5 text-white",
+    spanishCheese: "border-yellow-200/60 bg-[#fff5bf] text-yellow-950",
+    grupoDim: "border-blue-200/40 bg-[#b7c9ff] text-[#04277f]",
+  };
+  const panelShadowClass = shadowClasses[tone] || "bg-[#5ab94e]";
+  const labelClasses = tone === "spanishCheese" ? "text-yellow-200" : tone === "grupoDim" ? "text-blue-200" : "text-[#5ab94e]";
+  const headerMutedClasses = tone === "spanishCheese" ? "text-yellow-950/70" : tone === "grupoDim" ? "text-[#04277f]/70" : "text-zinc-400";
+  const termClasses = "text-zinc-400";
+  const valueClasses = "text-white";
+  const logoSrc = tone === "spanishCheese" ? "/logo-spanish-cheese.svg" : tone === "grupoDim" ? "/logo-grupo-dim.svg" : null;
+
+  const metricCards = [
+    {
+      label: "ACTUAL",
+      rows: [
+        { term: "Facturación", value: actual },
+        { term: "Horas", value: hours },
+      ],
+    },
+    {
+      label: "PREVISION",
+      rows: [
+        { term: "Facturación", value: prevision },
+        { term: "Horas", value: previsionHours },
+      ],
+    },
+    {
+      label: "DIFERENCIA",
+      rows: [
+        { term: "Facturación", value: diff },
+        { term: "Horas", value: diffHours },
+      ],
+    },
+  ];
 
   return (
     <div className="relative">
       {shadowClasses[tone] ? (
-        <div aria-hidden="true" className={`absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl opacity-90 ${shadowClasses[tone]}`} />
+        <div aria-hidden="true" className={`absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl opacity-70 ${shadowClasses[tone]}`} />
       ) : null}
-      <div className={`relative rounded-2xl border p-5 shadow-sm ${toneClasses[tone]}`}>
-        <p className="text-base font-semibold">{client}</p>
-        <p className={`mt-1 min-h-10 text-sm leading-5 ${mutedClasses}`}>Facturación y horas del cliente en el mes seleccionado.</p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className={`rounded-xl border p-3 ${panelClasses}`}>
-            <p className={`text-xs font-semibold ${labelClasses}`}>ACTUAL</p>
-            <dl className="mt-3 space-y-2 text-sm">
-              <div>
-                <dt className={termClasses}>Facturación</dt>
-                <dd className={`mt-1 font-medium ${valueClasses}`}>{actual || "—"}</dd>
-              </div>
-              <div>
-                <dt className={termClasses}>Horas</dt>
-                <dd className={`mt-1 font-medium ${valueClasses}`}>{hours || "—"}</dd>
-              </div>
-            </dl>
+      <div className={`relative overflow-hidden rounded-2xl border shadow-sm ${toneClasses[tone]}`}>
+        <div className={`flex items-center justify-between gap-4 border-b px-5 py-4 ${headerClasses[tone]}`}>
+          <div>
+            <p className="text-base font-semibold">{client}</p>
+            <p className={`mt-1 text-sm leading-5 ${headerMutedClasses}`}>Facturación y horas del cliente en el mes seleccionado.</p>
           </div>
-          <div className={`rounded-xl border p-3 ${panelClasses}`}>
-            <p className={`text-xs font-semibold ${labelClasses}`}>PREVISION</p>
-            <dl className="mt-3 space-y-2 text-sm">
-              <div>
-                <dt className={termClasses}>Facturación</dt>
-                <dd className={`mt-1 font-medium ${valueClasses}`}>{prevision || "—"}</dd>
+          {logoSrc ? (
+            <div className="flex h-20 w-28 shrink-0 items-center justify-center overflow-hidden">
+              <Image src={logoSrc} alt={`${client} logo`} width={140} height={100} className="max-h-full w-auto object-contain" />
+            </div>
+          ) : null}
+        </div>
+        <div className="p-5">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {metricCards.map((card) => (
+              <div key={`${client}-${card.label}`} className="relative">
+                <div aria-hidden="true" className={`absolute inset-0 -translate-x-1 translate-y-1 rounded-2xl opacity-70 ${panelShadowClass}`} />
+                <div className={`relative rounded-2xl border p-4 shadow-sm ${SUMMARY_CARD_TONE}`}>
+                  <p className={`text-xs font-semibold ${labelClasses}`}>{card.label}</p>
+                  <dl className="mt-3 space-y-2 text-sm">
+                    {card.rows.map((row) => (
+                      <div key={`${client}-${card.label}-${row.term}`}>
+                        <dt className={termClasses}>{row.term}</dt>
+                        <dd className={`mt-1 font-medium ${valueClasses}`}>{row.value || "—"}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
               </div>
-              <div>
-                <dt className={termClasses}>Horas</dt>
-                <dd className={`mt-1 font-medium ${valueClasses}`}>{previsionHours || "—"}</dd>
-              </div>
-            </dl>
-          </div>
-          <div className={`rounded-xl border p-3 ${panelClasses}`}>
-            <p className={`text-xs font-semibold ${labelClasses}`}>DIFERENCIA</p>
-            <dl className="mt-3 space-y-2 text-sm">
-              <div>
-                <dt className={termClasses}>Facturación</dt>
-                <dd className={`mt-1 font-medium ${valueClasses}`}>{diff || "—"}</dd>
-              </div>
-              <div>
-                <dt className={termClasses}>Horas</dt>
-                <dd className={`mt-1 font-medium ${valueClasses}`}>{diffHours || "—"}</dd>
-              </div>
-            </dl>
+            ))}
           </div>
         </div>
       </div>
@@ -313,8 +326,15 @@ function MlcdProjectBillingCard({ projects }: { projects: Array<{ client: string
     <div className="relative lg:col-span-2">
       <div aria-hidden="true" className="absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl bg-[#a2e0e7] opacity-90" />
       <div className="relative rounded-2xl border border-[#a2e0e7]/80 bg-[#e8fbfd] p-5 text-sky-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]">
-        <p className="text-base font-semibold">MLC DESING</p>
-        <p className="mt-1 min-h-10 text-sm leading-5 text-sky-950/70">Facturación por proyecto registrada para trabajos freelance del mes.</p>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-base font-semibold">MLC DESIGN</p>
+            <p className="mt-1 min-h-10 text-sm leading-5 text-sky-950/70">Facturación por proyecto registrada para trabajos freelance del mes.</p>
+          </div>
+          <div className="flex h-20 w-28 shrink-0 items-center justify-center overflow-hidden">
+            <Image src="/logo-mlc-design.svg" alt="MLC Design logo" width={140} height={100} className="max-h-full w-auto object-contain" />
+          </div>
+        </div>
 
         <div className="mt-4 overflow-hidden rounded-xl border border-white/60 bg-[#e8fbfd]">
           <div className="grid grid-cols-[1fr_2.4fr_auto] gap-4 border-b border-[#a2e0e7]/70 px-4 py-3 text-xs font-semibold text-sky-950">
@@ -358,6 +378,79 @@ function formatEuroValue(value: number) {
     minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function ComparisonTrendIcon({ current, previous }: { current: number; previous: number }) {
+  if (current === previous) {
+    return <span aria-hidden="true" className="h-7 w-7" />;
+  }
+
+  const isBetter = current > previous;
+
+  return (
+    <span
+      aria-label={isBetter ? "Mejor que el año anterior" : "Peor que el año anterior"}
+      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full shadow-[0_6px_14px_rgba(0,0,0,0.35)] ring-2 ${
+        isBetter ? "bg-emerald-400 text-emerald-950 ring-emerald-200/80" : "bg-red-500 text-white ring-red-200/80"
+      }`}
+      title={isBetter ? "Mejor que el año anterior" : "Peor que el año anterior"}
+    >
+      <svg aria-hidden="true" viewBox="0 0 16 16" className="h-5 w-5" fill="none">
+        <path
+          d={isBetter ? "M8 12.5V3.5M8 3.5L4.5 7M8 3.5L11.5 7" : "M8 3.5V12.5M8 12.5L4.5 9M8 12.5L11.5 9"}
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+        />
+      </svg>
+    </span>
+  );
+}
+
+function AnnualResultIcon({ current, previous }: { current: string; previous?: string }) {
+  if (!previous) {
+    return null;
+  }
+
+  const currentValue = parseEuroValue(current);
+  const previousValue = parseEuroValue(previous);
+
+  if (currentValue === previousValue) {
+    return (
+      <span
+        aria-label="Resultado igual al año anterior"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-zinc-500 text-white shadow-[0_6px_14px_rgba(0,0,0,0.35)] ring-2 ring-zinc-200/70"
+        title="Resultado igual al año anterior"
+      >
+        <svg aria-hidden="true" viewBox="0 0 16 16" className="h-5 w-5" fill="none">
+          <path d="M4 6.25H12M4 9.75H12" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+        </svg>
+      </span>
+    );
+  }
+
+  const isPositive = currentValue > previousValue;
+
+  return (
+    <span
+      aria-label={isPositive ? "Resultado anual positivo" : "Resultado anual negativo"}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-full shadow-[0_6px_14px_rgba(0,0,0,0.35)] ring-2 ${
+        isPositive ? "bg-emerald-400 text-emerald-950 ring-emerald-200/80" : "bg-red-500 text-white ring-red-200/80"
+      }`}
+      title={isPositive ? "Resultado anual positivo" : "Resultado anual negativo"}
+    >
+      <svg aria-hidden="true" viewBox="0 0 16 16" className="h-5 w-5" fill="none">
+        <path
+          d={isPositive ? "M3.5 8.4L6.6 11.5L12.8 4.5" : "M4.5 4.5L11.5 11.5M11.5 4.5L4.5 11.5"}
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+        />
+      </svg>
+    </span>
+  );
 }
 
 function getAccumulatedSavingsUntilMonth(entries: Array<{ month: string; savings: string }>, selectedMonth: string) {
@@ -449,7 +542,6 @@ function AnnualSavingsChart({
           );
         })}
       </div>
-      <p className="mt-4 text-sm text-zinc-400">Ahorro registrado mes a mes dentro del reparto anual.</p>
     </div>
   );
 }
@@ -459,29 +551,35 @@ function SavingsHighlightCards({
   accumulatedSavings,
   month,
   year,
+  selectedMonth,
 }: {
   monthlySavings: string;
   accumulatedSavings: string;
   month: string;
   year: string;
+  selectedMonth: string;
 }) {
+  const [currentMonthName, currentYear] = month.split(" ");
+  const monthlySavingsDescription = `Ahorro total del mes de ${currentMonthName ?? month} de ${currentYear ?? year}.`;
+  const accumulatedSavingsDescription = `Ahorro acumulado de ENERO de ${year} hasta ${currentMonthName ?? month} de ${currentYear ?? year}.`;
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <div className="relative">
-        <div aria-hidden="true" className="absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl bg-[#d7ecff] opacity-90" />
-        <div className="relative rounded-2xl border border-blue-200/50 bg-[#eef7ff] p-6 text-blue-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-blue-950/70">Ahorro total del mes</p>
-          <p className="mt-3 text-5xl font-semibold tracking-normal text-blue-950">{monthlySavings}</p>
-          <p className="mt-3 text-sm leading-6 text-blue-950/70">Reserva asignada en {month} dentro del reparto de ingresos.</p>
+        <div aria-hidden="true" className={`absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl opacity-90 ${getSummaryShadow(selectedMonth, 0)}`} />
+        <div className={`relative rounded-2xl border p-6 shadow-sm ${SUMMARY_CARD_TONE}`}>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-300">Ahorro total del mes</p>
+          <p className="kpi-value mt-3 text-5xl font-semibold tracking-normal text-white">{monthlySavings}</p>
+          <p className="mt-3 text-sm leading-6 text-zinc-400">{monthlySavingsDescription}</p>
         </div>
       </div>
 
       <div className="relative">
-        <div aria-hidden="true" className="absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl bg-[#a2e0e7] opacity-90" />
-        <div className="relative rounded-2xl border border-[#a2e0e7]/80 bg-[#e8fbfd] p-6 text-sky-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)]">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-950/70">Ahorro total acumulado</p>
-          <p className="mt-3 text-5xl font-semibold tracking-normal text-sky-950">{accumulatedSavings}</p>
-          <p className="mt-3 text-sm leading-6 text-sky-950/70">Ahorro acumulado de {year} hasta {month}.</p>
+        <div aria-hidden="true" className={`absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl opacity-90 ${getSummaryShadow(selectedMonth, 1)}`} />
+        <div className={`relative rounded-2xl border p-6 shadow-sm ${SUMMARY_CARD_TONE}`}>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-zinc-300">Ahorro total acumulado</p>
+          <p className="kpi-value mt-3 text-5xl font-semibold tracking-normal text-white">{accumulatedSavings}</p>
+          <p className="mt-3 text-sm leading-6 text-zinc-400">{accumulatedSavingsDescription}</p>
         </div>
       </div>
     </div>
@@ -550,7 +648,8 @@ function MonthlyComparisonChart({
                   </div>
                 </div>
                 <div className="h-8 overflow-hidden rounded-full bg-white/10">
-                  <div className="flex h-full min-w-fit items-center rounded-full bg-[#5ab94e] px-2" style={{ width: `${currentWidth}%` }}>
+                  <div className="flex h-full min-w-fit items-center gap-2 rounded-full bg-[#5ab94e] px-2" style={{ width: `${currentWidth}%` }}>
+                    <ComparisonTrendIcon current={entry.current} previous={entry.previous} />
                     <span className="whitespace-nowrap text-sm font-semibold leading-none text-slate-950">{formatEuroValue(entry.current)}</span>
                   </div>
                 </div>
@@ -572,6 +671,7 @@ function MonthlyComparisonChart({
                 />
               </div>
               <div className="flex min-w-0 flex-col items-center gap-1">
+                <ComparisonTrendIcon current={entry.current} previous={entry.previous} />
                 <p className="text-[9px] font-medium text-zinc-300">{formatEuroValue(entry.current)}</p>
                 <div
                   className="w-4 rounded-t bg-[#5ab94e]"
@@ -595,6 +695,7 @@ function AnnualIncomeHistoryCard({
   monthlyComparison,
   entries,
   previousYear,
+  previousTotal,
   previousEntries,
 }: {
   year: string;
@@ -604,11 +705,15 @@ function AnnualIncomeHistoryCard({
   monthlyComparison: string;
   entries: Array<{ month: string; value: string }>;
   previousYear?: string;
+  previousTotal?: string;
   previousEntries?: Array<{ month: string; value: string }>;
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
-      <p className="text-3xl font-semibold text-white">{year}</p>
+      <div className="flex items-center gap-3">
+        <p className="text-3xl font-semibold text-white">{year}</p>
+        <AnnualResultIcon current={total} previous={previousTotal} />
+      </div>
       <p className="mt-1 min-h-10 text-sm leading-5 text-zinc-400">Ingresos netos anuales registrados en la ficha de seguimiento de ingresos.</p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -704,10 +809,10 @@ export default async function Home({ searchParams }: HomeProps) {
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0b1020]/55 via-[#0b1020]/18 to-[#0b1020]/82 md:bg-[linear-gradient(90deg,rgba(11,16,32,0.96)_0%,rgba(11,16,32,0.72)_34%,rgba(11,16,32,0.22)_68%,rgba(11,16,32,0.08)_100%)]" />
             <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-b from-transparent via-transparent to-[#0b1020]/70 md:block" />
-            <span className="forseti-hero-bg-latency" aria-hidden="true" />
-            <span className="forseti-hero-eye-core" aria-hidden="true" />
-            <span className="forseti-hero-eye-aura" aria-hidden="true" />
-            <span className="forseti-hero-eye-ray" aria-hidden="true" />
+            <span className="forseti-hero-bg-latency forseti-dashboard-bg-latency" aria-hidden="true" />
+            <span className="forseti-hero-eye-core forseti-dashboard-eye-core" aria-hidden="true" />
+            <span className="forseti-hero-eye-aura forseti-dashboard-eye-aura" aria-hidden="true" />
+            <span className="forseti-hero-eye-ray forseti-dashboard-eye-ray" aria-hidden="true" />
 
             <form action="/api/logout" method="post" className="absolute right-5 top-5 z-20 sm:right-6 sm:top-6">
               <button className="rounded-lg border border-[#5ab94e]/70 bg-[#5ab94e] px-4 py-2 text-sm font-medium text-slate-950 backdrop-blur transition hover:bg-[#6dcc62]">
@@ -828,9 +933,9 @@ export default async function Home({ searchParams }: HomeProps) {
               </div>
 
               <div className="mt-5 grid gap-4 md:grid-cols-3">
-                <KpiCard accent="mist" title="BASE SIN PASIVOS" description="Total neto usado como punto de partida." value={data.totalNeto} />
-                <KpiCard accent="aqua" title="RESULTADO CON PASIVOS" description="Neto final despues de sumar pasivos." value={data.netoConPasivos} />
-                <KpiCard accent="ice" title="TOTAL PASIVOS" description="Importe detectado por diferencia." value={data.ingresosPasivos} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 0)} toneClass={SUMMARY_CARD_TONE} title="TOTAL PASIVOS" description="Suma total de pasivos este mes." value={data.ingresosPasivos} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 1)} toneClass={SUMMARY_CARD_TONE} title="BASE SIN PASIVOS" description="Total neto usado como punto de partida." value={data.totalNeto} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 2)} toneClass={SUMMARY_CARD_TONE} title="RESULTADO CON PASIVOS" description="Neto final despues de sumar pasivos." value={data.netoConPasivos} />
               </div>
 
               {data.pasivosDetalle.length > 0 ? (
@@ -871,13 +976,14 @@ export default async function Home({ searchParams }: HomeProps) {
               accumulatedSavings={accumulatedSavings}
               month={selectedMonth}
               year={data.annualSavingsSummary.year}
+              selectedMonth={selectedMonth}
             />
 
             <section className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h2 className="text-xl font-semibold">RESUMEN ANUAL DE AHORRO</h2>
-                  <p className="mt-1 text-sm text-zinc-400">Acumulado del reparto de ingresos de {data.annualSavingsSummary.year}.</p>
+                  <p className="mt-1 text-sm text-zinc-400">Desglose de ahorro por mes en {data.annualSavingsSummary.year}.</p>
                 </div>
                 <p className="text-sm font-medium text-[#5ab94e]">{data.annualSavingsSummary.entries.length} meses registrados</p>
               </div>
@@ -928,6 +1034,7 @@ export default async function Home({ searchParams }: HomeProps) {
                     monthlyComparison={item.monthlyComparison}
                     entries={item.entries}
                     previousYear={previousItem?.year}
+                    previousTotal={previousItem?.total}
                     previousEntries={previousItem?.entries}
                   />
                 );
