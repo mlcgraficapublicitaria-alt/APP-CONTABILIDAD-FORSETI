@@ -1020,7 +1020,7 @@ export default async function Home({ searchParams }: HomeProps) {
               <p className="mt-1 text-sm text-zinc-400">Datos reflejados desde la pestaña Seguimiento ingresos.</p>
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-2">
+            <div className="grid gap-4">
               {data.annualIncomeHistory.map((item, index) => {
                 const previousItem = data.annualIncomeHistory[index - 1];
 
