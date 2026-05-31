@@ -37,6 +37,21 @@ const PASSIVE_BREAKDOWN_RANGES: Record<string, string[]> = {
   ],
 };
 
+const MONTH_NUMBER_BY_NAME: Record<string, number> = {
+  ENERO: 1,
+  FEBRERO: 2,
+  MARZO: 3,
+  ABRIL: 4,
+  MAYO: 5,
+  JUNIO: 6,
+  JULIO: 7,
+  AGOSTO: 8,
+  SEPTIEMBRE: 9,
+  OCTUBRE: 10,
+  NOVIEMBRE: 11,
+  DICIEMBRE: 12,
+};
+
 type DashboardData = {
   month: string;
   isDemoData: boolean;
@@ -47,7 +62,15 @@ type DashboardData = {
   totalNeto: string;
   netoConPasivos: string;
   ingresosPasivos: string;
-  pasivosDetalle: Array<{ concepto: string; origen: string; importe: string }>;
+  pasivosDetalle: Array<{
+    concepto: string;
+    origen: string;
+    importe: string;
+    seccion?: "SERVICIOS ALOJAMIENTOS WEB" | "COMISIONADOS" | "OTROS";
+    cliente?: string;
+    servicio?: string;
+    fechaCobro?: string;
+  }>;
   pasivosDetalleNota: string;
   gastosTotales: string;
   ivaTotal: string;
@@ -260,6 +283,10 @@ function subtractMoneyValues(total: string, base: string) {
   return formatPassiveMoney(totalAmount - baseAmount);
 }
 
+function sumPassiveItems(items: DashboardData["pasivosDetalle"]) {
+  return items.reduce((sum, item) => sum + (parseMoneyOrNull(item.importe) ?? 0), 0);
+}
+
 function normalizePassiveAmount(value: string) {
   const amount = parseMoneyOrNull(value);
   return amount === null ? value || "—" : formatPassiveMoney(amount);
@@ -282,6 +309,35 @@ function formatRangeOrigin(range: string) {
   return `${getSheetFromRange(range)}!${getCellFromRange(range)}`;
 }
 
+function getMonthParts(month: string) {
+  const [monthName = "", year = ""] = month.split(" ");
+
+  return {
+    monthNumber: MONTH_NUMBER_BY_NAME[normalize(monthName)] ?? 0,
+    year: Number(year),
+  };
+}
+
+function parseSheetDate(value: string) {
+  const normalized = value.trim();
+  const match = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+
+  if (!match) return null;
+
+  return {
+    day: Number(match[1]),
+    month: Number(match[2]),
+    year: Number(match[3]),
+  };
+}
+
+function isDateInSelectedMonth(value: string, month: string) {
+  const parsedDate = parseSheetDate(value);
+  const selected = getMonthParts(month);
+
+  return Boolean(parsedDate && parsedDate.month === selected.monthNumber && parsedDate.year === selected.year);
+}
+
 function buildPassiveItem(range: string, row: string[]) {
   const sheet = getSheetFromRange(range);
 
@@ -290,6 +346,7 @@ function buildPassiveItem(range: string, row: string[]) {
       concepto: joinLabel([pick(row, 0), pick(row, 2)]),
       origen: formatRangeOrigin(range),
       importe: normalizePassiveAmount(pick(row, 3)),
+      seccion: "OTROS" as const,
     };
   }
 
@@ -298,6 +355,7 @@ function buildPassiveItem(range: string, row: string[]) {
       concepto: joinLabel([pick(row, 1), "Cupon mantenimiento"]),
       origen: formatRangeOrigin(range),
       importe: normalizePassiveAmount(pick(row, 3)),
+      seccion: "OTROS" as const,
     };
   }
 
@@ -305,46 +363,101 @@ function buildPassiveItem(range: string, row: string[]) {
     concepto: joinLabel([sheet, "Ajuste de pasivos"]),
     origen: formatRangeOrigin(range),
     importe: normalizePassiveAmount(row.findLast((value) => parseMoneyOrNull(value) !== null) ?? "—"),
+    seccion: "OTROS" as const,
   };
 }
 
-async function getPassiveBreakdown(month: string, totalPassive: string) {
-  const formulaCell = PASSIVE_FORMULA_CELLS[month];
-  const ranges = PASSIVE_BREAKDOWN_RANGES[month] ?? [];
+async function getPassiveTableItems(month: string) {
+  const rows = await getRange("INGRESOS_PASIVOS!A1:AZ140");
+  const items: DashboardData["pasivosDetalle"] = [];
 
-  if (ranges.length === 0) {
-    return {
-      note: "Mes sin pasivos desglosados actualmente.",
-      items: [],
-    };
+  for (const row of rows) {
+    const commissionItem = findCommissionPassiveItem(row, month);
+    if (commissionItem) items.push(commissionItem);
+
+    const hostingItem = findHostingPassiveItem(row, month);
+    if (hostingItem) items.push(hostingItem);
   }
 
-  try {
-    const rows = await Promise.all(ranges.map((range) => getRange(range)));
-    const items = rows
-      .map((rangeRows, index) => buildPassiveItem(ranges[index], rangeRows[0] ?? []))
-      .filter((item) => parseMoneyOrNull(item.importe) !== null && parseMoneyOrNull(item.importe) !== 0);
-    const totalAmount = parseMoneyOrNull(totalPassive);
-    const listedAmount = items.reduce((sum, item) => sum + (parseMoneyOrNull(item.importe) ?? 0), 0);
-    const missingAmount = totalAmount === null ? 0 : totalAmount - listedAmount;
+  return items;
+}
 
-    if (Math.abs(missingAmount) >= 0.01) {
-      items.push({
-        concepto: "Otros pasivos o ajustes incluidos en la formula",
-        origen: formulaCell ? `${month}!${formulaCell}` : month,
-        importe: formatPassiveMoney(missingAmount),
-      });
+function findCommissionPassiveItem(row: string[], month: string): DashboardData["pasivosDetalle"][number] | null {
+  for (let index = 0; index <= row.length - 10; index += 1) {
+    const orderDate = row[index] ?? "";
+    const paymentDate = row[index + 1] ?? "";
+    const client = row[index + 2] ?? "";
+    const provider = row[index + 3] ?? "";
+    const service = row[index + 4] ?? "";
+    const income = row[index + 9] ?? "";
+
+    if (
+      parseSheetDate(orderDate) &&
+      isDateInSelectedMonth(paymentDate, month) &&
+      client.trim() &&
+      service.trim() &&
+      parseMoneyOrNull(income) !== null &&
+      parseMoneyOrNull(income) !== 0
+    ) {
+      return {
+        seccion: "COMISIONADOS",
+        cliente: client.trim(),
+        servicio: joinLabel([provider, service]),
+        fechaCobro: paymentDate.trim(),
+        concepto: joinLabel([client, service]),
+        origen: "INGRESOS_PASIVOS · COMISIONADOS",
+        importe: normalizePassiveAmount(income),
+      };
     }
+  }
+
+  return null;
+}
+
+function findHostingPassiveItem(row: string[], month: string): DashboardData["pasivosDetalle"][number] | null {
+  for (let index = 0; index <= row.length - 6; index += 1) {
+    const client = row[index] ?? "";
+    const provider = row[index + 1] ?? "";
+    const collectionDate = row[index + 2] ?? "";
+    const service = row[index + 4] ?? "";
+    const income = row[index + 5] ?? "";
+
+    if (
+      client.trim() &&
+      parseSheetDate(collectionDate) &&
+      isDateInSelectedMonth(collectionDate, month) &&
+      service.trim() &&
+      parseMoneyOrNull(income) !== null &&
+      parseMoneyOrNull(income) !== 0
+    ) {
+      return {
+        seccion: "SERVICIOS ALOJAMIENTOS WEB",
+        cliente: client.trim(),
+        servicio: joinLabel([provider, service]),
+        fechaCobro: collectionDate.trim(),
+        concepto: joinLabel([client, service]),
+        origen: "INGRESOS_PASIVOS · SERVICIOS ALOJAMIENTOS WEB",
+        importe: normalizePassiveAmount(income),
+      };
+    }
+  }
+
+  return null;
+}
+
+async function getPassiveBreakdown(month: string, totalPassive: string) {
+  try {
+    const items = await getPassiveTableItems(month);
 
     return {
-      note: `Desglose de pasivos mes de ${month}.`,
+      note: `Desglose de pasivos mes de ${month}, filtrado por fecha de cobro o renovación cuando existe.`,
       items,
     };
   } catch {
     return {
-      note: formulaCell
-        ? `Columna MAS INGRESOS PASIVOS localizada en ${month}!${formulaCell}; no se pudo leer el desglose.`
-        : "Total calculado por diferencia. No se pudo leer el desglose rastreado para este mes.",
+      note: totalPassive !== "—"
+        ? `Total de pasivos detectado para ${month}; no se pudo leer la tabla INGRESOS_PASIVOS.`
+        : "No se pudo leer la tabla INGRESOS_PASIVOS.",
       items: [],
     };
   }
@@ -554,20 +667,26 @@ function findAnnualSavingsSummary(rows: string[][]) {
 }
 
 function findFreelanceProjects(rows: string[][]) {
-  const headerRowIndex = rows.findIndex((row) => row.some((item) => normalize(item) === "CLIENTE") && row.some((item) => normalize(item) === "TRABAJOS"));
+  const headerRowIndex = rows.findIndex((row) => row.some((item) => normalize(item) === "TRABAJOS"));
   const headerRow = rows[headerRowIndex];
 
   if (!headerRow) return [];
 
   const clientIndex = headerRow.findIndex((item) => normalize(item) === "CLIENTE");
   const projectIndex = headerRow.findIndex((item) => normalize(item) === "TRABAJOS");
+  const descriptionIndex = headerRow.findIndex((item) => normalize(item) === "DESCRIPCION");
 
   return rows
     .slice(headerRowIndex + 1)
     .map((row) => {
-      const client = row[clientIndex]?.trim() ?? "";
-      const project = row[projectIndex]?.trim() ?? "";
-      const price = row.slice(projectIndex + 1).find((value) => isMoneyValue(value) && parseMoney(value) > 0)?.trim() ?? "";
+      const hasClientColumn = clientIndex >= 0 && clientIndex < projectIndex;
+      const client = hasClientColumn ? row[clientIndex]?.trim() ?? "" : row[projectIndex]?.trim() ?? "";
+      const project =
+        descriptionIndex > projectIndex
+          ? row[descriptionIndex]?.trim() ?? ""
+          : row[projectIndex]?.trim() ?? "";
+      const priceSearchStart = Math.max(projectIndex, descriptionIndex) + 1;
+      const price = row.slice(priceSearchStart).find((value) => isMoneyValue(value) && parseMoney(value) > 0)?.trim() ?? "";
 
       return { client, project, price };
     })
@@ -635,6 +754,61 @@ function findAnnualIncomeHistory(rows: string[][]) {
   return years.filter((item) => item.entries.length > 0 || item.total !== "—");
 }
 
+async function findAnnualIncomeHistoryWithNetWithPasivos(rows: string[][]) {
+  const history = findAnnualIncomeHistory(rows);
+  const year = "2026";
+  const currentYear = history.find((item) => item.year === year);
+
+  if (!currentYear) return history;
+
+  const entries = (
+    await Promise.all(
+      MONTH_NAMES.map(async (monthName) => {
+        const value = await getMonthlyNetWithPasivos(`${monthName} ${year}`);
+
+        return value ? { month: monthName, value } : null;
+      }),
+    )
+  ).filter((item): item is { month: string; value: string } => item !== null);
+
+  if (entries.length === 0) return history;
+
+  const total = entries.reduce((sum, entry) => sum + parseMoney(entry.value), 0);
+  const average = entries.length > 0 ? total / entries.length : 0;
+  const previousYear = history.find((item) => item.year === String(Number(year) - 1));
+  const previousTotal = previousYear ? parseMoney(previousYear.total) : 0;
+  const previousAverage = previousYear ? parseMoney(previousYear.average) : 0;
+
+  currentYear.entries = entries;
+  currentYear.total = formatPassiveMoney(total);
+  currentYear.average = formatPassiveMoney(average);
+  currentYear.comparison = previousYear ? formatPassiveMoney(total - previousTotal) : currentYear.comparison;
+  currentYear.monthlyComparison = previousYear ? formatPassiveMoney(average - previousAverage) : currentYear.monthlyComparison;
+
+  return history;
+}
+
+async function getMonthlyNetWithPasivos(month: string) {
+  try {
+    const finance = await getRange(`${month}!AA1:AZ90`);
+    const netValues = findValuesBelowHeader(finance, "TOTAL INGRESOS NETOS");
+    const totalNeto = netValues[0] ?? "—";
+    const netoConPasivos = netValues[1] ?? totalNeto;
+    const ingresosPasivos = subtractMoneyValues(netoConPasivos, totalNeto);
+    const pasivosBreakdown = await getPassiveBreakdown(month, ingresosPasivos);
+    const listedPassiveAmount = sumPassiveItems(pasivosBreakdown.items);
+    const passiveAmountFromSheet = parseMoneyOrNull(ingresosPasivos);
+
+    if (listedPassiveAmount > 0 && (!passiveAmountFromSheet || Math.abs(passiveAmountFromSheet) < 0.01)) {
+      return formatPassiveMoney((parseMoneyOrNull(totalNeto) ?? 0) + listedPassiveAmount);
+    }
+
+    return netoConPasivos !== "—" ? netoConPasivos : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getDashboardData(month = DEFAULT_MONTH): Promise<DashboardData> {
   let summary: string[][];
   let finance: string[][];
@@ -671,7 +845,20 @@ export async function getDashboardData(month = DEFAULT_MONTH): Promise<Dashboard
   const netoConPasivos = netValues[1] ?? totalNeto;
   const ingresosPasivos = subtractMoneyValues(netoConPasivos, totalNeto);
   const pasivosBreakdown = await getPassiveBreakdown(month, ingresosPasivos);
-  const totalFacturado = await getTotalFacturado(month, monthlyRows, pick(summaryTotalRow, 2));
+  const listedPassiveAmount = sumPassiveItems(pasivosBreakdown.items);
+  const passiveAmountFromSheet = parseMoneyOrNull(ingresosPasivos);
+  const displayIngresosPasivos =
+    listedPassiveAmount > 0 && (!passiveAmountFromSheet || Math.abs(passiveAmountFromSheet) < 0.01)
+      ? formatPassiveMoney(listedPassiveAmount)
+      : ingresosPasivos;
+  const displayNetoConPasivos =
+    listedPassiveAmount > 0 && (!passiveAmountFromSheet || Math.abs(passiveAmountFromSheet) < 0.01)
+      ? formatPassiveMoney((parseMoneyOrNull(totalNeto) ?? 0) + listedPassiveAmount)
+      : netoConPasivos;
+  const [totalFacturado, annualIncomeHistory] = await Promise.all([
+    getTotalFacturado(month, monthlyRows, pick(summaryTotalRow, 2)),
+    findAnnualIncomeHistoryWithNetWithPasivos(annualIncomeHistoryRows),
+  ]);
 
   return {
     month,
@@ -680,8 +867,8 @@ export async function getDashboardData(month = DEFAULT_MONTH): Promise<Dashboard
     hoursPerDay: await getHoursPerDay(month, finance),
     totalFactura: totalFacturado,
     totalNeto,
-    netoConPasivos,
-    ingresosPasivos,
+    netoConPasivos: displayNetoConPasivos,
+    ingresosPasivos: displayIngresosPasivos,
     pasivosDetalle: pasivosBreakdown.items,
     pasivosDetalleNota: pasivosBreakdown.note,
     gastosTotales: findTotalExpenses(finance),
@@ -692,6 +879,6 @@ export async function getDashboardData(month = DEFAULT_MONTH): Promise<Dashboard
     annualSavingsSummary: findAnnualSavingsSummary(incomeSplit),
     clientSummary,
     freelanceProjects: findFreelanceProjects(monthlyRows),
-    annualIncomeHistory: findAnnualIncomeHistory(annualIncomeHistoryRows),
+    annualIncomeHistory,
   };
 }

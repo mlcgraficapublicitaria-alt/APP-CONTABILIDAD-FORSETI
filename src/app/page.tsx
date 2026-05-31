@@ -791,6 +791,13 @@ export default async function Home({ searchParams }: HomeProps) {
   const billingClientNames = ["SPANISHCHEESE", "GRUPODIM"];
   const billingClients = data.clientSummary.filter((item) => billingClientNames.includes(normalizeClientName(item.client)));
   const accumulatedSavings = getAccumulatedSavingsUntilMonth(data.annualSavingsSummary.entries, selectedMonth);
+  const passiveSectionOrder = ["SERVICIOS ALOJAMIENTOS WEB", "COMISIONADOS"];
+  const passiveSections = passiveSectionOrder
+    .map((section) => ({
+      section,
+      items: data.pasivosDetalle.filter((item) => (item.seccion ?? "OTROS") === section),
+    }))
+    .filter((section) => section.items.length > 0);
 
   return (
     <div className="min-h-screen bg-[#0b1020] text-white">
@@ -945,24 +952,39 @@ export default async function Home({ searchParams }: HomeProps) {
               </div>
 
               {data.pasivosDetalle.length > 0 ? (
-                <div className="mt-6 overflow-x-auto">
+                <div className="mt-6">
                   <p className="mb-3 text-sm text-zinc-400">{data.pasivosDetalleNota}</p>
-                  <table className="min-w-full text-sm">
-                    <thead className="text-left text-zinc-400">
-                      <tr className="border-b border-white/10">
-                        <th className="pb-3 pr-4">CONCEPTO</th>
-                        <th className="pb-3 pr-4 text-right">IMPORTE</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.pasivosDetalle.map((item) => (
-                        <tr key={`${item.origen}-${item.concepto}`} className="border-b border-white/5">
-                          <td className="py-3 pr-4 text-zinc-200">{item.concepto}</td>
-                          <td className="py-3 pr-4 text-right font-medium text-white">{item.importe}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="space-y-5">
+                    {passiveSections.map((section) => (
+                      <section key={section.section} className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/35">
+                        <div className="border-b border-white/10 bg-white/5 px-4 py-3">
+                          <h3 className="text-sm font-semibold tracking-[0.12em] text-cyan-100">{section.section}</h3>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full text-sm">
+                            <thead className="text-left text-zinc-400">
+                              <tr className="border-b border-white/10">
+                                <th className="px-4 py-3">CLIENTE</th>
+                                <th className="px-4 py-3">SERVICIO</th>
+                                <th className="px-4 py-3">FECHA DE COBRO</th>
+                                <th className="px-4 py-3 text-right">INGRESOS</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {section.items.map((item) => (
+                                <tr key={`${item.origen}-${item.concepto}-${item.fechaCobro}`} className="border-b border-white/5 last:border-0">
+                                  <td className="px-4 py-3 font-medium text-zinc-100">{item.cliente ?? item.concepto}</td>
+                                  <td className="max-w-xl whitespace-pre-line px-4 py-3 text-zinc-300">{item.servicio ?? item.concepto}</td>
+                                  <td className="px-4 py-3 text-zinc-400">{item.fechaCobro ?? "—"}</td>
+                                  <td className="px-4 py-3 text-right font-medium text-white">{item.importe}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <p className="mt-6 rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-zinc-400">
