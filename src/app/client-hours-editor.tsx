@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { loadHoursTableAction, saveHoursTableAction } from "./hours-editor-actions";
+import { MONTHS_2026 } from "./navigation";
 import type { SheetHoursTable } from "@/lib/forseti-hours-editor";
 
 type ClientHoursEditorProps = {
@@ -87,6 +88,7 @@ function getEditorClient(value: string) {
 export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBilling, monthlyTotalNet, tone = "default" }: ClientHoursEditorProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [modalMonth, setModalMonth] = useState(month);
   const [table, setTable] = useState<SheetHoursTable | null>(null);
   const [originalRows, setOriginalRows] = useState<Map<string, string>>(new Map());
   const [message, setMessage] = useState("");
@@ -94,6 +96,7 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
+    setModalMonth(month);
     setTable(null);
     setOriginalRows(new Map());
     setMessage("");
@@ -139,15 +142,14 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
   const estimatedNet = estimatedBilling * netRatio;
   const billingDifference = estimatedBilling - originalBilling;
 
-  function openEditor() {
-    setOpen(true);
+  function loadTable(nextMonth: string) {
     setMessage("");
     setError("");
 
-    if (table?.month === month && table.client === getEditorClient(client)) return;
+    if (table?.month === nextMonth && table.client === getEditorClient(client)) return;
 
     startTransition(async () => {
-      const state = await loadHoursTableAction(month, client);
+      const state = await loadHoursTableAction(nextMonth, client);
       if (state.error) {
         setError(state.error);
         return;
@@ -159,6 +161,20 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
         setOriginalRows(buildRowSnapshot(nextTable));
       }
     });
+  }
+
+  function openEditor() {
+    setOpen(true);
+    loadTable(modalMonth);
+  }
+
+  function changeModalMonth(nextMonth: string) {
+    if (changedRows.length > 0 && !window.confirm("Hay cambios sin guardar. Cambiar de mes descartara esos cambios.")) return;
+
+    setModalMonth(nextMonth);
+    setTable(null);
+    setOriginalRows(new Map());
+    loadTable(nextMonth);
   }
 
   function updateCell(rowNumber: number, columnIndex: number, value: string) {
@@ -191,7 +207,7 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
 
     startTransition(async () => {
       const state = await saveHoursTableAction(
-        month,
+        modalMonth,
         client,
         changedRows.map((row) => ({
           rowNumber: row.rowNumber,
@@ -240,11 +256,26 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
               <div>
                 <p className="text-xs font-semibold tracking-[0.16em] text-cyan-200">HORARIOS</p>
                 <h3 className="mt-1 text-xl font-semibold">
-                  {client} - {month}
+                  {client} - {modalMonth}
                 </h3>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                <label className="flex items-center gap-2 text-xs font-semibold text-zinc-400">
+                  MES
+                  <select
+                    value={modalMonth}
+                    onChange={(event) => changeModalMonth(event.target.value)}
+                    disabled={isPending}
+                    className="h-9 rounded-lg border border-white/10 bg-slate-950 px-2 text-xs font-medium text-white outline-none transition focus:border-cyan-300 disabled:opacity-60"
+                  >
+                    {MONTHS_2026.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 {changedRows.length > 0 ? <span className="text-sm text-amber-200">{changedRows.length} fila(s) modificada(s)</span> : null}
                 <button
                   type="button"
