@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { loadHoursTableAction, saveHoursTableAction } from "./hours-editor-actions";
 import { MONTHS_2026 } from "./navigation";
@@ -14,6 +14,13 @@ type ClientHoursEditorProps = {
   monthlyTotalBilling: string;
   monthlyTotalNet: string;
   tone?: "default" | "spanishCheese" | "grupoDim";
+};
+
+type EditorFinancials = {
+  actual: string;
+  hours: string;
+  monthlyTotalBilling: string;
+  monthlyTotalNet: string;
 };
 
 function makeRowKey(rowNumber: number) {
@@ -87,9 +94,16 @@ function getEditorClient(value: string) {
 
 export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBilling, monthlyTotalNet, tone = "default" }: ClientHoursEditorProps) {
   const router = useRouter();
+  const loadRequestRef = useRef(0);
   const [open, setOpen] = useState(false);
   const [modalMonth, setModalMonth] = useState(month);
   const [table, setTable] = useState<SheetHoursTable | null>(null);
+  const [financials, setFinancials] = useState<EditorFinancials>({
+    actual,
+    hours,
+    monthlyTotalBilling,
+    monthlyTotalNet,
+  });
   const [originalRows, setOriginalRows] = useState<Map<string, string>>(new Map());
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -98,10 +112,16 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
   useEffect(() => {
     setModalMonth(month);
     setTable(null);
+    setFinancials({
+      actual,
+      hours,
+      monthlyTotalBilling,
+      monthlyTotalNet,
+    });
     setOriginalRows(new Map());
     setMessage("");
     setError("");
-  }, [client, month]);
+  }, [actual, client, hours, month, monthlyTotalBilling, monthlyTotalNet]);
 
   const editableColumns = useMemo(() => new Set(table?.editableColumnIndexes ?? []), [table]);
   const isGroupedHoursTable = table?.client === "SPANISH-CHEESE" || table?.client === "GRUPO DIM";
@@ -110,13 +130,13 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
 
     return table.rows.filter((row) => !row.locked && originalRows.get(makeRowKey(row.rowNumber)) !== JSON.stringify(row.values));
   }, [originalRows, table]);
-  const originalMinutes = useMemo(() => parseTimeToMinutes(hours), [hours]);
-  const originalBilling = useMemo(() => parseMoney(actual), [actual]);
+  const originalMinutes = useMemo(() => parseTimeToMinutes(financials.hours), [financials.hours]);
+  const originalBilling = useMemo(() => parseMoney(financials.actual), [financials.actual]);
   const netRatio = useMemo(() => {
-    const monthlyBilling = parseMoney(monthlyTotalBilling);
-    const monthlyNet = parseMoney(monthlyTotalNet);
+    const monthlyBilling = parseMoney(financials.monthlyTotalBilling);
+    const monthlyNet = parseMoney(financials.monthlyTotalNet);
     return monthlyBilling > 0 ? monthlyNet / monthlyBilling : 1;
-  }, [monthlyTotalBilling, monthlyTotalNet]);
+  }, [financials.monthlyTotalBilling, financials.monthlyTotalNet]);
   const hourlyRate = originalMinutes > 0 ? originalBilling / (originalMinutes / 60) : 0;
   const totalMinutes = useMemo(() => {
     if (!table) return 0;
@@ -148,8 +168,13 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
 
     if (table?.month === nextMonth && table.client === getEditorClient(client)) return;
 
+    const requestId = loadRequestRef.current + 1;
+    loadRequestRef.current = requestId;
+
     startTransition(async () => {
       const state = await loadHoursTableAction(nextMonth, client);
+      if (loadRequestRef.current !== requestId) return;
+
       if (state.error) {
         setError(state.error);
         return;
@@ -159,6 +184,10 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
         const nextTable = cloneTable(state.table);
         setTable(nextTable);
         setOriginalRows(buildRowSnapshot(nextTable));
+      }
+
+      if (state.financials) {
+        setFinancials(state.financials);
       }
     });
   }
@@ -215,6 +244,7 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
           values: row.values,
         })),
       );
+      loadRequestRef.current += 1;
 
       if (state.error) {
         setError(state.error);
@@ -225,6 +255,10 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
         const nextTable = cloneTable(state.table);
         setTable(nextTable);
         setOriginalRows(buildRowSnapshot(nextTable));
+      }
+
+      if (state.financials) {
+        setFinancials(state.financials);
       }
 
       setMessage(state.message ?? "Horarios guardados en Google Sheets.");
