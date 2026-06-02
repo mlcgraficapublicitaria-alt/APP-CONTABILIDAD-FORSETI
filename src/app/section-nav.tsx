@@ -32,6 +32,7 @@ export function SectionNav({ sections, selectedMonth, activeSectionOverride }: S
           <Link
             key={section.id}
             href={section.href ?? `/?seccion=${section.id}&mes=${encodeURIComponent(selectedMonth)}`}
+            scroll={false}
             className={`flex min-h-11 items-center justify-center rounded-lg px-3 py-2 text-center text-xs font-semibold transition sm:text-sm lg:min-h-0 lg:px-4 ${
               isActive ? "bg-[#5ab94e] text-slate-950 shadow-sm shadow-[#5ab94e]/20" : "text-zinc-300 hover:bg-[#5ab94e]/15 hover:text-white"
             }`}

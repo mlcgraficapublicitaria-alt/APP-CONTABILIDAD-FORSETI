@@ -21,7 +21,7 @@ export function MonthSelect({ months, selectedMonth, section }: MonthSelectProps
             seccion: section,
             mes: event.target.value,
           });
-          router.push(`/?${params.toString()}`);
+          router.push(`/?${params.toString()}`, { scroll: false });
         }}
         className="h-11 rounded-lg border border-white/10 bg-slate-950 px-3 text-sm font-medium text-white outline-none transition focus:border-cyan-300"
       >
