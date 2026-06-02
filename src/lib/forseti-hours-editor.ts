@@ -5,6 +5,20 @@ const SHEET_ID = "1C-4g6B4iiQzCuiWiDGi-YyTm1Tm5Z88bIrTOhlKSsQo";
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 const HOURS_RANGE_START_ROW = 3;
 const HOURS_RANGE = "J3:AF90";
+const MONTH_NUMBER_BY_NAME: Record<string, number> = {
+  ENERO: 1,
+  FEBRERO: 2,
+  MARZO: 3,
+  ABRIL: 4,
+  MAYO: 5,
+  JUNIO: 6,
+  JULIO: 7,
+  AGOSTO: 8,
+  SEPTIEMBRE: 9,
+  OCTUBRE: 10,
+  NOVIEMBRE: 11,
+  DICIEMBRE: 12,
+};
 
 type HoursEditorClient = "SPANISH-CHEESE" | "GRUPO DIM";
 
@@ -87,10 +101,36 @@ export type SheetHoursUpdate = {
   values: string[];
 };
 
-function parseDate(value: string) {
+function parseDateParts(value: string) {
   const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!match) return null;
-  return `${match[1].padStart(2, "0")}/${match[2].padStart(2, "0")}/${match[3]}`;
+
+  return {
+    day: Number(match[1]),
+    month: Number(match[2]),
+    year: Number(match[3]),
+  };
+}
+
+function parseDate(value: string) {
+  const parts = parseDateParts(value);
+  if (!parts) return null;
+  return `${String(parts.day).padStart(2, "0")}/${String(parts.month).padStart(2, "0")}/${parts.year}`;
+}
+
+function getSelectedMonthParts(month: string) {
+  const [monthName = "", year = ""] = month.split(" ");
+  return {
+    month: MONTH_NUMBER_BY_NAME[normalizeDayName(monthName)] ?? 0,
+    year: Number(year),
+  };
+}
+
+function isDateInSelectedMonth(value: string, month: string) {
+  const date = parseDateParts(value);
+  const selected = getSelectedMonthParts(month);
+
+  return Boolean(date && date.month === selected.month && date.year === selected.year);
 }
 
 function parseClient(value: string): HoursEditorClient {
@@ -329,9 +369,11 @@ export async function readEditableSheetHours(month: string, clientValue: string)
     bodyRows.forEach((row, index) => {
       const normalizedRow = normalizeRow(row, width);
       const rowNumber = HOURS_RANGE_START_ROW + index + 1;
-      const date = parseDate(normalizedRow[config.displaySourceIndexes[0]] ?? "");
+      const dateValue = normalizedRow[config.displaySourceIndexes[0]] ?? "";
+      const date = parseDate(dateValue);
 
       if (!date) return;
+      if (!isDateInSelectedMonth(dateValue, month)) return;
 
       const nextRow = bodyRows[index + 1] ? normalizeRow(bodyRows[index + 1], width) : null;
       const nextRowIsContinuation = nextRow && isContinuationRow(nextRow, config);
