@@ -233,6 +233,13 @@ function getRowDisplayMinutes(values: string[], config: (typeof CLIENT_CONFIG)[H
   return durationToMinutes(values[config.lastEditableDisplayIndex] ?? "");
 }
 
+function isContinuationRow(row: string[], config: (typeof CLIENT_CONFIG)[HoursEditorClient]) {
+  if (parseDate(row[0] ?? "")) return false;
+
+  const values = pickColumns(row, config.displaySourceIndexes);
+  return Boolean((values[2] ?? "").trim() || (values[3] ?? "").trim());
+}
+
 export function normalizeEditedHoursRow(values: string[], client: HoursEditorClient) {
   const config = CLIENT_CONFIG[client];
   const normalized = [...values];
@@ -306,7 +313,7 @@ export async function readEditableSheetHours(month: string, clientValue: string)
       if (!date) return;
 
       const nextRow = bodyRows[index + 1] ? normalizeRow(bodyRows[index + 1], width) : null;
-      const nextRowIsContinuation = nextRow && !parseDate(nextRow[0] ?? "");
+      const nextRowIsContinuation = nextRow && isContinuationRow(nextRow, config);
       const displayRow = buildGroupedDayRow(normalizedRow, nextRowIsContinuation ? nextRow : null, config);
 
       tableRows.push({
