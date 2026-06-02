@@ -201,9 +201,9 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
 
   const buttonClasses =
     tone === "spanishCheese"
-      ? "border-yellow-900/20 bg-yellow-950 px-2.5 py-1.5 text-yellow-100 hover:bg-yellow-900"
+      ? "border-red-700/70 bg-red-600 px-2.5 py-1.5 text-white hover:bg-red-500"
       : tone === "grupoDim"
-        ? "border-blue-100/30 bg-blue-300 px-2.5 py-1.5 text-[#04277f] hover:bg-blue-200"
+        ? "border-[#04277f]/70 bg-[#04277f] px-2.5 py-1.5 text-white hover:bg-[#0b3aa6]"
         : "border-white/10 bg-white/10 px-2.5 py-1.5 text-white hover:bg-white/15";
 
   return (
