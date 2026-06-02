@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { loadHoursTableAction, saveHoursTableAction } from "./hours-editor-actions";
 import type { SheetHoursTable } from "@/lib/forseti-hours-editor";
@@ -74,6 +74,16 @@ function formatMoney(value: number) {
   }).format(value);
 }
 
+function getEditorClient(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9]+/gi, "")
+    .toUpperCase() === "GRUPODIM"
+    ? "GRUPO DIM"
+    : "SPANISH-CHEESE";
+}
+
 export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBilling, monthlyTotalNet, tone = "default" }: ClientHoursEditorProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -82,6 +92,13 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setTable(null);
+    setOriginalRows(new Map());
+    setMessage("");
+    setError("");
+  }, [client, month]);
 
   const editableColumns = useMemo(() => new Set(table?.editableColumnIndexes ?? []), [table]);
   const isGroupedHoursTable = table?.client === "SPANISH-CHEESE" || table?.client === "GRUPO DIM";
@@ -127,7 +144,7 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
     setMessage("");
     setError("");
 
-    if (table) return;
+    if (table?.month === month && table.client === getEditorClient(client)) return;
 
     startTransition(async () => {
       const state = await loadHoursTableAction(month, client);
