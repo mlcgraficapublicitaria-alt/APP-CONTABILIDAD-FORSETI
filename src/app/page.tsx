@@ -277,8 +277,8 @@ function ClientBillingCard({
             ) : (
               <p className="text-base font-semibold">{client}</p>
             )}
-            <p className={`mt-1 text-sm leading-5 ${headerMutedClasses}`}>{description}</p>
           </div>
+          <p className={`mt-1 text-sm leading-5 ${headerMutedClasses}`}>{description}</p>
           <div className="absolute right-4 top-4">
             <ClientHoursEditor
               client={client}
