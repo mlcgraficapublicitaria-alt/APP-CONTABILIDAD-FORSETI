@@ -855,7 +855,7 @@ export default async function Home({ searchParams }: HomeProps) {
           </div>
         </header>
 
-        <section className="flex flex-col gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
+        <section className="sticky top-0 z-30 -mx-6 flex flex-col gap-4 border-b border-white/10 bg-[#0b1020]/95 px-6 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.22)] backdrop-blur lg:flex-row lg:items-end lg:justify-between">
           <SectionNav sections={SECTIONS} selectedMonth={selectedMonth} />
 
           {selectedSection !== "historial" ? <MonthSelect months={MONTHS_2026} selectedMonth={selectedMonth} section={selectedSection ?? "mes"} /> : null}
