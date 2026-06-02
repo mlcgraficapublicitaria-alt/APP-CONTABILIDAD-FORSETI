@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { MonthSelect } from "./month-select";
 import { SectionNav } from "./section-nav";
+import { ClientHoursEditor } from "./client-hours-editor";
 import { MONTHS_2026, SECTIONS } from "./navigation";
 import { hasValidSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/sheets";
@@ -186,8 +187,11 @@ function KpiCard({
 
 function ClientBillingCard({
   client,
+  month,
   actual,
   hours,
+  monthlyTotalBilling,
+  monthlyTotalNet,
   prevision,
   diff,
   diffHours,
@@ -195,8 +199,11 @@ function ClientBillingCard({
   tone = "default",
 }: {
   client: string;
+  month: string;
   actual: string;
   hours: string;
+  monthlyTotalBilling: string;
+  monthlyTotalNet: string;
   prevision: string;
   previsionHours: string;
   diff: string;
@@ -272,6 +279,15 @@ function ClientBillingCard({
             )}
             <p className={`mt-1 text-sm leading-5 ${headerMutedClasses}`}>{description}</p>
           </div>
+          <ClientHoursEditor
+            client={client}
+            month={month}
+            actual={actual}
+            hours={hours}
+            monthlyTotalBilling={monthlyTotalBilling}
+            monthlyTotalNet={monthlyTotalNet}
+            tone={tone}
+          />
         </div>
         <div className="p-5">
           <div className="grid gap-3 sm:grid-cols-3">
@@ -898,6 +914,9 @@ export default async function Home({ searchParams }: HomeProps) {
                   <ClientBillingCard
                     key={item.client}
                     client={item.client}
+                    month={selectedMonth}
+                    monthlyTotalBilling={data.totalFactura}
+                    monthlyTotalNet={data.totalNeto}
                     tone={normalizeClientName(item.client) === "SPANISHCHEESE" ? "spanishCheese" : "grupoDim"}
                     actual={item.actual}
                     hours={item.hours}
