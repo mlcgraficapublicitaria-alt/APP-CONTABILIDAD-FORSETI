@@ -126,11 +126,13 @@ function getSelectedMonthParts(month: string) {
   };
 }
 
-function isDateInSelectedMonth(value: string, month: string) {
+function normalizeDateForSelectedMonth(value: string, month: string) {
   const date = parseDateParts(value);
   const selected = getSelectedMonthParts(month);
 
-  return Boolean(date && date.month === selected.month && date.year === selected.year);
+  if (!date || date.month !== selected.month || !selected.year) return null;
+
+  return `${String(date.day).padStart(2, "0")}/${String(date.month).padStart(2, "0")}/${selected.year}`;
 }
 
 function parseClient(value: string): HoursEditorClient {
@@ -370,14 +372,19 @@ export async function readEditableSheetHours(month: string, clientValue: string)
       const normalizedRow = normalizeRow(row, width);
       const rowNumber = HOURS_RANGE_START_ROW + index + 1;
       const dateValue = normalizedRow[config.displaySourceIndexes[0]] ?? "";
-      const date = parseDate(dateValue);
+      const normalizedDate = normalizeDateForSelectedMonth(dateValue, month);
 
-      if (!date) return;
-      if (!isDateInSelectedMonth(dateValue, month)) return;
+      if (!normalizedDate) return;
 
       const nextRow = bodyRows[index + 1] ? normalizeRow(bodyRows[index + 1], width) : null;
       const nextRowIsContinuation = nextRow && isContinuationRow(nextRow, config);
-      const displayRow = buildGroupedDayRow(normalizedRow, nextRowIsContinuation ? nextRow : null, config);
+      const displaySourceRow = [...normalizedRow];
+      displaySourceRow[config.displaySourceIndexes[0]] = normalizedDate;
+      const displayRow = buildGroupedDayRow(
+        displaySourceRow,
+        nextRowIsContinuation ? nextRow : null,
+        config,
+      );
 
       tableRows.push({
         rowNumber,
