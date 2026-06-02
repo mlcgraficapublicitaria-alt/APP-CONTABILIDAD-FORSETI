@@ -268,8 +268,8 @@ function ClientBillingCard({
         <div aria-hidden="true" className={`absolute inset-0 -translate-x-1.5 translate-y-1.5 rounded-2xl opacity-70 ${shadowClasses[tone]}`} />
       ) : null}
       <div className={`relative overflow-hidden rounded-2xl border shadow-sm ${toneClasses[tone]}`}>
-        <div className={`flex items-center justify-between gap-4 border-b px-5 py-4 ${headerClasses[tone]}`}>
-          <div>
+        <div className={`relative border-b px-5 py-4 ${headerClasses[tone]}`}>
+          <div className="pr-32">
             {logoSrc ? (
               <div className="flex h-[77px] w-[173px] items-center justify-start overflow-hidden">
                 <Image src={logoSrc} alt={`${client} logo`} width={160} height={96} className="max-h-full w-auto object-contain" />
@@ -279,15 +279,17 @@ function ClientBillingCard({
             )}
             <p className={`mt-1 text-sm leading-5 ${headerMutedClasses}`}>{description}</p>
           </div>
-          <ClientHoursEditor
-            client={client}
-            month={month}
-            actual={actual}
-            hours={hours}
-            monthlyTotalBilling={monthlyTotalBilling}
-            monthlyTotalNet={monthlyTotalNet}
-            tone={tone}
-          />
+          <div className="absolute right-4 top-4">
+            <ClientHoursEditor
+              client={client}
+              month={month}
+              actual={actual}
+              hours={hours}
+              monthlyTotalBilling={monthlyTotalBilling}
+              monthlyTotalNet={monthlyTotalNet}
+              tone={tone}
+            />
+          </div>
         </div>
         <div className="p-5">
           <div className="grid gap-3 sm:grid-cols-3">

@@ -201,17 +201,17 @@ export function ClientHoursEditor({ client, month, actual, hours, monthlyTotalBi
 
   const buttonClasses =
     tone === "spanishCheese"
-      ? "border-yellow-900/20 bg-yellow-950 px-3 py-2 text-yellow-100 hover:bg-yellow-900"
+      ? "border-yellow-900/20 bg-yellow-950 px-2.5 py-1.5 text-yellow-100 hover:bg-yellow-900"
       : tone === "grupoDim"
-        ? "border-blue-100/30 bg-blue-300 px-3 py-2 text-[#04277f] hover:bg-blue-200"
-        : "border-white/10 bg-white/10 px-3 py-2 text-white hover:bg-white/15";
+        ? "border-blue-100/30 bg-blue-300 px-2.5 py-1.5 text-[#04277f] hover:bg-blue-200"
+        : "border-white/10 bg-white/10 px-2.5 py-1.5 text-white hover:bg-white/15";
 
   return (
     <>
       <button
         type="button"
         onClick={openEditor}
-        className={`shrink-0 rounded-lg border text-sm font-semibold transition ${buttonClasses}`}
+        className={`shrink-0 rounded-md border text-xs font-semibold transition ${buttonClasses}`}
       >
         Editar horarios
       </button>
