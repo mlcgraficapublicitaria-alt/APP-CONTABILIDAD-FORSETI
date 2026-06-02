@@ -8,18 +8,20 @@ const HOURS_RANGE = "J3:AF90";
 
 type HoursEditorClient = "SPANISH-CHEESE" | "GRUPO DIM";
 
+type ClientConfig = {
+  displaySourceIndexes: number[];
+  editableDisplayIndexes: number[];
+  firstEditableDisplayIndex: number;
+  lastEditableDisplayIndex: number;
+  headers: string[];
+  sheetRangeStartColumn: string;
+  sheetRangeEndColumn: string;
+  durationByEndDisplayIndex: Map<number, number>;
+};
+
 const CLIENT_CONFIG: Record<
   HoursEditorClient,
-  {
-    displaySourceIndexes: number[];
-    editableDisplayIndexes: number[];
-    firstEditableDisplayIndex: number;
-    lastEditableDisplayIndex: number;
-    headers: string[];
-    sheetRangeStartColumn: string;
-    sheetRangeEndColumn: string;
-    durationByEndDisplayIndex: Map<number, number>;
-  }
+  ClientConfig
 > = {
   "SPANISH-CHEESE": {
     displaySourceIndexes: [0, 1, 5, 6, 7],
@@ -42,6 +44,25 @@ const CLIENT_CONFIG: Record<
     durationByEndDisplayIndex: new Map([[3, 4]]),
   },
 };
+
+const JANUARY_CLIENT_CONFIG: Record<HoursEditorClient, ClientConfig> = {
+  "SPANISH-CHEESE": {
+    ...CLIENT_CONFIG["SPANISH-CHEESE"],
+    displaySourceIndexes: [2, 3, 7, 8, 9],
+    sheetRangeStartColumn: "Q",
+    sheetRangeEndColumn: "S",
+  },
+  "GRUPO DIM": {
+    ...CLIENT_CONFIG["GRUPO DIM"],
+    displaySourceIndexes: [2, 3, 13, 14, 15],
+    sheetRangeStartColumn: "W",
+    sheetRangeEndColumn: "Y",
+  },
+};
+
+function getClientConfig(client: HoursEditorClient, month: string) {
+  return month === "ENERO 2026" ? JANUARY_CLIENT_CONFIG[client] : CLIENT_CONFIG[client];
+}
 
 export type SheetHoursRow = {
   rowNumber: number;
@@ -234,7 +255,7 @@ function getRowDisplayMinutes(values: string[], config: (typeof CLIENT_CONFIG)[H
 }
 
 function isContinuationRow(row: string[], config: (typeof CLIENT_CONFIG)[HoursEditorClient]) {
-  if (parseDate(row[0] ?? "")) return false;
+  if (parseDate(row[config.displaySourceIndexes[0]] ?? "")) return false;
 
   const values = pickColumns(row, config.displaySourceIndexes);
   return Boolean((values[2] ?? "").trim() || (values[3] ?? "").trim());
@@ -256,7 +277,7 @@ export function normalizeEditedHoursRow(values: string[], client: HoursEditorCli
 }
 
 function buildUpdateData(month: string, client: HoursEditorClient, updates: SheetHoursUpdate[]) {
-  const config = CLIENT_CONFIG[client];
+  const config = getClientConfig(client, month);
 
   if (updates.every((update) => update.values.length < 8)) {
     return updates.map((update) => ({
@@ -297,7 +318,7 @@ function buildUpdateData(month: string, client: HoursEditorClient, updates: Shee
 
 export async function readEditableSheetHours(month: string, clientValue: string): Promise<SheetHoursTable> {
   const client = parseClient(clientValue);
-  const config = CLIENT_CONFIG[client];
+  const config = getClientConfig(client, month);
   const rows = await getSheetRange(month, HOURS_RANGE);
   const [, ...bodyRows] = rows;
   const width = Math.max(...bodyRows.map((row) => row.length), 0);
@@ -308,7 +329,7 @@ export async function readEditableSheetHours(month: string, clientValue: string)
     bodyRows.forEach((row, index) => {
       const normalizedRow = normalizeRow(row, width);
       const rowNumber = HOURS_RANGE_START_ROW + index + 1;
-      const date = parseDate(normalizedRow[0] ?? "");
+      const date = parseDate(normalizedRow[config.displaySourceIndexes[0]] ?? "");
 
       if (!date) return;
 
@@ -353,7 +374,7 @@ export async function readEditableSheetHours(month: string, clientValue: string)
 
 export async function updateEditableSheetHours(month: string, clientValue: string, updates: SheetHoursUpdate[]) {
   const client = parseClient(clientValue);
-  const config = CLIENT_CONFIG[client];
+  const config = getClientConfig(client, month);
   const token = await getGoogleAccessToken([SHEETS_SCOPE]);
   const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values:batchUpdate`, {
     method: "POST",
