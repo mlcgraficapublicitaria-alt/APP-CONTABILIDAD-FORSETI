@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { MONTHS_2026 } from "@/app/navigation";
+import { getDefaultMonthLabel, MONTHS_2026 } from "@/app/navigation";
 import { applyHoursAction, compareHoursAction, type AuditActionState } from "./actions";
 
 const initialState: AuditActionState = {};
@@ -17,6 +17,7 @@ export function HoursAuditClient() {
   const [compareState, compareFormAction, comparing] = useActionState(compareHoursAction, initialState);
   const [applyState, applyFormAction, applying] = useActionState(applyHoursAction, initialState);
   const [confirmed, setConfirmed] = useState(false);
+  const defaultMonth = getDefaultMonthLabel();
   const differences = compareState.result?.differences ?? [];
   const payload = compareState.result ? JSON.stringify(compareState.result) : "";
   const pdfTotal = compareState.result?.pdfDays.reduce((sum, day) => sum + day.totalMinutes, 0) ?? 0;
@@ -30,7 +31,7 @@ export function HoursAuditClient() {
         <div className="mt-5 space-y-4">
           <label className="block">
             <span className="text-sm font-medium text-zinc-200">Mes</span>
-            <select name="month" className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-slate-950/70 px-4 text-sm text-white outline-none">
+            <select name="month" defaultValue={defaultMonth} className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-slate-950/70 px-4 text-sm text-white outline-none">
               {MONTHS_2026.map((month) => (
                 <option key={month} value={month}>
                   {month}

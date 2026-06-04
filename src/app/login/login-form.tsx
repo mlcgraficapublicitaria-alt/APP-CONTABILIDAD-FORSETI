@@ -36,6 +36,8 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
       body: JSON.stringify({ username, password }),
     });
 
+    const result = await response.json().catch(() => null);
+
     setIsSubmitting(false);
 
     if (!response.ok) {
@@ -43,7 +45,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
       return;
     }
 
-    router.push("/");
+    router.push(typeof result?.redirectTo === "string" ? result.redirectTo : "/");
     router.refresh();
   }
 

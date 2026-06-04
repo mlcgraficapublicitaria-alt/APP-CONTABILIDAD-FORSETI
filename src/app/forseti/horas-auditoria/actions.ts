@@ -1,5 +1,6 @@
 "use server";
 
+import { getDefaultMonthLabel } from "@/app/navigation";
 import { compareHours } from "@/lib/forseti-hours-compare";
 import { applyHourDifferences } from "@/lib/forseti-hours-apply";
 import { readMonthlyHoursPdfFromDrive } from "@/lib/forseti-hours-drive";
@@ -15,7 +16,7 @@ export type AuditActionState = {
 };
 
 export async function compareHoursAction(_state: AuditActionState, formData: FormData): Promise<AuditActionState> {
-  const month = String(formData.get("month") ?? "MAYO 2026");
+  const month = String(formData.get("month") ?? getDefaultMonthLabel());
   const client = parseClient(formData.get("client"));
   const file = formData.get("pdf");
 

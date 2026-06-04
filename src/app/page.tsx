@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { MonthSelect } from "./month-select";
 import { SectionNav } from "./section-nav";
 import { ClientHoursEditor } from "./client-hours-editor";
-import { MONTHS_2026, SECTIONS } from "./navigation";
+import { getDefaultMonthLabel, MONTHS_2026, SECTIONS } from "./navigation";
 import { hasValidSession } from "@/lib/auth";
 import { getDashboardData } from "@/lib/sheets";
 
@@ -758,7 +758,7 @@ function AnnualIncomeHistoryCard({
 
 function getSelectedMonth(month?: string) {
   const normalizedMonth = month?.toUpperCase();
-  return MONTHS_2026.find((item) => item === normalizedMonth) ?? "MAYO 2026";
+  return MONTHS_2026.find((item) => item === normalizedMonth) ?? getDefaultMonthLabel();
 }
 
 function getSelectedSection(section?: string) {

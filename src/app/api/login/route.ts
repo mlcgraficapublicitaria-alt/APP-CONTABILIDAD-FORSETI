@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getDefaultMonthLabel } from "@/app/navigation";
 import { AUTH_COOKIE_NAME, createSessionToken, isValidLogin } from "@/lib/auth";
 
 const SESSION_MAX_AGE = 60 * 60 * 8;
@@ -11,17 +12,21 @@ export async function POST(request: Request) {
   const usernameValue = wantsJson ? body?.username : formData?.get("username");
   const passwordValue = wantsJson ? body?.password : formData?.get("password");
   const username = typeof usernameValue === "string" ? usernameValue.trim() : "";
-  const password = typeof passwordValue === "string" ? passwordValue : "";
+  const password = typeof passwordValue === "string" ? passwordValue.trim() : "";
 
   if (!isValidLogin(username, password)) {
     if (!wantsJson) {
       return NextResponse.redirect(new URL("/login?error=1", request.url), 303);
     }
 
-    return NextResponse.json({ message: "Usuario o contrasena incorrectos." }, { status: 401 });
+    return NextResponse.json({ message: "Usuario o contraseña incorrectos." }, { status: 401 });
   }
 
-  const response = wantsJson ? NextResponse.json({ ok: true }) : NextResponse.redirect(new URL("/", request.url), 303);
+  const homeUrl = new URL("/", request.url);
+  homeUrl.searchParams.set("seccion", "mes");
+  homeUrl.searchParams.set("mes", getDefaultMonthLabel());
+
+  const response = wantsJson ? NextResponse.json({ ok: true, redirectTo: homeUrl.pathname + homeUrl.search }) : NextResponse.redirect(homeUrl, 303);
   response.cookies.set(AUTH_COOKIE_NAME, createSessionToken(), {
     httpOnly: true,
     sameSite: "lax",

@@ -1,5 +1,25 @@
 const SHEET_ID = "1C-4g6B4iiQzCuiWiDGi-YyTm1Tm5Z88bIrTOhlKSsQo";
-const DEFAULT_MONTH = "MAYO 2026";
+const MONTH_NAMES = [
+  "ENERO",
+  "FEBRERO",
+  "MARZO",
+  "ABRIL",
+  "MAYO",
+  "JUNIO",
+  "JULIO",
+  "AGOSTO",
+  "SEPTIEMBRE",
+  "OCTUBRE",
+  "NOVIEMBRE",
+  "DICIEMBRE",
+];
+const DEFAULT_MONTH = getCurrentMonthLabel();
+
+function getCurrentMonthLabel() {
+  const today = new Date();
+  return `${MONTH_NAMES[today.getMonth()]} ${today.getFullYear()}`;
+}
+
 const HOURS_PER_DAY_CELLS: Record<string, string> = {
   "MAYO 2026": "AF62",
 };
@@ -37,20 +57,7 @@ const PASSIVE_BREAKDOWN_RANGES: Record<string, string[]> = {
   ],
 };
 
-const MONTH_NUMBER_BY_NAME: Record<string, number> = {
-  ENERO: 1,
-  FEBRERO: 2,
-  MARZO: 3,
-  ABRIL: 4,
-  MAYO: 5,
-  JUNIO: 6,
-  JULIO: 7,
-  AGOSTO: 8,
-  SEPTIEMBRE: 9,
-  OCTUBRE: 10,
-  NOVIEMBRE: 11,
-  DICIEMBRE: 12,
-};
+const MONTH_NUMBER_BY_NAME = Object.fromEntries(MONTH_NAMES.map((month, index) => [month, index + 1])) as Record<string, number>;
 
 type DashboardData = {
   month: string;
@@ -692,21 +699,6 @@ function findFreelanceProjects(rows: string[][]) {
     })
     .filter((item) => item.client && item.project && item.price);
 }
-
-const MONTH_NAMES = [
-  "ENERO",
-  "FEBRERO",
-  "MARZO",
-  "ABRIL",
-  "MAYO",
-  "JUNIO",
-  "JULIO",
-  "AGOSTO",
-  "SEPTIEMBRE",
-  "OCTUBRE",
-  "NOVIEMBRE",
-  "DICIEMBRE",
-];
 
 function findAnnualIncomeHistory(rows: string[][]) {
   const years: Array<{

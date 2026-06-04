@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { SECTIONS } from "@/app/navigation";
+import { getDefaultMonthLabel, SECTIONS } from "@/app/navigation";
 import { SectionNav } from "@/app/section-nav";
 import { hasValidSession } from "@/lib/auth";
 import { HoursAuditClient } from "./hours-audit-client";
@@ -10,7 +10,7 @@ export default async function ForsetiHorasAuditoriaPage() {
     redirect("/login");
   }
 
-  const selectedMonth = "MAYO 2026";
+  const selectedMonth = getDefaultMonthLabel();
 
   return (
     <div className="min-h-screen bg-[#0b1020] text-white">
