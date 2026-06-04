@@ -16,11 +16,10 @@ export default async function RentaFiscalDashboardPage() {
   const user = await getCurrentUser();
   if (!user) return <LoginRequired />;
 
-  const cases = await prisma.taxCase.findMany({
-    orderBy: { updatedAt: "desc" },
-    include: { summary: true, issues: { where: { status: "OPEN" } } },
-  });
+  const casesResult = await getDashboardCases();
   const selectedMonth = getDefaultMonthLabel();
+  if (!casesResult.ok) return <RentaFiscalDatabaseUnavailable error={casesResult.error} selectedMonth={selectedMonth} />;
+  const cases = casesResult.cases;
   const archivedCases = cases.map((item) => {
     const taxCase = serializeTaxCase(item);
     return {
@@ -64,6 +63,39 @@ export default async function RentaFiscalDashboardPage() {
         </section>
 
         <DashboardHelpButtons />
+      </main>
+    </div>
+  );
+}
+
+async function getDashboardCases() {
+  try {
+    const cases = await prisma.taxCase.findMany({
+      orderBy: { updatedAt: "desc" },
+      include: { summary: true, issues: { where: { status: "OPEN" } } },
+    });
+    return { ok: true as const, cases };
+  } catch (error) {
+    return { ok: false as const, error: error instanceof Error ? error.message : "Error desconocido de base de datos." };
+  }
+}
+
+function RentaFiscalDatabaseUnavailable({ error, selectedMonth }: { error: string; selectedMonth: string }) {
+  return (
+    <div className="min-h-screen bg-[#0b1020] text-white">
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10">
+        <ForsetiShellHeader />
+        <section className="sticky top-0 z-30 -mx-6 flex flex-col gap-4 border-b border-white/10 bg-[#0b1020]/95 px-6 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.22)] backdrop-blur lg:flex-row lg:items-end lg:justify-between">
+          <SectionNav sections={SECTIONS} selectedMonth={selectedMonth} activeSectionOverride="renta-fiscal" />
+        </section>
+        <section className="rounded-lg border border-amber-300/25 bg-amber-300/10 p-5 text-amber-100">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em]">FORSETI Renta Fiscal</p>
+          <h1 className="mt-2 text-2xl font-semibold text-white">Base fiscal pendiente de inicializar</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-6">
+            La seccion esta cargada, pero la base de datos de Renta Fiscal no esta disponible en este servidor. Hay que revisar `DATABASE_URL` y ejecutar las migraciones/seed en produccion.
+          </p>
+          <p className="mt-3 rounded-md border border-white/10 bg-slate-950/40 p-3 text-sm text-zinc-300">{error}</p>
+        </section>
       </main>
     </div>
   );
