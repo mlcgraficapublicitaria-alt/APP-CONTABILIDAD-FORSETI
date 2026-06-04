@@ -17,7 +17,7 @@ type PageProps = {
 
 export default async function RentaFiscalCasePage({ params }: PageProps) {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) return <LoginRequired />;
 
   const { id } = await params;
   const existing = await getCaseOrNull(id);
@@ -174,6 +174,21 @@ export default async function RentaFiscalCasePage({ params }: PageProps) {
             </div>
           </Panel>
         </section>
+      </div>
+    </main>
+  );
+}
+
+function LoginRequired() {
+  return (
+    <main className="min-h-screen bg-[#0b1020] px-5 py-8 text-white">
+      <div className="mx-auto flex max-w-2xl flex-col gap-4 rounded-lg border border-white/10 bg-white/[0.04] p-6">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-300">FORSETI Renta Fiscal</p>
+        <h1 className="text-2xl font-semibold">Sesion no iniciada</h1>
+        <p className="text-sm leading-6 text-zinc-400">Para abrir este expediente primero debes iniciar sesion en FORSETI.</p>
+        <Link href="/login" className="inline-flex h-10 w-fit items-center rounded-md bg-emerald-300 px-4 text-sm font-semibold text-slate-950 transition hover:bg-emerald-200">
+          Ir al login
+        </Link>
       </div>
     </main>
   );
