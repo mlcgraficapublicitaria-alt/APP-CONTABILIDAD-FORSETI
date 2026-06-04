@@ -1,6 +1,8 @@
 const http = require("http");
 const next = require("next");
 
+process.env.DATABASE_URL ||= "file:./dev.db";
+
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const handle = app.getRequestHandler();
