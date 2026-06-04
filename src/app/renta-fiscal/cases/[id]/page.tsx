@@ -6,6 +6,7 @@ import { formatAuditAction, formatAuditEntity, formatAuditMetadata, formatCaseSt
 import { validateTaxCase } from "@/lib/renta-fiscal/validation";
 import { getDefaultMonthLabel, SECTIONS } from "@/app/navigation";
 import { SectionNav } from "@/app/section-nav";
+import { ForsetiShellHeader } from "@/app/forseti-shell-header";
 import { HelpModal, RequirementHelpButton } from "../../help-modal";
 import { CaseWorkflowClient } from "./case-workflow-client";
 import { Model130Analyzer } from "./model-130-analyzer";
@@ -35,18 +36,20 @@ export default async function RentaFiscalCasePage({ params }: PageProps) {
   const selectedMonth = getDefaultMonthLabel();
 
   return (
-    <main className="min-h-screen bg-[#0b1020] px-5 py-8 text-white">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+    <div className="min-h-screen bg-[#0b1020] text-white">
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10">
+        <ForsetiShellHeader />
+
+        <section className="sticky top-0 z-30 -mx-6 flex flex-col gap-4 border-b border-white/10 bg-[#0b1020]/95 px-6 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.22)] backdrop-blur lg:flex-row lg:items-end lg:justify-between">
+          <SectionNav sections={SECTIONS} selectedMonth={selectedMonth} activeSectionOverride="renta-fiscal" />
+        </section>
+
         <header className="border-b border-white/10 pb-5">
           <Link href="/renta-fiscal" className="text-sm font-medium text-emerald-300">Volver a expedientes</Link>
           <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-emerald-300">{taxCase.reference}</p>
           <h1 className="mt-2 text-3xl font-semibold">{taxCase.title}</h1>
           <p className="mt-2 text-sm text-zinc-400">{taxCase.taxpayerName} · NIF {safeCase.taxpayerNifMasked ?? "pendiente"} · ejercicio {taxCase.fiscalYear} · {formatCaseStatus(taxCase.status)}</p>
         </header>
-
-        <section className="border-b border-white/10 pb-5">
-          <SectionNav sections={SECTIONS} selectedMonth={selectedMonth} activeSectionOverride="renta-fiscal" />
-        </section>
 
         <section className="grid gap-3 md:grid-cols-4">
           <Metric label="Documentos faltantes" value={missing.length} />
@@ -174,8 +177,8 @@ export default async function RentaFiscalCasePage({ params }: PageProps) {
             </div>
           </Panel>
         </section>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
 

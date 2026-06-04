@@ -6,6 +6,7 @@ import { formatCaseStatus, formatUserRole } from "@/lib/renta-fiscal/labels";
 import { maskEmail } from "@/lib/renta-fiscal/security";
 import { getDefaultMonthLabel, SECTIONS } from "@/app/navigation";
 import { SectionNav } from "@/app/section-nav";
+import { ForsetiShellHeader } from "@/app/forseti-shell-header";
 import { CaseCreateClient } from "./case-create-client";
 import { DashboardHelpButtons } from "./help-modal";
 import { TaxKnowledgeRefresh } from "./tax-knowledge-refresh";
@@ -21,19 +22,21 @@ export default async function RentaFiscalDashboardPage() {
   const selectedMonth = getDefaultMonthLabel();
 
   return (
-    <main className="min-h-screen bg-[#0b1020] px-5 py-8 text-white">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <header className="flex flex-col gap-4 border-b border-white/10 pb-5 md:flex-row md:items-end md:justify-between">
+    <div className="min-h-screen bg-[#0b1020] text-white">
+      <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10">
+        <ForsetiShellHeader />
+
+        <section className="sticky top-0 z-30 -mx-6 flex flex-col gap-4 border-b border-white/10 bg-[#0b1020]/95 px-6 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.22)] backdrop-blur lg:flex-row lg:items-end lg:justify-between">
+          <SectionNav sections={SECTIONS} selectedMonth={selectedMonth} activeSectionOverride="renta-fiscal" />
+        </section>
+
+        <section className="flex flex-col gap-4 border-b border-white/10 pb-5 md:flex-row md:items-end md:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-300">FORSETI Renta Fiscal</p>
             <h1 className="mt-2 text-3xl font-semibold">Expedientes fiscales</h1>
             <p className="mt-2 text-sm text-zinc-400">Sesión: {maskEmail(user.email)} · permiso {formatUserRole(user.role)}</p>
           </div>
           <CaseCreateClient />
-        </header>
-
-        <section className="border-b border-white/10 pb-5">
-          <SectionNav sections={SECTIONS} selectedMonth={selectedMonth} activeSectionOverride="renta-fiscal" />
         </section>
 
         <DashboardHelpButtons />
@@ -67,8 +70,8 @@ export default async function RentaFiscalDashboardPage() {
           })}
           {cases.length === 0 ? <p className="rounded-lg border border-white/10 bg-white/[0.04] p-5 text-sm text-zinc-400">No hay expedientes. Crea el primero para iniciar el flujo minimo.</p> : null}
         </section>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
 
