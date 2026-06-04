@@ -9,11 +9,21 @@
     "dev": "next dev",
     "build": "next build",
     "start": "node server.js",
-    "lint": "eslint"
+    "lint": "eslint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "db:init": "node prisma/init-sqlite.js && npm run db:seed",
+    "db:seed": "prisma db seed"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "next": "16.2.6",
     "pdf-parse": "^2.4.5",
+    "prisma": "^6.19.3",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
