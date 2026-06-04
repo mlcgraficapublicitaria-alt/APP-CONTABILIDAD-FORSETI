@@ -52,13 +52,7 @@ export async function getCurrentUser() {
   const accessToken = cookieStore.get(ACCESS_COOKIE)?.value;
   const payload = accessToken ? verifyToken(accessToken) : null;
   if (!payload?.sub) {
-    if (await hasValidSession()) {
-      try {
-        return await getForsetiSessionUser();
-      } catch {
-        return getFallbackForsetiSessionUser();
-      }
-    }
+    if (await hasValidSession()) return getFallbackForsetiSessionUser();
     return null;
   }
 

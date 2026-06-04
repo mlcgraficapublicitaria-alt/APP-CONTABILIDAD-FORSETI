@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/renta-fiscal/auth";
 import { prisma } from "@/lib/renta-fiscal/prisma";
-import { serializeTaxCase } from "@/lib/renta-fiscal/cases";
 import { formatCaseStatus, formatUserRole } from "@/lib/renta-fiscal/labels";
-import { maskEmail } from "@/lib/renta-fiscal/security";
+import { maskEmail, maskNif } from "@/lib/renta-fiscal/security";
 import { getDefaultMonthLabel, SECTIONS } from "@/app/navigation";
 import { SectionNav } from "@/app/section-nav";
 import { ForsetiShellHeader } from "@/app/forseti-shell-header";
@@ -21,13 +20,12 @@ export default async function RentaFiscalDashboardPage() {
   if (!casesResult.ok) return <RentaFiscalDatabaseUnavailable error={casesResult.error} selectedMonth={selectedMonth} />;
   const cases = casesResult.cases;
   const archivedCases = cases.map((item) => {
-    const taxCase = serializeTaxCase(item);
     return {
       id: item.id,
       reference: item.reference,
       title: item.title,
       taxpayerName: item.taxpayerName,
-      taxpayerNifMasked: taxCase.taxpayerNifMasked,
+      taxpayerNifMasked: maskNif(item.taxpayerNif),
       statusLabel: formatCaseStatus(item.status),
       fiscalYear: item.fiscalYear,
       openIssues: item.issues.length,
