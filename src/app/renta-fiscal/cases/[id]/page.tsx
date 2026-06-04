@@ -209,7 +209,7 @@ function Metric({ label, value }: { label: string; value: string | number }) {
 function SectionHeading({ title, description }: { title: string; description: string }) {
   return (
     <header className="mt-3 border-b border-emerald-300/25 pb-4">
-      <h2 className="text-2xl font-bold uppercase tracking-[0.08em] text-white md:text-3xl">{title}</h2>
+      <h2 className="text-2xl font-extrabold uppercase tracking-[0.08em] text-white md:text-3xl">{title}</h2>
       <p className="mt-2 max-w-4xl text-sm leading-6 text-zinc-400">{description}</p>
     </header>
   );

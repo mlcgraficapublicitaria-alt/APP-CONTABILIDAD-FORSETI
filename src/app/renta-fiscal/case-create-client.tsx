@@ -43,7 +43,7 @@ export function CaseCreateClient() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-4 md:grid-cols-4">
+    <form onSubmit={handleSubmit} className="grid w-full gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-4 md:grid-cols-4">
       <input name="title" placeholder="Titulo" className="h-10 rounded-md border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" required />
       <input name="taxpayerName" placeholder="Contribuyente" className="h-10 rounded-md border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" required />
       <input name="taxpayerNif" placeholder="NIF/NIE opcional" className="h-10 rounded-md border border-white/10 bg-slate-950 px-3 text-sm text-white outline-none" />
