@@ -16,17 +16,15 @@ export async function POST(request: Request) {
 
   if (!isValidLogin(username, password)) {
     if (!wantsJson) {
-      return NextResponse.redirect(new URL("/login?error=1", request.url), 303);
+      return redirectResponse("/login?error=1");
     }
 
     return NextResponse.json({ message: "Usuario o contraseña incorrectos." }, { status: 401 });
   }
 
-  const homeUrl = new URL("/", request.url);
-  homeUrl.searchParams.set("seccion", "mes");
-  homeUrl.searchParams.set("mes", getDefaultMonthLabel());
+  const homePath = `/?seccion=mes&mes=${encodeURIComponent(getDefaultMonthLabel())}`;
 
-  const response = wantsJson ? NextResponse.json({ ok: true, redirectTo: homeUrl.pathname + homeUrl.search }) : NextResponse.redirect(homeUrl, 303);
+  const response = wantsJson ? NextResponse.json({ ok: true, redirectTo: homePath }) : redirectResponse(homePath);
   response.cookies.set(AUTH_COOKIE_NAME, createSessionToken(), {
     httpOnly: true,
     sameSite: "lax",
@@ -36,4 +34,13 @@ export async function POST(request: Request) {
   });
 
   return response;
+}
+
+function redirectResponse(location: string) {
+  return new NextResponse(null, {
+    status: 303,
+    headers: {
+      Location: location,
+    },
+  });
 }
