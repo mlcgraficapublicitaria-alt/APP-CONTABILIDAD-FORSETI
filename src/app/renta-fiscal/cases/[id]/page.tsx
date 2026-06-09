@@ -106,7 +106,7 @@ export default async function RentaFiscalCasePage({ params }: PageProps) {
             >
               {openIssues.length ? (
                 <div className="space-y-3">
-                  {openIssues.map((issue) => (
+                  {openIssues.map((issue: (typeof openIssues)[number]) => (
                     <div key={issue.id} className="rounded-md border border-amber-300/20 bg-amber-300/10 p-3">
                       <p className="text-sm font-semibold text-amber-100">{issue.title}</p>
                       <p className="mt-1 text-sm text-amber-100/80">{issue.description}</p>
