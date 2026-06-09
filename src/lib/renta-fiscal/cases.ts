@@ -1,6 +1,16 @@
-import { type DataConfidence, type Prisma } from "@prisma/client";
+import { type DataConfidence, type Document, type DocumentStatus, type Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { maskNif } from "./security";
+
+export type TaxCaseChecklistItem = {
+  requirementId: string;
+  code: string;
+  label: string;
+  description: string | null;
+  required: boolean;
+  status: DocumentStatus;
+  document: Document | null;
+};
 
 export function serializeTaxCase<T extends { taxpayerNif?: string | null }>(taxCase: T) {
   const { taxpayerNif, ...rest } = taxCase;
@@ -32,7 +42,7 @@ export async function getCaseOrNull(id: string) {
   });
 }
 
-export async function buildChecklist(taxCaseId: string) {
+export async function buildChecklist(taxCaseId: string): Promise<TaxCaseChecklistItem[]> {
   const requirements = await prisma.documentRequirement.findMany({
     where: { active: true },
     orderBy: { sortOrder: "asc" },

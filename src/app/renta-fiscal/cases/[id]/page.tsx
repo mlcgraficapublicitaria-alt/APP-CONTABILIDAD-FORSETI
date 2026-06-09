@@ -82,7 +82,7 @@ export default async function RentaFiscalCasePage({ params }: PageProps) {
                       <p className="font-medium text-white">{item.label}</p>
                       <p className="mt-1 text-sm text-zinc-400">{item.description}</p>
                       <div className="mt-3">
-                        <RequirementHelpButton code={item.code} label={item.label} description={item.description} />
+                        <RequirementHelpButton code={item.code} label={item.label} description={item.description ?? ""} />
                       </div>
                     </div>
                     <span className="rounded-md border border-white/10 px-2 py-1 text-xs text-zinc-200">{formatDocumentStatus(item.status)}</span>
