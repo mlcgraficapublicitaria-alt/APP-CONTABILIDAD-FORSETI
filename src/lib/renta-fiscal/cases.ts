@@ -1,6 +1,8 @@
-import { type DataConfidence, type Document, type DocumentStatus, type Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { maskNif } from "./security";
+
+export type DataConfidence = "CONFIRMED" | "ESTIMATED" | "PENDING";
+export type DocumentStatus = "PENDING" | "RECEIVED" | "REVIEWED" | "REJECTED";
 
 export type TaxCaseChecklistItem = {
   requirementId: string;
@@ -9,7 +11,11 @@ export type TaxCaseChecklistItem = {
   description: string | null;
   required: boolean;
   status: DocumentStatus;
-  document: Document | null;
+  document: unknown | null;
+};
+
+type TaxCaseDataPoint = {
+  confidence: DataConfidence;
 };
 
 export function serializeTaxCase<T extends { taxpayerNif?: string | null }>(taxCase: T) {
@@ -74,10 +80,10 @@ export async function upsertSummary(taxCaseId: string) {
     prisma.validationIssue.findMany({ where: { taxCaseId, status: "OPEN" } }),
     prisma.dataPoint.findMany({ where: { taxCaseId } }),
   ]);
-  const missingCount = checklist.filter((item) => item.required && item.status === "PENDING").length;
-  const confirmedCount = dataPoints.filter((item) => item.confidence === "CONFIRMED").length;
-  const estimatedCount = dataPoints.filter((item) => item.confidence === "ESTIMATED").length;
-  const pendingCount = dataPoints.filter((item) => item.confidence === "PENDING").length;
+  const missingCount = checklist.filter((item: TaxCaseChecklistItem) => item.required && item.status === "PENDING").length;
+  const confirmedCount = dataPoints.filter((item: TaxCaseDataPoint) => item.confidence === "CONFIRMED").length;
+  const estimatedCount = dataPoints.filter((item: TaxCaseDataPoint) => item.confidence === "ESTIMATED").length;
+  const pendingCount = dataPoints.filter((item: TaxCaseDataPoint) => item.confidence === "PENDING").length;
   const status: DataConfidence = missingCount === 0 && issues.length === 0 && pendingCount === 0 ? "CONFIRMED" : estimatedCount > 0 ? "ESTIMATED" : "PENDING";
   const preliminaryNotes = [
     "Resumen preliminar interno. No automatiza presentacion a terceros.",
@@ -99,7 +105,7 @@ export function taxCaseCreateData(input: {
   taxpayerNif?: string;
   fiscalYear?: number;
   ownerId: string;
-}): Prisma.TaxCaseCreateInput {
+}) {
   const fiscalYear = Number.isInteger(input.fiscalYear) ? Number(input.fiscalYear) : new Date().getFullYear();
   const reference = `RF-${fiscalYear}-${Date.now().toString(36).toUpperCase()}`;
   return {
@@ -109,6 +115,6 @@ export function taxCaseCreateData(input: {
     taxpayerNif: input.taxpayerNif?.trim() || null,
     fiscalYear,
     owner: { connect: { id: input.ownerId } },
-    taxProfile: { create: { confidence: "PENDING" } },
+    taxProfile: { create: { confidence: "PENDING" as const } },
   };
 }
