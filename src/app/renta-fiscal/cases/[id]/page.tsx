@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { type ValidationIssue } from "@prisma/client";
 import { getCurrentUser } from "@/lib/renta-fiscal/auth";
 import { buildChecklist, getCaseOrNull, serializeTaxCase, type TaxCaseChecklistItem, upsertSummary } from "@/lib/renta-fiscal/cases";
 import { formatAuditAction, formatAuditEntity, formatAuditMetadata, formatCaseStatus, formatConfidence, formatDocumentStatus } from "@/lib/renta-fiscal/labels";
@@ -15,6 +14,10 @@ import { Model303Analyzer } from "./model-303-analyzer";
 
 type PageProps = {
   params: Promise<{ id: string }>;
+};
+
+type TaxCaseIssue = {
+  status: "OPEN" | "RESOLVED";
 };
 
 export default async function RentaFiscalCasePage({ params }: PageProps) {
@@ -33,7 +36,7 @@ export default async function RentaFiscalCasePage({ params }: PageProps) {
   if (!taxCase) redirect("/renta-fiscal");
   const safeCase = serializeTaxCase(taxCase);
   const missing = checklist.filter((item: TaxCaseChecklistItem) => item.required && item.status === "PENDING");
-  const openIssues = taxCase.issues.filter((item: ValidationIssue) => item.status === "OPEN");
+  const openIssues = taxCase.issues.filter((item: TaxCaseIssue) => item.status === "OPEN");
   const selectedMonth = getDefaultMonthLabel();
 
   return (
