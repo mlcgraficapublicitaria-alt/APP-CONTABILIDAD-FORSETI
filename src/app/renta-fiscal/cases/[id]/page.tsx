@@ -20,6 +20,21 @@ type TaxCaseIssue = {
   status: "OPEN" | "RESOLVED";
 };
 
+type TaxCaseDataPoint = {
+  id: string;
+  label: string;
+  value: string | null;
+  confidence: "CONFIRMED" | "ESTIMATED" | "PENDING";
+};
+
+type TaxCaseAuditEvent = {
+  id: string;
+  action: string;
+  entity: string;
+  createdAt: Date;
+  metadata: string | null;
+};
+
 export default async function RentaFiscalCasePage({ params }: PageProps) {
   const user = await getCurrentUser();
   if (!user) return <LoginRequired />;
@@ -72,7 +87,7 @@ export default async function RentaFiscalCasePage({ params }: PageProps) {
 
         <section className="grid gap-4">
           <SectionHeading title="Registro de documentos" description="Marca documentos recibidos y añade datos clave solo cuando tengan una fuente clara." />
-          <CaseWorkflowClient taxCaseId={taxCase.id} requirements={checklist.map((item) => ({ requirementId: item.requirementId, label: item.label }))} />
+          <CaseWorkflowClient taxCaseId={taxCase.id} requirements={checklist.map((item: TaxCaseChecklistItem) => ({ requirementId: item.requirementId, label: item.label }))} />
         </section>
 
         <section className="grid gap-4">
@@ -80,7 +95,7 @@ export default async function RentaFiscalCasePage({ params }: PageProps) {
           <div className="grid gap-4 lg:grid-cols-2">
             <Panel title="Checklist documental">
               <div className="divide-y divide-white/10">
-                {checklist.map((item) => (
+                {checklist.map((item: TaxCaseChecklistItem) => (
                   <div key={item.requirementId} className="flex items-start justify-between gap-4 py-3">
                     <div className="min-w-0">
                       <p className="font-medium text-white">{item.label}</p>
@@ -128,7 +143,7 @@ export default async function RentaFiscalCasePage({ params }: PageProps) {
               }
             >
               <div className="divide-y divide-white/10">
-                {taxCase.dataPoints.map((item) => (
+                {taxCase.dataPoints.map((item: TaxCaseDataPoint) => (
                   <div key={item.id} className="grid gap-1 py-3 sm:grid-cols-[1fr_1fr_auto]">
                     <p className="font-medium text-white">{item.label}</p>
                     <p className="text-sm text-zinc-300">{item.value ?? "Pendiente"}</p>
@@ -170,7 +185,7 @@ export default async function RentaFiscalCasePage({ params }: PageProps) {
             }
           >
             <div className="divide-y divide-white/10 text-sm">
-              {taxCase.auditEvents.map((event) => (
+              {taxCase.auditEvents.map((event: TaxCaseAuditEvent) => (
                 <div key={event.id} className="grid gap-2 py-3 md:grid-cols-[0.8fr_0.8fr_1fr_1fr]">
                   <p className="font-medium text-white">{formatAuditAction(event.action)}</p>
                   <p className="text-zinc-300">{formatAuditEntity(event.entity)}</p>
