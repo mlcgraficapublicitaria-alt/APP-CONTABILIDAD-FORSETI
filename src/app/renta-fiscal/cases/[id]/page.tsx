@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { type ValidationIssue } from "@prisma/client";
 import { getCurrentUser } from "@/lib/renta-fiscal/auth";
-import { buildChecklist, getCaseOrNull, serializeTaxCase, upsertSummary } from "@/lib/renta-fiscal/cases";
+import { buildChecklist, getCaseOrNull, serializeTaxCase, type TaxCaseChecklistItem, upsertSummary } from "@/lib/renta-fiscal/cases";
 import { formatAuditAction, formatAuditEntity, formatAuditMetadata, formatCaseStatus, formatConfidence, formatDocumentStatus } from "@/lib/renta-fiscal/labels";
 import { validateTaxCase } from "@/lib/renta-fiscal/validation";
 import { getDefaultMonthLabel, SECTIONS } from "@/app/navigation";
@@ -31,8 +32,8 @@ export default async function RentaFiscalCasePage({ params }: PageProps) {
   const [taxCase, checklist, summary] = await Promise.all([getCaseOrNull(id), buildChecklist(id), upsertSummary(id)]);
   if (!taxCase) redirect("/renta-fiscal");
   const safeCase = serializeTaxCase(taxCase);
-  const missing = checklist.filter((item) => item.required && item.status === "PENDING");
-  const openIssues = taxCase.issues.filter((item) => item.status === "OPEN");
+  const missing = checklist.filter((item: TaxCaseChecklistItem) => item.required && item.status === "PENDING");
+  const openIssues = taxCase.issues.filter((item: ValidationIssue) => item.status === "OPEN");
   const selectedMonth = getDefaultMonthLabel();
 
   return (
