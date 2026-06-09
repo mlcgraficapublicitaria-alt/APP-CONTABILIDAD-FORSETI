@@ -11,6 +11,17 @@ import { CaseCreateClient } from "./case-create-client";
 import { DashboardHelpButtons } from "./help-modal";
 import { TaxKnowledgeRefresh } from "./tax-knowledge-refresh";
 
+type DashboardCase = {
+  id: string;
+  reference: string;
+  title: string;
+  taxpayerName: string;
+  taxpayerNif: string | null;
+  status: "DRAFT" | "IN_REVIEW" | "READY" | "CLOSED";
+  fiscalYear: number;
+  issues: Array<{ id: string }>;
+};
+
 export default async function RentaFiscalDashboardPage() {
   const user = await getCurrentUser();
   if (!user) return <LoginRequired />;
@@ -19,7 +30,7 @@ export default async function RentaFiscalDashboardPage() {
   const selectedMonth = getDefaultMonthLabel();
   if (!casesResult.ok) return <RentaFiscalDatabaseUnavailable error={casesResult.error} selectedMonth={selectedMonth} />;
   const cases = casesResult.cases;
-  const archivedCases = cases.map((item) => {
+  const archivedCases = cases.map((item: DashboardCase) => {
     return {
       id: item.id,
       reference: item.reference,
