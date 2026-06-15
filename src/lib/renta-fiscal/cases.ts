@@ -1,3 +1,4 @@
+import type { Document, DocumentRequirement } from "@prisma/client";
 import { prisma } from "./prisma";
 import { maskNif } from "./security";
 
@@ -48,8 +49,12 @@ export async function getCaseOrNull(id: string) {
   });
 }
 
+type RequirementWithDocuments = DocumentRequirement & {
+  documents: Document[];
+};
+
 export async function buildChecklist(taxCaseId: string): Promise<TaxCaseChecklistItem[]> {
-  const requirements = await prisma.documentRequirement.findMany({
+  const requirements: RequirementWithDocuments[] = await prisma.documentRequirement.findMany({
     where: { active: true },
     orderBy: { sortOrder: "asc" },
     include: {
@@ -60,7 +65,7 @@ export async function buildChecklist(taxCaseId: string): Promise<TaxCaseChecklis
     },
   });
 
-  return requirements.map((requirement) => {
+  return requirements.map((requirement: RequirementWithDocuments) => {
     const latest = requirement.documents[0] ?? null;
     return {
       requirementId: requirement.id,
