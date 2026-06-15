@@ -31,7 +31,7 @@ yarn-error.log*
 .pnpm-debug.log*
 dev-server*.log
 
-# env files (can opt-in for committing if needed)
+# env files (keep real secrets out of Git, allow template)
 .env*
 !.env.example
 

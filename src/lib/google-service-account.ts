@@ -1,15 +1,43 @@
 import { createSign } from "crypto";
+import { existsSync, readFileSync } from "fs";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
+const FORSETI_OAUTH_CONFIG_PATH = "/data/.openclaw/workspace/forseti/integrations/google-drive/config.json";
+
+type ServiceAccountCredentials = {
+  email: string;
+  privateKey: string;
+};
+
+type ForsetiOAuthCredentials = {
+  clientId: string;
+  clientSecret: string;
+  refreshToken: string;
+  tokenUri: string;
+};
 
 function base64Url(value: Buffer | string) {
   return Buffer.from(value).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 
-function parseServiceAccountJson() {
-  const rawJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  const rawBase64 = process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64;
-  const value = rawJson ?? (rawBase64 ? Buffer.from(rawBase64, "base64").toString("utf8") : "");
+function getFirstEnvValue(names: string[]) {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value?.trim()) return value;
+  }
+
+  return "";
+}
+
+function parseServiceAccountJson(): ServiceAccountCredentials | null {
+  const rawJson = getFirstEnvValue([
+    "GOOGLE_SERVICE_ACCOUNT_JSON",
+    "GOOGLE_CREDENTIALS_JSON",
+    "GOOGLE_CREDENTIALS",
+    "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+  ]);
+  const rawBase64 = getFirstEnvValue(["GOOGLE_SERVICE_ACCOUNT_JSON_BASE64"]);
+  const value = rawJson || (rawBase64 ? Buffer.from(rawBase64, "base64").toString("utf8") : "");
 
   if (!value) return null;
 
@@ -25,21 +53,42 @@ function parseServiceAccountJson() {
   }
 }
 
-export function getGoogleCredentials() {
+function getGoogleCredentials(): ServiceAccountCredentials {
   const jsonCredentials = parseServiceAccountJson();
   if (jsonCredentials) return jsonCredentials;
 
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ?? process.env.GOOGLE_CLIENT_EMAIL;
-  const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY ?? process.env.GOOGLE_PRIVATE_KEY;
+  const email = getFirstEnvValue(["GOOGLE_SERVICE_ACCOUNT_EMAIL", "GOOGLE_CLIENT_EMAIL"]);
+  const rawKey = getFirstEnvValue(["GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY", "GOOGLE_PRIVATE_KEY"]);
   const privateKey = rawKey?.replace(/\\n/g, "\n");
 
   if (!email || !privateKey) {
     throw new Error(
-      "Faltan credenciales de Google en servidor. Configura GOOGLE_SERVICE_ACCOUNT_JSON o GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.",
+      "Faltan credenciales de Google en servidor. Configura GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 (preferido), GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_CREDENTIALS_JSON, GOOGLE_CREDENTIALS, GOOGLE_APPLICATION_CREDENTIALS_JSON o GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.",
     );
   }
 
   return { email, privateKey };
+}
+
+function getForsetiOAuthCredentials(): ForsetiOAuthCredentials | null {
+  if (!existsSync(FORSETI_OAUTH_CONFIG_PATH)) return null;
+
+  try {
+    const raw = readFileSync(FORSETI_OAUTH_CONFIG_PATH, "utf8");
+    const parsed = JSON.parse(raw) as {
+      auth?: { clientId?: string; clientSecret?: string; refreshToken?: string; tokenUri?: string };
+    };
+    const auth = parsed.auth;
+    if (!auth?.clientId || !auth.clientSecret || !auth.refreshToken || !auth.tokenUri) return null;
+    return {
+      clientId: auth.clientId,
+      clientSecret: auth.clientSecret,
+      refreshToken: auth.refreshToken,
+      tokenUri: auth.tokenUri,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function hasGoogleServiceAccountCredentials() {
@@ -47,11 +96,11 @@ export function hasGoogleServiceAccountCredentials() {
     getGoogleCredentials();
     return true;
   } catch {
-    return false;
+    return Boolean(getForsetiOAuthCredentials());
   }
 }
 
-export async function getGoogleAccessToken(scopes: string[]) {
+async function getServiceAccountAccessToken(scopes: string[]) {
   const { email, privateKey } = getGoogleCredentials();
   const now = Math.floor(Date.now() / 1000);
   const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
@@ -80,4 +129,37 @@ export async function getGoogleAccessToken(scopes: string[]) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error_description ?? "No se pudo autenticar con Google.");
   return String(data.access_token);
+}
+
+async function getForsetiOAuthAccessToken() {
+  const oauth = getForsetiOAuthCredentials();
+  if (!oauth) {
+    throw new Error(
+      "Faltan credenciales Google: no hay service account cargada y tampoco se ha encontrado la integración OAuth operativa de FORSETI.",
+    );
+  }
+
+  const response = await fetch(oauth.tokenUri, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: oauth.clientId,
+      client_secret: oauth.clientSecret,
+      refresh_token: oauth.refreshToken,
+      grant_type: "refresh_token",
+    }),
+    cache: "no-store",
+  });
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error_description ?? data.error ?? "No se pudo autenticar con Google OAuth.");
+  return String(data.access_token);
+}
+
+export async function getGoogleAccessToken(scopes: string[]) {
+  try {
+    return await getServiceAccountAccessToken(scopes);
+  } catch {
+    return getForsetiOAuthAccessToken();
+  }
 }

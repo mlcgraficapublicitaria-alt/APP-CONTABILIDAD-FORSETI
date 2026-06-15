@@ -29,6 +29,42 @@ Password recovery email requires:
 - `APP_RECOVERY_EMAIL`
 - `APP_FROM_EMAIL` (optional)
 
+## Environment variables
+
+Create a local `.env` from `.env.example`.
+
+### Google Sheets / Drive for production
+
+Preferred secret:
+
+```env
+GOOGLE_SERVICE_ACCOUNT_JSON_BASE64="..."
+```
+
+Supported alternatives:
+
+- `GOOGLE_SERVICE_ACCOUNT_JSON`
+- `GOOGLE_CREDENTIALS_JSON`
+- `GOOGLE_CREDENTIALS`
+- `GOOGLE_APPLICATION_CREDENTIALS_JSON`
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL` + `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
+
+Notes:
+
+- The service account must have access to the target Google Sheet as **Editor**.
+- If Google Drive is used to read monthly PDFs, the same service account must also have access to the relevant Drive folders/files.
+- `.env*` is ignored by Git. Keep real secrets only in local environment files or production secret storage.
+
+### Production deployment
+
+For production, configure the secret in the hosting platform/server with this exact name:
+
+```env
+GOOGLE_SERVICE_ACCOUNT_JSON_BASE64
+```
+
+Do not commit the real credential JSON or a real `.env` file to the repository.
+
 You can start editing the dashboard by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 ## Learn More
