@@ -71,6 +71,21 @@ function getGoogleCredentials(): ServiceAccountCredentials {
 }
 
 function getForsetiOAuthCredentials(): ForsetiOAuthCredentials | null {
+  const clientId = getFirstEnvValue(["GOOGLE_OAUTH_CLIENT_ID", "FORSETI_GOOGLE_OAUTH_CLIENT_ID"]);
+  const clientSecret = getFirstEnvValue(["GOOGLE_OAUTH_CLIENT_SECRET", "FORSETI_GOOGLE_OAUTH_CLIENT_SECRET"]);
+  const refreshToken = getFirstEnvValue(["GOOGLE_OAUTH_REFRESH_TOKEN", "FORSETI_GOOGLE_OAUTH_REFRESH_TOKEN"]);
+  const tokenUri =
+    getFirstEnvValue(["GOOGLE_OAUTH_TOKEN_URI", "FORSETI_GOOGLE_OAUTH_TOKEN_URI"]) || TOKEN_URL;
+
+  if (clientId && clientSecret && refreshToken) {
+    return {
+      clientId,
+      clientSecret,
+      refreshToken,
+      tokenUri,
+    };
+  }
+
   if (!existsSync(FORSETI_OAUTH_CONFIG_PATH)) return null;
 
   try {
@@ -135,7 +150,7 @@ async function getForsetiOAuthAccessToken() {
   const oauth = getForsetiOAuthCredentials();
   if (!oauth) {
     throw new Error(
-      "Faltan credenciales Google: no hay service account cargada y tampoco se ha encontrado la integración OAuth operativa de FORSETI.",
+      "Faltan credenciales Google: no hay service account cargada y tampoco se ha encontrado OAuth operativo (ni por variables de entorno ni por integración local de FORSETI).",
     );
   }
 

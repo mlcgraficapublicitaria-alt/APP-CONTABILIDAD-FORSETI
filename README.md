@@ -48,6 +48,7 @@ Supported alternatives:
 - `GOOGLE_CREDENTIALS`
 - `GOOGLE_APPLICATION_CREDENTIALS_JSON`
 - `GOOGLE_SERVICE_ACCOUNT_EMAIL` + `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
+- OAuth fallback via `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` + `GOOGLE_OAUTH_REFRESH_TOKEN` (+ optional `GOOGLE_OAUTH_TOKEN_URI`)
 
 Notes:
 
@@ -57,13 +58,22 @@ Notes:
 
 ### Production deployment
 
-For production, configure the secret in the hosting platform/server with this exact name:
+For production, configure one of these in the hosting platform/server:
 
 ```env
 GOOGLE_SERVICE_ACCOUNT_JSON_BASE64
 ```
 
-Do not commit the real credential JSON or a real `.env` file to the repository.
+or, if you are reusing the already-authorized OAuth integration instead of a service account:
+
+```env
+GOOGLE_OAUTH_CLIENT_ID
+GOOGLE_OAUTH_CLIENT_SECRET
+GOOGLE_OAUTH_REFRESH_TOKEN
+GOOGLE_OAUTH_TOKEN_URI
+```
+
+Do not commit real credentials or a real `.env` file to the repository.
 
 You can start editing the dashboard by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
