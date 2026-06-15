@@ -1,6 +1,11 @@
 import { join } from "path";
 import { pathToFileURL } from "url";
-import type { TaxProfile } from "@prisma/client";
+
+ type TaxProfileLike = {
+  selfEmployment?: boolean;
+  rentalIncome?: boolean;
+  investmentIncome?: boolean;
+ };
 
 export type Model130Analysis = {
   detected: {
@@ -19,7 +24,7 @@ export type Model130Analysis = {
   disclaimer: string;
 };
 
-export async function analyzeModel130Pdf(buffer: ArrayBuffer, profile: TaxProfile | null): Promise<Model130Analysis> {
+export async function analyzeModel130Pdf(buffer: ArrayBuffer, profile: TaxProfileLike | null): Promise<Model130Analysis> {
   const text = normalizeText(await extractPdfText(buffer));
   const detected = {
     looksLike130: /\bmodelo\s*130\b|pago\s+fraccionado|estimacion\s+directa|actividades\s+economicas/i.test(text),
