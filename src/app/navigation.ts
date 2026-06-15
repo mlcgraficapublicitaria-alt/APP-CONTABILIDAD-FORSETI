@@ -45,5 +45,4 @@ export const SECTIONS = [
   { id: "inversion", label: "INVERSION" },
   { id: "historial", label: "HISTORIAL DE INGRESOS ANUALES" },
   { id: "horas-auditoria", label: "AUDITORIA DE HORAS", href: "/forseti/horas-auditoria" },
-  { id: "renta-fiscal", label: "RENTA FISCAL", href: "/renta-fiscal" },
 ];
