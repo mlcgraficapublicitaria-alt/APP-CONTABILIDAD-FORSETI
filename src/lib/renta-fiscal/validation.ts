@@ -1,6 +1,10 @@
 import { prisma } from "./prisma";
 import { buildChecklist, upsertSummary } from "./cases";
 
+type DataPointLike = {
+  confidence: "CONFIRMED" | "ESTIMATED" | "PENDING";
+};
+
 export async function validateTaxCase(taxCaseId: string) {
   const [taxCase, checklist, dataPoints] = await Promise.all([
     prisma.taxCase.findUnique({ where: { id: taxCaseId }, include: { taxProfile: true } }),
@@ -35,7 +39,7 @@ export async function validateTaxCase(taxCaseId: string) {
     });
   }
 
-  if (dataPoints.length === 0 || dataPoints.some((item) => item.confidence === "PENDING")) {
+  if (dataPoints.length === 0 || dataPoints.some((item: DataPointLike) => item.confidence === "PENDING")) {
     issueData.push({
       taxCaseId,
       code: "pending_data_points",
