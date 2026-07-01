@@ -2,6 +2,94 @@ import { join } from "path";
 import { pathToFileURL } from "url";
 import type { DayHours, WorkSegment } from "./forseti-hours-types";
 
+type PdfJsGlobalScope = typeof globalThis & {
+  DOMMatrix?: typeof DOMMatrix;
+  ImageData?: typeof ImageData;
+  Path2D?: typeof Path2D;
+};
+
+class PdfJsDOMMatrixFallback {
+  a = 1;
+  b = 0;
+  c = 0;
+  d = 1;
+  e = 0;
+  f = 0;
+
+  constructor(init?: ArrayLike<number> | string) {
+    if (typeof init !== "string" && init?.length) {
+      [this.a, this.b, this.c, this.d, this.e, this.f] = [
+        init[0] ?? 1,
+        init[1] ?? 0,
+        init[2] ?? 0,
+        init[3] ?? 1,
+        init[4] ?? 0,
+        init[5] ?? 0,
+      ];
+    }
+  }
+
+  translate(tx = 0, ty = 0) {
+    return new PdfJsDOMMatrixFallback([this.a, this.b, this.c, this.d, this.e + tx, this.f + ty]);
+  }
+
+  scale(scaleX = 1, scaleY = scaleX) {
+    return new PdfJsDOMMatrixFallback([this.a * scaleX, this.b * scaleX, this.c * scaleY, this.d * scaleY, this.e, this.f]);
+  }
+
+  multiplySelf(other: PdfJsDOMMatrixFallback) {
+    [this.a, this.b, this.c, this.d, this.e, this.f] = multiplyMatrix(this, other);
+    return this;
+  }
+
+  preMultiplySelf(other: PdfJsDOMMatrixFallback) {
+    [this.a, this.b, this.c, this.d, this.e, this.f] = multiplyMatrix(other, this);
+    return this;
+  }
+
+  invertSelf() {
+    const determinant = this.a * this.d - this.b * this.c;
+    if (!determinant) return this;
+
+    const [a, b, c, d, e, f] = [this.a, this.b, this.c, this.d, this.e, this.f];
+    this.a = d / determinant;
+    this.b = -b / determinant;
+    this.c = -c / determinant;
+    this.d = a / determinant;
+    this.e = (c * f - d * e) / determinant;
+    this.f = (b * e - a * f) / determinant;
+    return this;
+  }
+}
+
+class PdfJsPath2DFallback {
+  addPath() {}
+  rect() {}
+}
+
+function multiplyMatrix(left: PdfJsDOMMatrixFallback, right: PdfJsDOMMatrixFallback) {
+  return [
+    left.a * right.a + left.c * right.b,
+    left.b * right.a + left.d * right.b,
+    left.a * right.c + left.c * right.d,
+    left.b * right.c + left.d * right.d,
+    left.a * right.e + left.c * right.f + left.e,
+    left.b * right.e + left.d * right.f + left.f,
+  ];
+}
+
+function ensurePdfJsNodeGlobals() {
+  const scope = globalThis as PdfJsGlobalScope;
+
+  if (!scope.DOMMatrix) {
+    scope.DOMMatrix = PdfJsDOMMatrixFallback as unknown as typeof DOMMatrix;
+  }
+
+  if (!scope.Path2D) {
+    scope.Path2D = PdfJsPath2DFallback as unknown as typeof Path2D;
+  }
+}
+
 function normalizeText(value: string) {
   return value
     .replace(/\r/g, "\n")
@@ -29,6 +117,7 @@ export async function extractPdfHours(buffer: ArrayBuffer, month: string): Promi
   const positionedDays = await extractPositionedHours(buffer, month);
   if (positionedDays.length > 0) return positionedDays;
 
+  ensurePdfJsNodeGlobals();
   const { PDFParse } = await import("pdf-parse");
   PDFParse.setWorker(pathToFileURL(join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs")).href);
   const parser = new PDFParse({ data: Buffer.from(buffer) });
@@ -123,6 +212,7 @@ async function extractPositionedHours(buffer: ArrayBuffer, month: string): Promi
 }
 
 async function extractPositionedRows(buffer: ArrayBuffer) {
+  ensurePdfJsNodeGlobals();
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs")).href;
 
