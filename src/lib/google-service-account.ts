@@ -16,6 +16,19 @@ type ForsetiOAuthCredentials = {
   tokenUri: string;
 };
 
+function parseServiceAccountValue(value: string): ServiceAccountCredentials | null {
+  try {
+    const parsed = JSON.parse(value) as { client_email?: string; private_key?: string };
+    if (!parsed.client_email || !parsed.private_key) return null;
+    return {
+      email: parsed.client_email,
+      privateKey: parsed.private_key.replace(/\\n/g, "\n"),
+    };
+  } catch {
+    return null;
+  }
+}
+
 function base64Url(value: Buffer | string) {
   return Buffer.from(value).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
@@ -41,13 +54,20 @@ function parseServiceAccountJson(): ServiceAccountCredentials | null {
 
   if (!value) return null;
 
+  return parseServiceAccountValue(value);
+}
+
+function parseServiceAccountFile(): ServiceAccountCredentials | null {
+  const filePath = getFirstEnvValue([
+    "GOOGLE_APPLICATION_CREDENTIALS",
+    "GOOGLE_SERVICE_ACCOUNT_FILE",
+    "GOOGLE_CREDENTIALS_FILE",
+  ]);
+
+  if (!filePath || !existsSync(/* turbopackIgnore: true */ filePath)) return null;
+
   try {
-    const parsed = JSON.parse(value) as { client_email?: string; private_key?: string };
-    if (!parsed.client_email || !parsed.private_key) return null;
-    return {
-      email: parsed.client_email,
-      privateKey: parsed.private_key.replace(/\\n/g, "\n"),
-    };
+    return parseServiceAccountValue(readFileSync(/* turbopackIgnore: true */ filePath, "utf8"));
   } catch {
     return null;
   }
@@ -57,13 +77,16 @@ function getGoogleCredentials(): ServiceAccountCredentials {
   const jsonCredentials = parseServiceAccountJson();
   if (jsonCredentials) return jsonCredentials;
 
+  const fileCredentials = parseServiceAccountFile();
+  if (fileCredentials) return fileCredentials;
+
   const email = getFirstEnvValue(["GOOGLE_SERVICE_ACCOUNT_EMAIL", "GOOGLE_CLIENT_EMAIL"]);
   const rawKey = getFirstEnvValue(["GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY", "GOOGLE_PRIVATE_KEY"]);
   const privateKey = rawKey?.replace(/\\n/g, "\n");
 
   if (!email || !privateKey) {
     throw new Error(
-      "Faltan credenciales de Google en servidor. Configura GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 (preferido), GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_CREDENTIALS_JSON, GOOGLE_CREDENTIALS, GOOGLE_APPLICATION_CREDENTIALS_JSON o GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.",
+      "Faltan credenciales de Google en servidor. Configura GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 (preferido), GOOGLE_APPLICATION_CREDENTIALS con la ruta al JSON, GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_CREDENTIALS_JSON, GOOGLE_CREDENTIALS, GOOGLE_APPLICATION_CREDENTIALS_JSON o GOOGLE_SERVICE_ACCOUNT_EMAIL + GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY.",
     );
   }
 
@@ -86,10 +109,10 @@ function getForsetiOAuthCredentials(): ForsetiOAuthCredentials | null {
     };
   }
 
-  if (!existsSync(FORSETI_OAUTH_CONFIG_PATH)) return null;
+  if (!existsSync(/* turbopackIgnore: true */ FORSETI_OAUTH_CONFIG_PATH)) return null;
 
   try {
-    const raw = readFileSync(FORSETI_OAUTH_CONFIG_PATH, "utf8");
+    const raw = readFileSync(/* turbopackIgnore: true */ FORSETI_OAUTH_CONFIG_PATH, "utf8");
     const parsed = JSON.parse(raw) as {
       auth?: { clientId?: string; clientSecret?: string; refreshToken?: string; tokenUri?: string };
     };
