@@ -504,7 +504,7 @@ export function FacturacionClient() {
   }
 
   return (
-    <section className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.82fr)] xl:items-start">
+    <section className="grid gap-6 xl:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.55fr)] xl:items-start">
       <div className="order-1 rounded-[28px] border border-white/10 bg-[#0f1728] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] xl:order-1 xl:sticky xl:top-6">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
