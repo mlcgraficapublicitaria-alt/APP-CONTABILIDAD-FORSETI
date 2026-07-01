@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "fs";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const FORSETI_OAUTH_CONFIG_PATH = "/data/.openclaw/workspace/forseti/integrations/google-drive/config.json";
+const GOOGLE_AUTH_TIMEOUT_MS = 12_000;
 
 type ServiceAccountCredentials = {
   email: string;
@@ -40,6 +41,10 @@ function getFirstEnvValue(names: string[]) {
   }
 
   return "";
+}
+
+function timeoutSignal(ms: number) {
+  return AbortSignal.timeout(ms);
 }
 
 function parseServiceAccountJson(): ServiceAccountCredentials | null {
@@ -158,6 +163,7 @@ async function getServiceAccountAccessToken(scopes: string[]) {
   const response = await fetch(TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    signal: timeoutSignal(GOOGLE_AUTH_TIMEOUT_MS),
     body: new URLSearchParams({
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
       assertion,
@@ -180,6 +186,7 @@ async function getForsetiOAuthAccessToken() {
   const response = await fetch(oauth.tokenUri, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    signal: timeoutSignal(GOOGLE_AUTH_TIMEOUT_MS),
     body: new URLSearchParams({
       client_id: oauth.clientId,
       client_secret: oauth.clientSecret,
@@ -197,7 +204,11 @@ async function getForsetiOAuthAccessToken() {
 export async function getGoogleAccessToken(scopes: string[]) {
   try {
     return await getServiceAccountAccessToken(scopes);
-  } catch {
+  } catch (error) {
+    if (parseServiceAccountJson() || parseServiceAccountFile()) {
+      throw error;
+    }
+
     return getForsetiOAuthAccessToken();
   }
 }

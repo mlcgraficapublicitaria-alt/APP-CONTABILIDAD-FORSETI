@@ -15,6 +15,8 @@ export type AuditActionState = {
   error?: string;
 };
 
+type ApplyHoursPayload = Pick<HoursCompareResult, "month" | "pdfDays" | "differences">;
+
 export async function compareHoursAction(_state: AuditActionState, formData: FormData): Promise<AuditActionState> {
   const month = String(formData.get("month") ?? getDefaultMonthLabel());
   const client = parseClient(formData.get("client"));
@@ -66,11 +68,11 @@ export async function applyHoursAction(_state: AuditActionState, formData: FormD
   if (!payload) return { error: "Primero compara horas para generar una lista de cambios." };
 
   try {
-    const result = JSON.parse(payload) as HoursCompareResult;
+    const result = JSON.parse(payload) as ApplyHoursPayload;
     if (!result.differences.length) return { message: "No hay diferencias que aplicar." };
 
     const applyResult = await applyHourDifferences(result.month, result.pdfDays, result.differences);
-    return { message: applyResult.message, result };
+    return { message: applyResult.message };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "No se pudo aplicar la actualizacion en Google Sheets.",

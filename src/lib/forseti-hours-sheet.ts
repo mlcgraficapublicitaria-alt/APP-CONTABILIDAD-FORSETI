@@ -1,6 +1,7 @@
 import type { AuditClient, DayHours, WorkSegment } from "./forseti-hours-types";
 
 const SHEET_ID = "1C-4g6B4iiQzCuiWiDGi-YyTm1Tm5Z88bIrTOhlKSsQo";
+const SHEETS_READ_TIMEOUT_MS = 12_000;
 
 function parseCsv(csv: string) {
   const rows: string[][] = [];
@@ -47,7 +48,7 @@ export async function getSheetRange(sheet: string, range: string) {
   url.searchParams.set("sheet", sheet);
   url.searchParams.set("range", range);
 
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(SHEETS_READ_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`No se pudo leer el Sheet: ${res.status}`);
   return parseCsv(await res.text());
 }

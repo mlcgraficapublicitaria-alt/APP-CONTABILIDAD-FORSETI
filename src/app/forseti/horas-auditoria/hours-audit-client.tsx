@@ -19,7 +19,13 @@ export function HoursAuditClient() {
   const [confirmed, setConfirmed] = useState(false);
   const defaultMonth = getDefaultMonthLabel();
   const differences = compareState.result?.differences ?? [];
-  const payload = compareState.result ? JSON.stringify(compareState.result) : "";
+  const payload = compareState.result
+    ? JSON.stringify({
+        month: compareState.result.month,
+        pdfDays: compareState.result.pdfDays,
+        differences: compareState.result.differences,
+      })
+    : "";
   const pdfTotal = compareState.result?.pdfDays.reduce((sum, day) => sum + day.totalMinutes, 0) ?? 0;
   const sheetTotal = compareState.result?.sheetClientTotalMinutes ?? 0;
   const totalDiff = pdfTotal - sheetTotal;

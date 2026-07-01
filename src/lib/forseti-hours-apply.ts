@@ -4,6 +4,7 @@ import type { DayHours, HoursApplyResult, HoursDifference, WorkSegment } from ".
 
 const SHEET_ID = "1C-4g6B4iiQzCuiWiDGi-YyTm1Tm5Z88bIrTOhlKSsQo";
 const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+const SHEETS_WRITE_TIMEOUT_MS = 15_000;
 const HOUR_SLOTS = ["O", "R", "U"] as const;
 
 function parseDate(value: string) {
@@ -50,6 +51,7 @@ async function updateSheetValues(month: string, updates: Array<{ row: number; va
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
+    signal: AbortSignal.timeout(SHEETS_WRITE_TIMEOUT_MS),
     body: JSON.stringify({
       valueInputOption: "USER_ENTERED",
       data: updates.map((update) => ({
