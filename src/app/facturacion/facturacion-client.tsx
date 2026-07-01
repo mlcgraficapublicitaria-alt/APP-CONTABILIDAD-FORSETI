@@ -505,7 +505,7 @@ export function FacturacionClient() {
 
   return (
     <section className="flex flex-col gap-6">
-      <div className="rounded-[28px] border border-white/10 bg-[#0f1728] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+      <div className="max-w-5xl rounded-[28px] border border-white/10 bg-[#0f1728] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#a3cf56]">
@@ -520,60 +520,88 @@ export function FacturacionClient() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <FormField label="Nombre del documento" htmlFor={`${baseId}-document`}>
-            <input id={`${baseId}-document`} className={fieldClassName} value={form.documentName} onChange={(event) => updateField("documentName", event.target.value)} />
-          </FormField>
-          <FormField label="Fecha de factura" htmlFor={`${baseId}-date`}>
-            <input id={`${baseId}-date`} type="date" className={fieldClassName} value={form.invoiceDate} onChange={(event) => updateField("invoiceDate", event.target.value)} />
-          </FormField>
-          <FormField label="Serie" htmlFor={`${baseId}-series`}>
-            <input id={`${baseId}-series`} className={fieldClassName} value={form.invoiceSeries} onChange={(event) => updateField("invoiceSeries", event.target.value)} />
-          </FormField>
-          <FormField label="Numero" htmlFor={`${baseId}-number`}>
-            <input id={`${baseId}-number`} className={fieldClassName} value={form.invoiceNumber} onChange={(event) => updateField("invoiceNumber", event.target.value)} />
-          </FormField>
-        </div>
-
-        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Emisor</p>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <FormField label="Nombre del emisor" htmlFor={`${baseId}-issuer-name`}>
-              <input id={`${baseId}-issuer-name`} className={fieldClassName} value={form.issuerName} onChange={(event) => updateField("issuerName", event.target.value)} />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-12">
+          <div className="xl:col-span-5">
+            <FormField label="Nombre del documento" htmlFor={`${baseId}-document`}>
+              <input id={`${baseId}-document`} className={fieldClassName} value={form.documentName} onChange={(event) => updateField("documentName", event.target.value)} />
             </FormField>
-            <FormField label="NIF / CIF" htmlFor={`${baseId}-issuer-tax`}>
-              <input id={`${baseId}-issuer-tax`} className={fieldClassName} value={form.issuerTaxId} onChange={(event) => updateField("issuerTaxId", event.target.value)} />
+          </div>
+          <div className="xl:col-span-3">
+            <FormField label="Fecha de factura" htmlFor={`${baseId}-date`}>
+              <input id={`${baseId}-date`} type="date" className={fieldClassName} value={form.invoiceDate} onChange={(event) => updateField("invoiceDate", event.target.value)} />
             </FormField>
-            <FormField label="Direccion" htmlFor={`${baseId}-issuer-address`}>
-              <input id={`${baseId}-issuer-address`} className={fieldClassName} value={form.issuerAddress} onChange={(event) => updateField("issuerAddress", event.target.value)} />
+          </div>
+          <div className="xl:col-span-2">
+            <FormField label="Serie" htmlFor={`${baseId}-series`}>
+              <input id={`${baseId}-series`} className={fieldClassName} value={form.invoiceSeries} onChange={(event) => updateField("invoiceSeries", event.target.value)} />
             </FormField>
-            <FormField label="Codigo postal" htmlFor={`${baseId}-issuer-postal`}>
-              <input id={`${baseId}-issuer-postal`} className={fieldClassName} value={form.issuerPostalCode} onChange={(event) => updateField("issuerPostalCode", event.target.value)} />
-            </FormField>
-            <FormField label="Ciudad" htmlFor={`${baseId}-issuer-city`}>
-              <input id={`${baseId}-issuer-city`} className={fieldClassName} value={form.issuerCity} onChange={(event) => updateField("issuerCity", event.target.value)} />
-            </FormField>
-            <FormField label="Telefono" htmlFor={`${baseId}-issuer-phone`}>
-              <input id={`${baseId}-issuer-phone`} className={fieldClassName} value={form.issuerPhone} onChange={(event) => updateField("issuerPhone", event.target.value)} />
-            </FormField>
-            <FormField label="Email" htmlFor={`${baseId}-issuer-email`}>
-              <input id={`${baseId}-issuer-email`} className={fieldClassName} value={form.issuerEmail} onChange={(event) => updateField("issuerEmail", event.target.value)} />
-            </FormField>
-            <FormField label="Cuenta bancaria" htmlFor={`${baseId}-issuer-bank`}>
-              <input id={`${baseId}-issuer-bank`} className={fieldClassName} value={form.issuerBankAccount} onChange={(event) => updateField("issuerBankAccount", event.target.value)} />
+          </div>
+          <div className="xl:col-span-2">
+            <FormField label="Numero" htmlFor={`${baseId}-number`}>
+              <input id={`${baseId}-number`} className={fieldClassName} value={form.invoiceNumber} onChange={(event) => updateField("invoiceNumber", event.target.value)} />
             </FormField>
           </div>
         </div>
 
         <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Emisor</p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-12">
+            <div className="xl:col-span-7">
+              <FormField label="Nombre del emisor" htmlFor={`${baseId}-issuer-name`}>
+                <input id={`${baseId}-issuer-name`} className={fieldClassName} value={form.issuerName} onChange={(event) => updateField("issuerName", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-5">
+              <FormField label="NIF / CIF" htmlFor={`${baseId}-issuer-tax`}>
+                <input id={`${baseId}-issuer-tax`} className={fieldClassName} value={form.issuerTaxId} onChange={(event) => updateField("issuerTaxId", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-7">
+              <FormField label="Direccion" htmlFor={`${baseId}-issuer-address`}>
+                <input id={`${baseId}-issuer-address`} className={fieldClassName} value={form.issuerAddress} onChange={(event) => updateField("issuerAddress", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-2">
+              <FormField label="Codigo postal" htmlFor={`${baseId}-issuer-postal`}>
+                <input id={`${baseId}-issuer-postal`} className={fieldClassName} value={form.issuerPostalCode} onChange={(event) => updateField("issuerPostalCode", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-3">
+              <FormField label="Ciudad" htmlFor={`${baseId}-issuer-city`}>
+                <input id={`${baseId}-issuer-city`} className={fieldClassName} value={form.issuerCity} onChange={(event) => updateField("issuerCity", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-4">
+              <FormField label="Telefono" htmlFor={`${baseId}-issuer-phone`}>
+                <input id={`${baseId}-issuer-phone`} className={fieldClassName} value={form.issuerPhone} onChange={(event) => updateField("issuerPhone", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-4">
+              <FormField label="Email" htmlFor={`${baseId}-issuer-email`}>
+                <input id={`${baseId}-issuer-email`} className={fieldClassName} value={form.issuerEmail} onChange={(event) => updateField("issuerEmail", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-4">
+              <FormField label="Cuenta bancaria" htmlFor={`${baseId}-issuer-bank`}>
+                <input id={`${baseId}-issuer-bank`} className={fieldClassName} value={form.issuerBankAccount} onChange={(event) => updateField("issuerBankAccount", event.target.value)} />
+              </FormField>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Cliente y linea</p>
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <FormField label="Nombre del cliente" htmlFor={`${baseId}-client`}>
-              <input id={`${baseId}-client`} className={fieldClassName} value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} />
-            </FormField>
-            <FormField label="Articulo" htmlFor={`${baseId}-article`}>
-              <input id={`${baseId}-article`} className={fieldClassName} value={form.articleCode} onChange={(event) => updateField("articleCode", event.target.value)} />
-            </FormField>
+          <div className="mt-4 grid gap-4 lg:grid-cols-12">
+            <div className="lg:col-span-8">
+              <FormField label="Nombre del cliente" htmlFor={`${baseId}-client`}>
+                <input id={`${baseId}-client`} className={fieldClassName} value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="lg:col-span-4">
+              <FormField label="Articulo" htmlFor={`${baseId}-article`}>
+                <input id={`${baseId}-article`} className={fieldClassName} value={form.articleCode} onChange={(event) => updateField("articleCode", event.target.value)} />
+              </FormField>
+            </div>
           </div>
           <div className="mt-4">
             <FormField label="Datos del cliente" htmlFor={`${baseId}-details`}>
@@ -587,17 +615,23 @@ export function FacturacionClient() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <FormField label="Base imponible" htmlFor={`${baseId}-base`}>
-            <input id={`${baseId}-base`} inputMode="decimal" className={fieldClassName} value={form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} />
-          </FormField>
-          <FormField label="IVA (%)" htmlFor={`${baseId}-vat`}>
-            <input id={`${baseId}-vat`} inputMode="decimal" className={fieldClassName} value={form.vatRate} onChange={(event) => updateField("vatRate", event.target.value)} />
-          </FormField>
-          <FormField label="IRPF (%)" htmlFor={`${baseId}-irpf`}>
-            <input id={`${baseId}-irpf`} inputMode="decimal" className={fieldClassName} value={form.irpfRate} onChange={(event) => updateField("irpfRate", event.target.value)} />
-          </FormField>
-          <div className="rounded-2xl border border-[#87ba2f]/30 bg-[#87ba2f]/12 px-4 py-3 text-right text-sm text-[#d7f0a7]">
+        <div className="mt-6 grid gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-4">
+            <FormField label="Base imponible" htmlFor={`${baseId}-base`}>
+              <input id={`${baseId}-base`} inputMode="decimal" className={fieldClassName} value={form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} />
+            </FormField>
+          </div>
+          <div className="lg:col-span-2">
+            <FormField label="IVA (%)" htmlFor={`${baseId}-vat`}>
+              <input id={`${baseId}-vat`} inputMode="decimal" className={fieldClassName} value={form.vatRate} onChange={(event) => updateField("vatRate", event.target.value)} />
+            </FormField>
+          </div>
+          <div className="lg:col-span-2">
+            <FormField label="IRPF (%)" htmlFor={`${baseId}-irpf`}>
+              <input id={`${baseId}-irpf`} inputMode="decimal" className={fieldClassName} value={form.irpfRate} onChange={(event) => updateField("irpfRate", event.target.value)} />
+            </FormField>
+          </div>
+          <div className="lg:col-span-4 rounded-2xl border border-[#87ba2f]/30 bg-[#87ba2f]/12 px-4 py-3 text-right text-sm text-[#d7f0a7]">
             <p className="font-semibold">Total previsto</p>
             <p className="mt-1 text-xl font-semibold text-white">{formatMoney(summary.totalAmount)}</p>
           </div>
