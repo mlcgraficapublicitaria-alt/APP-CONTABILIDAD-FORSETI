@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -44,6 +44,13 @@ enum ValidationStatus {
   RESOLVED
 }
 
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  CANCELLED
+}
+
 model User {
   id           String       @id @default(cuid())
   email        String       @unique
@@ -55,6 +62,7 @@ model User {
   taxCases     TaxCase[]
   documents    Document[]   @relation("DocumentUploader")
   auditEvents  AuditEvent[]
+  invoices     Invoice[]    @relation("InvoiceCreatedBy")
 }
 
 model TaxCase {
@@ -174,4 +182,108 @@ model AuditEvent {
   createdAt  DateTime @default(now())
   taxCase    TaxCase? @relation(fields: [taxCaseId], references: [id], onDelete: Cascade)
   user       User?    @relation(fields: [userId], references: [id])
+}
+
+model InvoiceIssuerProfile {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  legalName      String
+  taxId          String?
+  addressLine1   String?
+  addressLine2   String?
+  postalCode     String?
+  city           String?
+  province       String?
+  country        String?
+  email          String?
+  phone          String?
+  website        String?
+  bankAccount    String?
+  invoicePrefix  String?
+  isDefault      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  invoices       Invoice[]
+}
+
+model InvoiceClient {
+  id             String    @id @default(cuid())
+  code           String?   @unique
+  legalName      String
+  taxId          String?
+  addressLine1   String?
+  addressLine2   String?
+  postalCode     String?
+  city           String?
+  province       String?
+  country        String?
+  email          String?
+  phone          String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  invoices       Invoice[]
+}
+
+model InvoiceTemplate {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  name           String
+  description    String?
+  layoutKey      String
+  isDefault      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  invoices       Invoice[]
+}
+
+model Invoice {
+  id                  String              @id @default(cuid())
+  issuerProfileId     String
+  clientId            String
+  templateId          String?
+  createdById         String?
+  status              InvoiceStatus       @default(DRAFT)
+  documentName        String
+  series              String?
+  number              Int
+  issueDate           DateTime
+  articleCode         String?
+  serviceDescription  String
+  subtotalAmount      Decimal             @db.Decimal(10, 2)
+  vatRate             Decimal             @db.Decimal(5, 2)
+  vatAmount           Decimal             @db.Decimal(10, 2)
+  irpfRate            Decimal             @db.Decimal(5, 2)
+  irpfAmount          Decimal             @db.Decimal(10, 2)
+  totalAmount         Decimal             @db.Decimal(10, 2)
+  notes               String?             @db.Text
+  renderedHtml        String?             @db.LongText
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  issuerProfile       InvoiceIssuerProfile @relation(fields: [issuerProfileId], references: [id], onDelete: Restrict)
+  client              InvoiceClient       @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  template            InvoiceTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdBy           User?               @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  lines               InvoiceLine[]
+
+  @@unique([series, number])
+  @@index([clientId, issueDate])
+  @@index([issuerProfileId, issueDate])
+}
+
+model InvoiceLine {
+  id               String   @id @default(cuid())
+  invoiceId        String
+  sortOrder        Int      @default(0)
+  articleCode      String?
+  description      String   @db.Text
+  quantity         Decimal  @default(1) @db.Decimal(10, 2)
+  unitPrice        Decimal  @db.Decimal(10, 2)
+  discountAmount   Decimal  @default(0) @db.Decimal(10, 2)
+  lineTotalAmount  Decimal  @db.Decimal(10, 2)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  invoice          Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId, sortOrder])
 }

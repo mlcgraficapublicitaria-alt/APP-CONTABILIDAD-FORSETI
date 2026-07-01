@@ -84,6 +84,54 @@ async function main() {
     },
   });
 
+  await prisma.invoiceIssuerProfile.upsert({
+    where: { code: "MLC-DEFAULT" },
+    update: {
+      legalName: "MARIANO LUJAN CANOVAS",
+      taxId: "47078608-T",
+      addressLine1: "C/ Dionisio Guardiola, 55",
+      postalCode: "02003",
+      city: "ALBACETE",
+      email: "creativo@mlcdesign.es",
+      phone: "639 350 843",
+      website: "www.mlcdesign.es",
+      bankAccount: "GLOBAL CAJA: ES15 3190 0091 1504 0253 9910",
+      invoicePrefix: "A",
+      isDefault: true,
+    },
+    create: {
+      code: "MLC-DEFAULT",
+      legalName: "MARIANO LUJAN CANOVAS",
+      taxId: "47078608-T",
+      addressLine1: "C/ Dionisio Guardiola, 55",
+      postalCode: "02003",
+      city: "ALBACETE",
+      email: "creativo@mlcdesign.es",
+      phone: "639 350 843",
+      website: "www.mlcdesign.es",
+      bankAccount: "GLOBAL CAJA: ES15 3190 0091 1504 0253 9910",
+      invoicePrefix: "A",
+      isDefault: true,
+    },
+  });
+
+  await prisma.invoiceTemplate.upsert({
+    where: { code: "MLC-CLASSIC" },
+    update: {
+      name: "MLC Clasica",
+      description: "Plantilla basada en la factura de ejemplo de Grupo Dim.",
+      layoutKey: "mlc-classic",
+      isDefault: true,
+    },
+    create: {
+      code: "MLC-CLASSIC",
+      name: "MLC Clasica",
+      description: "Plantilla basada en la factura de ejemplo de Grupo Dim.",
+      layoutKey: "mlc-classic",
+      isDefault: true,
+    },
+  });
+
   console.log(`Seed listo. Login local: ${adminEmail} / ${adminPassword}`);
 }
 

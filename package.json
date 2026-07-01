@@ -15,7 +15,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
-    "db:init": "node prisma/init-sqlite.js && npm run db:seed",
+    "db:init": "prisma migrate deploy && npm run db:seed",
     "db:prod": "prisma migrate deploy && prisma db seed",
     "db:seed": "prisma db seed"
   },
