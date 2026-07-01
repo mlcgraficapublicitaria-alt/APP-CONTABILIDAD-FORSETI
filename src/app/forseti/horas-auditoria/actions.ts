@@ -17,6 +17,13 @@ export type AuditActionState = {
 
 type ApplyHoursPayload = Pick<HoursCompareResult, "month" | "pdfDays" | "differences">;
 
+function isApplyHoursPayload(value: unknown): value is ApplyHoursPayload {
+  if (!value || typeof value !== "object") return false;
+
+  const payload = value as Partial<ApplyHoursPayload>;
+  return typeof payload.month === "string" && Array.isArray(payload.pdfDays) && Array.isArray(payload.differences);
+}
+
 export async function compareHoursAction(_state: AuditActionState, formData: FormData): Promise<AuditActionState> {
   const month = String(formData.get("month") ?? getDefaultMonthLabel());
   const client = parseClient(formData.get("client"));
@@ -68,7 +75,12 @@ export async function applyHoursAction(_state: AuditActionState, formData: FormD
   if (!payload) return { error: "Primero compara horas para generar una lista de cambios." };
 
   try {
-    const result = JSON.parse(payload) as ApplyHoursPayload;
+    const parsed = JSON.parse(payload) as unknown;
+    if (!isApplyHoursPayload(parsed)) {
+      return { error: "La comparacion ha caducado o no tiene un formato valido. Vuelve a comparar horas." };
+    }
+
+    const result = parsed;
     if (!result.differences.length) return { message: "No hay diferencias que aplicar." };
 
     const applyResult = await applyHourDifferences(result.month, result.pdfDays, result.differences);

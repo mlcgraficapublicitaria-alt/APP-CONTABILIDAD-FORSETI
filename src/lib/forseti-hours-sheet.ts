@@ -141,8 +141,15 @@ export async function readSheetMonthHours(month: string): Promise<DayHours[]> {
 }
 
 function readWorkSegmentsFromRow(row: string[]) {
-  const primarySegment = makeSegment(row[14] ?? "", row[15] ?? "");
-  return primarySegment ? [primarySegment] : [];
+  const segmentColumnPairs = [
+    [14, 15],
+    [17, 18],
+    [20, 21],
+  ] as const;
+
+  return segmentColumnPairs
+    .map(([startIndex, endIndex]) => makeSegment(row[startIndex] ?? "", row[endIndex] ?? ""))
+    .filter((segment): segment is WorkSegment => segment !== null);
 }
 
 export async function readSheetClientTotalMinutes(month: string, client: AuditClient): Promise<number> {

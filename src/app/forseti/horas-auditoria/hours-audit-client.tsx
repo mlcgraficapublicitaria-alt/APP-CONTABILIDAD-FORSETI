@@ -192,6 +192,11 @@ export function HoursAuditClient() {
               {applyState.error}
             </p>
           ) : null}
+          {applyState.message ? (
+            <p className="rounded-xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
+              {applyState.message}
+            </p>
+          ) : null}
         </form>
       </section>
     </div>
