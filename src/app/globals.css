@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
   --background: #ffffff;
@@ -95,6 +95,11 @@ body {
   opacity: 0;
   mix-blend-mode: screen;
   animation: forseti-hero-eye-ray 5.2s ease-in-out infinite;
+}
+
+.forseti-login-hero img {
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .forseti-dashboard-hero .forseti-hero-bg-latency {

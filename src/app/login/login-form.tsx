@@ -1,7 +1,6 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 type LoginFormProps = {
@@ -10,8 +9,6 @@ type LoginFormProps = {
 
 export function LoginForm({ showBrand = true }: LoginFormProps) {
   const router = useRouter();
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showRecovery, setShowRecovery] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState("");
@@ -29,6 +26,10 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
     event.preventDefault();
     setError("");
     setIsSubmitting(true);
+
+    const formData = new FormData(event.currentTarget);
+    const username = String(formData.get("username") ?? "");
+    const password = String(formData.get("password") ?? "");
 
     const response = await fetch("/api/login", {
       method: "POST",
@@ -81,7 +82,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
     >
       {showBrand ? (
         <div className="text-center">
-          <Image src="/logos-forseti.png" alt="Forseti" width={220} height={78} priority className="mx-auto h-auto w-44" />
+          <img src="/logos-forseti.png" alt="Forseti" width={220} height={78} className="mx-auto h-auto w-44" decoding="async" />
           <h1 className="mt-3 text-[22px] font-semibold text-white">Administracion y contabilidad</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-400">Inicia sesion para consultar la contabilidad y el resumen mensual.</p>
         </div>
@@ -96,8 +97,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
         Usuario
         <input
           name="username"
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
+          defaultValue="admin"
           className="rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none transition placeholder:text-zinc-600 focus:border-cyan-300"
           autoComplete="username"
           required
@@ -110,8 +110,6 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
           <input
             name="password"
             id="forseti-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
             className="w-full rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 pr-12 text-white outline-none transition placeholder:text-zinc-600 focus:border-cyan-300"
             type={showPassword ? "text" : "password"}
             autoComplete="current-password"
