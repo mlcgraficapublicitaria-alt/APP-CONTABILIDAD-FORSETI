@@ -1,7 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
+
+type SavedInvoiceClient = {
+  id: string;
+  legalName: string;
+  details: string;
+};
 
 type InvoiceFormState = {
   documentName: string;
@@ -434,24 +440,33 @@ function FormField({
   children: React.ReactNode;
 }) {
   return (
-    <label htmlFor={htmlFor} className="flex flex-col gap-2">
-      <span className="text-sm font-semibold text-slate-100">{label}</span>
+    <label htmlFor={htmlFor} className="flex flex-col items-center gap-2 text-center">
+      <span className="text-center text-sm font-semibold text-slate-100">{label}</span>
       {children}
     </label>
   );
 }
 
 function inputClassName() {
-  return "w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-400 focus:border-[#87ba2f] focus:ring-2 focus:ring-[#87ba2f]/30";
+  return "w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-center text-sm text-white outline-none transition placeholder:text-center placeholder:text-slate-400 focus:border-[#87ba2f] focus:ring-2 focus:ring-[#87ba2f]/30";
 }
 
 function circleLinesForPreview(lines: string[]) {
   return lines.map((line) => <p key={line}>{line}</p>);
 }
 
+function normalizeSavedClients(clients: SavedInvoiceClient[], client: SavedInvoiceClient) {
+  const nextClients = clients.filter((item) => item.id !== client.id);
+  return [...nextClients, client].sort((a, b) => a.legalName.localeCompare(b.legalName, "es"));
+}
+
 export function FacturacionClient() {
   const [form, setForm] = useState(INITIAL_STATE);
   const [generated, setGenerated] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [savedClients, setSavedClients] = useState<SavedInvoiceClient[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [clientStatus, setClientStatus] = useState("");
   const baseId = useId();
   const fieldClassName = inputClassName();
 
@@ -483,8 +498,73 @@ export function FacturacionClient() {
     !form.billedService.trim() ||
     summary.baseAmount <= 0;
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadClients() {
+      try {
+        const response = await fetch("/api/facturacion/clientes", { cache: "no-store" });
+        if (!response.ok) throw new Error("No se pudieron cargar las fichas.");
+        const data = (await response.json()) as { clients?: SavedInvoiceClient[] };
+        if (!cancelled) setSavedClients(data.clients ?? []);
+      } catch {
+        if (!cancelled) setClientStatus("No se pudieron cargar las fichas guardadas.");
+      }
+    }
+
+    loadClients();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function updateField<Key extends keyof InvoiceFormState>(key: Key, value: InvoiceFormState[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleSelectSavedClient(clientId: string) {
+    setSelectedClientId(clientId);
+    setClientStatus("");
+
+    const client = savedClients.find((item) => item.id === clientId);
+    if (!client) return;
+
+    setForm((current) => ({
+      ...current,
+      clientName: client.legalName,
+      clientDetails: client.details,
+    }));
+  }
+
+  async function handleSaveClientProfile() {
+    const legalName = form.clientName.trim();
+    if (!legalName) {
+      setClientStatus("Escribe el nombre del cliente antes de guardar la ficha.");
+      return;
+    }
+
+    setClientStatus("Guardando ficha...");
+
+    try {
+      const response = await fetch("/api/facturacion/clientes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: selectedClientId || undefined,
+          legalName,
+          details: form.clientDetails,
+        }),
+      });
+
+      const data = (await response.json().catch(() => ({}))) as { client?: SavedInvoiceClient; error?: string };
+      if (!response.ok || !data.client) throw new Error(data.error || "No se pudo guardar la ficha.");
+
+      setSavedClients((current) => normalizeSavedClients(current, data.client!));
+      setSelectedClientId(data.client.id);
+      setClientStatus("Ficha guardada.");
+    } catch (error) {
+      setClientStatus(error instanceof Error ? error.message : "No se pudo guardar la ficha.");
+    }
   }
 
   function handleGenerateInvoice() {
@@ -503,164 +583,8 @@ export function FacturacionClient() {
     printWindow.print();
   }
 
-  return (
-    <section className="grid gap-6 xl:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.55fr)] xl:items-start">
-      <div className="order-1 rounded-[28px] border border-white/10 bg-[#0f1728] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] xl:order-1 xl:sticky xl:top-6">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#a3cf56]">
-              Plantilla tipo MLC
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold text-white">
-              Factura basada en el ejemplo subido
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">
-              Esta versión replica la estructura del PDF de ejemplo: cabecera limpia, número grande, círculos de emisor y cliente, tabla simple, resumen fiscal y pie negro.
-            </p>
-          </div>
-        </div>
-
-        <div className="max-w-md">
-          <FormField label="Nombre del documento" htmlFor={`${baseId}-document`}>
-            <input id={`${baseId}-document`} className={fieldClassName} value={form.documentName} onChange={(event) => updateField("documentName", event.target.value)} />
-          </FormField>
-        </div>
-
-        <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-12">
-          <div className="xl:col-span-3">
-            <FormField label="Fecha de factura" htmlFor={`${baseId}-date`}>
-              <input id={`${baseId}-date`} type="date" className={fieldClassName} value={form.invoiceDate} onChange={(event) => updateField("invoiceDate", event.target.value)} />
-            </FormField>
-          </div>
-          <div className="xl:col-span-2">
-            <FormField label="Serie" htmlFor={`${baseId}-series`}>
-              <input id={`${baseId}-series`} className={fieldClassName} value={form.invoiceSeries} onChange={(event) => updateField("invoiceSeries", event.target.value)} />
-            </FormField>
-          </div>
-          <div className="xl:col-span-2">
-            <FormField label="Numero" htmlFor={`${baseId}-number`}>
-              <input id={`${baseId}-number`} className={fieldClassName} value={form.invoiceNumber} onChange={(event) => updateField("invoiceNumber", event.target.value)} />
-            </FormField>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Emisor</p>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-12">
-            <div className="xl:col-span-8">
-              <FormField label="Nombre del emisor" htmlFor={`${baseId}-issuer-name`}>
-                <input id={`${baseId}-issuer-name`} className={fieldClassName} value={form.issuerName} onChange={(event) => updateField("issuerName", event.target.value)} />
-              </FormField>
-            </div>
-            <div className="xl:col-span-4">
-              <FormField label="NIF / CIF" htmlFor={`${baseId}-issuer-tax`}>
-                <input id={`${baseId}-issuer-tax`} className={fieldClassName} value={form.issuerTaxId} onChange={(event) => updateField("issuerTaxId", event.target.value)} />
-              </FormField>
-            </div>
-            <div className="xl:col-span-12">
-              <FormField label="Direccion" htmlFor={`${baseId}-issuer-address`}>
-                <input id={`${baseId}-issuer-address`} className={fieldClassName} value={form.issuerAddress} onChange={(event) => updateField("issuerAddress", event.target.value)} />
-              </FormField>
-            </div>
-            <div className="xl:col-span-4">
-              <FormField label="Codigo postal" htmlFor={`${baseId}-issuer-postal`}>
-                <input id={`${baseId}-issuer-postal`} className={fieldClassName} value={form.issuerPostalCode} onChange={(event) => updateField("issuerPostalCode", event.target.value)} />
-              </FormField>
-            </div>
-            <div className="xl:col-span-8">
-              <FormField label="Ciudad" htmlFor={`${baseId}-issuer-city`}>
-                <input id={`${baseId}-issuer-city`} className={fieldClassName} value={form.issuerCity} onChange={(event) => updateField("issuerCity", event.target.value)} />
-              </FormField>
-            </div>
-            <div className="xl:col-span-5">
-              <FormField label="Telefono" htmlFor={`${baseId}-issuer-phone`}>
-                <input id={`${baseId}-issuer-phone`} className={fieldClassName} value={form.issuerPhone} onChange={(event) => updateField("issuerPhone", event.target.value)} />
-              </FormField>
-            </div>
-            <div className="xl:col-span-7">
-              <FormField label="Email" htmlFor={`${baseId}-issuer-email`}>
-                <input id={`${baseId}-issuer-email`} className={fieldClassName} value={form.issuerEmail} onChange={(event) => updateField("issuerEmail", event.target.value)} />
-              </FormField>
-            </div>
-            <div className="xl:col-span-12">
-              <FormField label="Cuenta bancaria" htmlFor={`${baseId}-issuer-bank`}>
-                <input id={`${baseId}-issuer-bank`} className={fieldClassName} value={form.issuerBankAccount} onChange={(event) => updateField("issuerBankAccount", event.target.value)} />
-              </FormField>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Cliente y linea</p>
-          <div className="mt-4 grid gap-4 lg:grid-cols-12">
-            <div className="lg:col-span-8">
-              <FormField label="Nombre del cliente" htmlFor={`${baseId}-client`}>
-                <input id={`${baseId}-client`} className={fieldClassName} value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} />
-              </FormField>
-            </div>
-            <div className="lg:col-span-4">
-              <FormField label="Articulo" htmlFor={`${baseId}-article`}>
-                <input id={`${baseId}-article`} className={fieldClassName} value={form.articleCode} onChange={(event) => updateField("articleCode", event.target.value)} />
-              </FormField>
-            </div>
-          </div>
-          <div className="mt-4">
-            <FormField label="Datos del cliente" htmlFor={`${baseId}-details`}>
-              <textarea id={`${baseId}-details`} className={`${fieldClassName} min-h-28 resize-y`} value={form.clientDetails} onChange={(event) => updateField("clientDetails", event.target.value)} placeholder={"PLAZA ...\n02001 - ALBACETE\nCIF: ...\nTlf: ..."} />
-            </FormField>
-          </div>
-          <div className="mt-4">
-            <FormField label="Descripcion del servicio" htmlFor={`${baseId}-service`}>
-              <textarea id={`${baseId}-service`} className={`${fieldClassName} min-h-24 resize-y`} value={form.billedService} onChange={(event) => updateField("billedService", event.target.value)} placeholder="SERVICIO MARKETING ONLINE" />
-            </FormField>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-6">
-            <FormField label="Base imponible" htmlFor={`${baseId}-base`}>
-              <input id={`${baseId}-base`} inputMode="decimal" className={fieldClassName} value={form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} />
-            </FormField>
-          </div>
-          <div className="lg:col-span-3">
-            <FormField label="IVA (%)" htmlFor={`${baseId}-vat`}>
-              <input id={`${baseId}-vat`} inputMode="decimal" className={fieldClassName} value={form.vatRate} onChange={(event) => updateField("vatRate", event.target.value)} />
-            </FormField>
-          </div>
-          <div className="lg:col-span-3">
-            <FormField label="IRPF (%)" htmlFor={`${baseId}-irpf`}>
-              <input id={`${baseId}-irpf`} inputMode="decimal" className={fieldClassName} value={form.irpfRate} onChange={(event) => updateField("irpfRate", event.target.value)} />
-            </FormField>
-          </div>
-          <div className="lg:col-span-12 rounded-2xl border border-[#87ba2f]/30 bg-[#87ba2f]/12 px-4 py-3 text-right text-sm text-[#d7f0a7]">
-            <p className="font-semibold">Total previsto</p>
-            <p className="mt-1 text-xl font-semibold text-white">{formatMoney(summary.totalAmount)}</p>
-          </div>
-        </div>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button type="button" onClick={handleGenerateInvoice} className="rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
-            Generar factura
-          </button>
-          <button type="button" onClick={handlePrintInvoice} disabled={printDisabled} className="rounded-2xl border border-white/12 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
-            Imprimir o guardar PDF
-          </button>
-        </div>
-      </div>
-
-      <div className="order-2 rounded-[28px] border border-white/10 bg-[#f7f7f5] p-4 text-slate-900 shadow-[0_20px_60px_rgba(0,0,0,0.3)] sm:p-6 xl:order-2">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5d7f1f]">Vista previa</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-950">{previewDocumentName}</h2>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-slate-500">Factura Nº {previewInvoiceCode}</p>
-            <p className="mt-1 text-xl font-semibold text-slate-950">{formatMoney(summary.totalAmount)}</p>
-          </div>
-        </div>
-
-        <article className="overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.12)]">
+  const renderInvoicePreview = (className = "") => (
+    <article className={`overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.12)] ${className}`}> 
           <div className="px-8 pt-8 pb-0">
             <div className="flex items-start justify-between gap-8">
               <div className="flex items-center gap-3">
@@ -670,7 +594,10 @@ export function FacturacionClient() {
               </div>
               <div className="pt-2 text-right">
                 <p className="text-[18px] font-medium text-sky-400">FECHA: {formatDate(form.invoiceDate) || "Sin fecha"}</p>
-                <p className="mt-6 text-[46px] font-light tracking-[0.02em] text-slate-200">FACTURA Nº {previewInvoiceCode}</p>
+                <div className="mt-6 text-right font-light tracking-[0.02em] text-slate-200">
+                  <p className="text-[28px] leading-tight">FACTURA Nº</p>
+                  <p className="mt-1 text-[26px] leading-tight">{previewInvoiceCode}</p>
+                </div>
               </div>
             </div>
 
@@ -753,7 +680,218 @@ export function FacturacionClient() {
             </div>
           </div>
         </article>
+  );
+
+  return (
+    <section className="grid gap-6 xl:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.55fr)] xl:items-start">
+      <div className="order-1 rounded-[28px] border border-white/10 bg-[#0f1728] p-5 text-center shadow-[0_20px_60px_rgba(0,0,0,0.35)] xl:order-1 xl:sticky xl:top-6">
+        <div className="mb-6 flex items-start justify-center gap-4 text-center">
+          <div className="flex w-full flex-col items-center text-center">
+            <p className="w-full text-center text-sm font-semibold uppercase tracking-[0.22em] text-[#a3cf56]">
+              Plantilla tipo MLC
+            </p>
+            <h2 className="mx-auto mt-2 w-full max-w-sm text-center text-2xl font-semibold text-white">
+              Factura basada en el ejemplo subido
+            </h2>
+            <p className="mx-auto mt-3 w-full max-w-sm text-center text-sm leading-6 text-slate-300">
+              Esta versión replica la estructura del PDF de ejemplo: cabecera limpia, número grande, círculos de emisor y cliente, tabla simple, resumen fiscal y pie negro.
+            </p>
+          </div>
+        </div>
+
+        <div className="mx-auto w-full max-w-lg">
+          <FormField label="Nombre del documento" htmlFor={`${baseId}-document`}>
+            <input id={`${baseId}-document`} className={fieldClassName} value={form.documentName} onChange={(event) => updateField("documentName", event.target.value)} />
+          </FormField>
+        </div>
+
+        <div className="mx-auto mt-4 grid w-full max-w-lg justify-items-center gap-4 sm:grid-cols-3">
+          <div>
+            <FormField label="Fecha de factura" htmlFor={`${baseId}-date`}>
+              <input id={`${baseId}-date`} type="date" className={fieldClassName} value={form.invoiceDate} onChange={(event) => updateField("invoiceDate", event.target.value)} />
+            </FormField>
+          </div>
+          <div>
+            <FormField label="Serie" htmlFor={`${baseId}-series`}>
+              <input id={`${baseId}-series`} className={fieldClassName} value={form.invoiceSeries} onChange={(event) => updateField("invoiceSeries", event.target.value)} />
+            </FormField>
+          </div>
+          <div>
+            <FormField label="Numero" htmlFor={`${baseId}-number`}>
+              <input id={`${baseId}-number`} className={fieldClassName} value={form.invoiceNumber} onChange={(event) => updateField("invoiceNumber", event.target.value)} />
+            </FormField>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Emisor</p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-12">
+            <div className="xl:col-span-8">
+              <FormField label="Nombre del emisor" htmlFor={`${baseId}-issuer-name`}>
+                <input id={`${baseId}-issuer-name`} className={fieldClassName} value={form.issuerName} onChange={(event) => updateField("issuerName", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-4">
+              <FormField label="NIF / CIF" htmlFor={`${baseId}-issuer-tax`}>
+                <input id={`${baseId}-issuer-tax`} className={fieldClassName} value={form.issuerTaxId} onChange={(event) => updateField("issuerTaxId", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-12">
+              <FormField label="Direccion" htmlFor={`${baseId}-issuer-address`}>
+                <input id={`${baseId}-issuer-address`} className={fieldClassName} value={form.issuerAddress} onChange={(event) => updateField("issuerAddress", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-4">
+              <FormField label="Codigo postal" htmlFor={`${baseId}-issuer-postal`}>
+                <input id={`${baseId}-issuer-postal`} className={fieldClassName} value={form.issuerPostalCode} onChange={(event) => updateField("issuerPostalCode", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-8">
+              <FormField label="Ciudad" htmlFor={`${baseId}-issuer-city`}>
+                <input id={`${baseId}-issuer-city`} className={fieldClassName} value={form.issuerCity} onChange={(event) => updateField("issuerCity", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-5">
+              <FormField label="Telefono" htmlFor={`${baseId}-issuer-phone`}>
+                <input id={`${baseId}-issuer-phone`} className={fieldClassName} value={form.issuerPhone} onChange={(event) => updateField("issuerPhone", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-7">
+              <FormField label="Email" htmlFor={`${baseId}-issuer-email`}>
+                <input id={`${baseId}-issuer-email`} className={fieldClassName} value={form.issuerEmail} onChange={(event) => updateField("issuerEmail", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="xl:col-span-12">
+              <FormField label="Cuenta bancaria" htmlFor={`${baseId}-issuer-bank`}>
+                <input id={`${baseId}-issuer-bank`} className={fieldClassName} value={form.issuerBankAccount} onChange={(event) => updateField("issuerBankAccount", event.target.value)} />
+              </FormField>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Cliente y linea</p>
+
+          <div className="mx-auto mt-4 grid w-full max-w-xl gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <FormField label="Seleccionar ficha guardada" htmlFor={`${baseId}-saved-client`}>
+              <select
+                id={`${baseId}-saved-client`}
+                className={fieldClassName}
+                value={selectedClientId}
+                onChange={(event) => handleSelectSavedClient(event.target.value)}
+              >
+                <option value="">Nueva ficha de cliente</option>
+                {savedClients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.legalName}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            <button type="button" onClick={handleSaveClientProfile} className="min-h-11 rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
+              Guardar ficha
+            </button>
+          </div>
+          {clientStatus ? <p className="mt-3 text-center text-xs font-semibold text-[#d7f0a7]">{clientStatus}</p> : null}
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-12">
+            <div className="lg:col-span-8">
+              <FormField label="Nombre del cliente" htmlFor={`${baseId}-client`}>
+                <input id={`${baseId}-client`} className={fieldClassName} value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="lg:col-span-4">
+              <FormField label="Articulo" htmlFor={`${baseId}-article`}>
+                <input id={`${baseId}-article`} className={fieldClassName} value={form.articleCode} onChange={(event) => updateField("articleCode", event.target.value)} />
+              </FormField>
+            </div>
+          </div>
+          <div className="mt-4">
+            <FormField label="Datos del cliente" htmlFor={`${baseId}-details`}>
+              <textarea id={`${baseId}-details`} className={`${fieldClassName} min-h-28 resize-y`} value={form.clientDetails} onChange={(event) => updateField("clientDetails", event.target.value)} placeholder={"PLAZA ...\n02001 - ALBACETE\nCIF: ...\nTlf: ..."} />
+            </FormField>
+          </div>
+          <div className="mt-4">
+            <FormField label="Descripcion del servicio" htmlFor={`${baseId}-service`}>
+              <textarea id={`${baseId}-service`} className={`${fieldClassName} min-h-24 resize-y`} value={form.billedService} onChange={(event) => updateField("billedService", event.target.value)} placeholder="SERVICIO MARKETING ONLINE" />
+            </FormField>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-6">
+            <FormField label="Base imponible" htmlFor={`${baseId}-base`}>
+              <input id={`${baseId}-base`} inputMode="decimal" className={fieldClassName} value={form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} />
+            </FormField>
+          </div>
+          <div className="lg:col-span-3">
+            <FormField label="IVA (%)" htmlFor={`${baseId}-vat`}>
+              <input id={`${baseId}-vat`} inputMode="decimal" className={fieldClassName} value={form.vatRate} onChange={(event) => updateField("vatRate", event.target.value)} />
+            </FormField>
+          </div>
+          <div className="lg:col-span-3">
+            <FormField label="IRPF (%)" htmlFor={`${baseId}-irpf`}>
+              <input id={`${baseId}-irpf`} inputMode="decimal" className={fieldClassName} value={form.irpfRate} onChange={(event) => updateField("irpfRate", event.target.value)} />
+            </FormField>
+          </div>
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-[#87ba2f]/30 bg-[#87ba2f]/12 px-4 py-3 text-center text-sm text-[#d7f0a7] lg:col-span-12">
+            <p className="font-semibold">Total previsto</p>
+            <p className="mt-1 text-xl font-semibold text-white">{formatMoney(summary.totalAmount)}</p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <button type="button" onClick={handleGenerateInvoice} className="rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
+            Generar factura
+          </button>
+          <button type="button" onClick={handlePrintInvoice} disabled={printDisabled} className="rounded-2xl border border-white/12 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
+            Imprimir o guardar PDF
+          </button>
+        </div>
       </div>
+
+      <div className="order-2 flex flex-col items-center rounded-[28px] border border-white/10 bg-[#f7f7f5] p-4 text-center text-slate-900 shadow-[0_20px_60px_rgba(0,0,0,0.3)] sm:p-6 xl:order-2">
+        <div className="mb-4 flex w-full max-w-[760px] flex-col items-center gap-3 text-center">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5d7f1f]">Vista previa</p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950">{previewDocumentName}</h2>
+          </div>
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div>
+              <p className="text-sm text-slate-500">Factura Nº {previewInvoiceCode}</p>
+              <p className="mt-1 text-xl font-semibold text-slate-950">{formatMoney(summary.totalAmount)}</p>
+            </div>
+            <button type="button" onClick={() => setIsPreviewOpen(true)} className="w-full max-w-xs rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto">
+              Ampliar vista previa
+            </button>
+          </div>
+        </div>
+
+        <div className="relative mx-auto h-[420px] w-full max-w-[320px] overflow-hidden rounded-[30px] border border-slate-200 bg-white sm:h-auto sm:max-w-[760px] sm:overflow-visible sm:border-0 sm:bg-transparent">
+          <div className="absolute left-1/2 top-1/2 w-[760px] origin-center -translate-x-1/2 -translate-y-1/2 scale-[0.24] min-[390px]:scale-[0.26] sm:static sm:w-auto sm:translate-x-0 sm:translate-y-0 sm:scale-100">
+            {renderInvoicePreview("w-[760px] sm:w-full")}
+          </div>
+        </div>
+      </div>
+
+      {isPreviewOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur sm:p-6" role="dialog" aria-modal="true" aria-label="Vista previa ampliada de factura">
+          <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] bg-[#f7f7f5] shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 text-slate-950 sm:px-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#5d7f1f]">Vista previa ampliada</p>
+                <p className="mt-1 text-sm font-semibold">{previewDocumentName}</p>
+              </div>
+              <button type="button" onClick={() => setIsPreviewOpen(false)} className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800">
+                Cerrar
+              </button>
+            </div>
+            <div className="overflow-auto p-3 sm:p-6">
+              <div className="mx-auto w-[760px] max-w-full">{renderInvoicePreview("w-[760px]")}</div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

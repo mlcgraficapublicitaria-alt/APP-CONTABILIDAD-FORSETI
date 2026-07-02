@@ -566,8 +566,26 @@ function AnnualValueChart({
   const maxValue = Math.max(...values, 1);
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
-      <div className="flex h-72 items-end gap-2 sm:gap-3">
+    <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 sm:p-5">
+      <div className="grid gap-3 sm:hidden">
+        {entries.map((entry) => {
+          const value = entry[valueKey];
+          const amount = parseEuroValue(value);
+          const width = Math.min(Math.max((amount / maxValue) * 100, 0), 100);
+
+          return (
+            <div key={`annual-${valueKey}-mobile-${entry.month}`} className="grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 text-xs">
+              <p className="truncate font-semibold text-zinc-400">{entry.month}</p>
+              <div className="h-3 overflow-hidden rounded-full bg-white/10">
+                <div className={`h-full rounded-full ${colorClass} ${shadowColor}`} style={{ width: `${width}%` }} />
+              </div>
+              <p className="min-w-16 text-right font-semibold text-white">{value}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden h-72 items-end gap-2 sm:flex sm:gap-3">
         {entries.map((entry) => {
           const value = entry[valueKey];
           const amount = parseEuroValue(value);
@@ -767,11 +785,11 @@ function AnnualIncomeHistoryCard({
           <p className="mt-3 text-2xl font-semibold text-white">{average}</p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-          <p className="text-base font-semibold text-[#5ab94e]">COMPARACION MENSUAL</p>
+          <p className="text-base font-semibold text-[#5ab94e]">DIFERENCIA MENSUAL CON {previousYear ?? "AÑO ANTERIOR"}</p>
           <p className="mt-3 text-2xl font-semibold text-white">{monthlyComparison}</p>
         </div>
         <div className="rounded-2xl border border-white/10 bg-slate-950/50 p-5">
-          <p className="text-base font-semibold text-[#5ab94e]">COMPARACION ANUAL</p>
+          <p className="text-base font-semibold text-[#5ab94e]">DIFERENCIA ANUAL CON {previousYear ?? "AÑO ANTERIOR"}</p>
           <p className="mt-3 text-2xl font-semibold text-white">{comparison}</p>
         </div>
       </div>
@@ -1086,25 +1104,25 @@ export default async function Home({ searchParams }: HomeProps) {
             </section>
           </>
         ) : selectedSection === "herramientas" ? (
-          <section className="flex flex-col gap-5">
-            <div>
+          <section className="flex flex-col items-center gap-5 text-center">
+            <div className="mx-auto max-w-2xl">
               <h2 className="text-xl font-semibold">HERRAMIENTAS</h2>
               <p className="mt-1 text-sm text-zinc-400">Accesos de ejecucion para facturacion y auditoria operativa.</p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <a href="/facturacion" className="group rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur transition hover:border-[#5ab94e]/60 hover:bg-[#5ab94e]/10">
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#5ab94e]">Facturacion</p>
-                <h3 className="mt-3 text-2xl font-semibold text-white">Generador de facturas</h3>
-                <p className="mt-3 text-sm leading-6 text-zinc-400">Crear facturas desde formulario, calcular base, IVA e IRPF y preparar el documento para imprimir o guardar.</p>
-                <span className="mt-5 inline-flex rounded-lg bg-[#5ab94e] px-4 py-2 text-sm font-semibold text-slate-950 transition group-hover:bg-[#6dcc62]">Abrir herramienta</span>
+            <div className="grid w-full max-w-4xl justify-items-center gap-4 md:grid-cols-2">
+              <a href="/facturacion" className="group flex w-full max-w-md flex-col items-center rounded-2xl border border-white/10 bg-white/5 p-5 text-center shadow-sm backdrop-blur transition hover:border-[#5ab94e]/60 hover:bg-[#5ab94e]/10">
+                <p className="w-full text-center text-sm font-semibold uppercase tracking-[0.22em] text-[#5ab94e]">Facturacion</p>
+                <h3 className="mx-auto mt-3 w-full max-w-xs text-center text-2xl font-semibold text-white">Generador de facturas</h3>
+                <p className="mx-auto mt-3 w-full max-w-sm text-center text-sm leading-6 text-zinc-400">Crear facturas desde formulario, calcular base, IVA e IRPF y preparar el documento para imprimir o guardar.</p>
+                <span className="mx-auto mt-5 inline-flex justify-center rounded-lg bg-[#5ab94e] px-4 py-2 text-center text-sm font-semibold text-slate-950 transition group-hover:bg-[#6dcc62]">Abrir herramienta</span>
               </a>
 
-              <a href="/forseti/horas-auditoria" className="group rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur transition hover:border-[#5ab94e]/60 hover:bg-[#5ab94e]/10">
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#5ab94e]">Auditoria de horas</p>
-                <h3 className="mt-3 text-2xl font-semibold text-white">Comparador de horas</h3>
-                <p className="mt-3 text-sm leading-6 text-zinc-400">Revisar diferencias por dia, tramos y total antes de aplicar cambios sobre HORAS TRABAJO 2026.</p>
-                <span className="mt-5 inline-flex rounded-lg bg-[#5ab94e] px-4 py-2 text-sm font-semibold text-slate-950 transition group-hover:bg-[#6dcc62]">Abrir herramienta</span>
+              <a href="/forseti/horas-auditoria" className="group flex w-full max-w-md flex-col items-center rounded-2xl border border-white/10 bg-white/5 p-5 text-center shadow-sm backdrop-blur transition hover:border-[#5ab94e]/60 hover:bg-[#5ab94e]/10">
+                <p className="w-full text-center text-sm font-semibold uppercase tracking-[0.22em] text-[#5ab94e]">Auditoria de horas</p>
+                <h3 className="mx-auto mt-3 w-full max-w-xs text-center text-2xl font-semibold text-white">Comparador de horas</h3>
+                <p className="mx-auto mt-3 w-full max-w-sm text-center text-sm leading-6 text-zinc-400">Revisar diferencias por dia, tramos y total antes de aplicar cambios sobre HORAS TRABAJO 2026.</p>
+                <span className="mx-auto mt-5 inline-flex justify-center rounded-lg bg-[#5ab94e] px-4 py-2 text-center text-sm font-semibold text-slate-950 transition group-hover:bg-[#6dcc62]">Abrir herramienta</span>
               </a>
             </div>
           </section>
