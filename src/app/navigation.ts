@@ -40,7 +40,6 @@ export function getDefaultMonthLabel() {
 
 export const SECTIONS = [
   { id: "mes", label: "RESUMEN DEL MES" },
-  { id: "historial", label: "HISTORIAL DE INGRESOS ANUALES" },
-  { id: "facturacion", label: "FACTURACION", href: "/facturacion" },
-  { id: "horas-auditoria", label: "AUDITORIA DE HORAS", href: "/forseti/horas-auditoria" },
+  { id: "historial", label: "RESUMENES ANUALES" },
+  { id: "herramientas", label: "HERRAMIENTAS" },
 ];

@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { ForsetiShellHeader } from "@/app/forseti-shell-header";
 import { getDefaultMonthLabel, SECTIONS } from "@/app/navigation";
 import { SectionNav } from "@/app/section-nav";
@@ -18,7 +18,7 @@ export default async function FacturacionPage() {
         <ForsetiShellHeader />
 
         <section className="flex flex-col gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
-          <SectionNav sections={SECTIONS} selectedMonth={selectedMonth} activeSectionOverride="facturacion" />
+          <SectionNav sections={SECTIONS} selectedMonth={selectedMonth} activeSectionOverride="herramientas" />
         </section>
 
         <section className="rounded-2xl border border-[#87ba2f]/25 bg-[linear-gradient(135deg,rgba(135,186,47,0.18),rgba(15,23,42,0.38))] p-5 shadow-sm backdrop-blur">

@@ -1,6 +1,7 @@
 ﻿import Image from "next/image";
 import { redirect } from "next/navigation";
 import { MonthSelect } from "./month-select";
+import { YearSelect } from "./year-select";
 import { SectionNav } from "./section-nav";
 import { ClientHoursEditor } from "./client-hours-editor";
 import { getDefaultMonthLabel, MONTHS_2026, SECTIONS } from "./navigation";
@@ -11,6 +12,7 @@ type HomeProps = {
   searchParams?: Promise<{
     seccion?: string;
     mes?: string;
+    ano?: string;
   }>;
 };
 
@@ -548,6 +550,43 @@ function AnnualSavingsChart({
   );
 }
 
+
+function AnnualValueChart({
+  entries,
+  valueKey,
+  colorClass,
+  shadowColor,
+}: {
+  entries: Array<{ month: string; profit: string; savings: string; investment: string; leisure: string }>;
+  valueKey: "savings" | "investment" | "leisure" | "profit";
+  colorClass: string;
+  shadowColor: string;
+}) {
+  const values = entries.map((entry) => parseEuroValue(entry[valueKey]));
+  const maxValue = Math.max(...values, 1);
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-5">
+      <div className="flex h-72 items-end gap-2 sm:gap-3">
+        {entries.map((entry) => {
+          const value = entry[valueKey];
+          const amount = parseEuroValue(value);
+          const height = Math.max((amount / maxValue) * 100, amount > 0 ? 4 : 0);
+
+          return (
+            <div key={`annual-${valueKey}-chart-${entry.month}`} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
+              <p className="text-center text-[10px] font-medium text-zinc-500">{value}</p>
+              <div className="flex h-48 w-full items-end rounded-t-lg bg-white/5">
+                <div className={`w-full rounded-t-lg ${colorClass} ${shadowColor}`} style={{ height: `${height}%` }} />
+              </div>
+              <p className="w-full truncate text-center text-[10px] font-semibold text-zinc-400">{entry.month.slice(0, 3)}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 function SavingsHighlightCards({
   monthlySavings,
   accumulatedSavings,
@@ -784,6 +823,17 @@ export default async function Home({ searchParams }: HomeProps) {
   const selectedMonth = getSelectedMonth(params?.mes);
   const selectedSection = getSelectedSection(params?.seccion);
   const data = await getDashboardData(selectedMonth);
+  const annualYears = Array.from(new Set([...data.annualIncomeHistory.map((item) => item.year), data.annualSavingsSummary.year]))
+    .filter(Boolean)
+    .sort((a, b) => Number(b) - Number(a));
+  const selectedYear = annualYears.includes(params?.ano ?? "") ? params?.ano ?? annualYears[0] : annualYears[0] ?? data.annualSavingsSummary.year;
+  const selectedAnnualIncomeHistory = data.annualIncomeHistory.filter((item) => item.year === selectedYear);
+  const selectedAnnualIncome = selectedAnnualIncomeHistory[0];
+  const selectedAnnualSavingsEntries = selectedYear === data.annualSavingsSummary.year ? data.annualSavingsSummary.entries : [];
+  const selectedAnnualSavingsTotal = selectedYear === data.annualSavingsSummary.year ? data.annualSavingsSummary.totalSavings : "--";
+  const selectedAnnualSavingsAverage = selectedYear === data.annualSavingsSummary.year ? data.annualSavingsSummary.averageSavings : "--";
+  const selectedAnnualInvestmentTotal = selectedYear === data.annualSavingsSummary.year ? data.annualSavingsSummary.totalInvestment : "--";
+  const selectedAnnualProfitTotal = selectedYear === data.annualSavingsSummary.year ? data.annualSavingsSummary.totalProfit : "--";
   const billingClientNames = ["SPANISHCHEESE", "GRUPODIM"];
   const billingClients = data.clientSummary.filter((item) => billingClientNames.includes(normalizeClientName(item.client)));
   const accumulatedSavings = getAccumulatedSavingsUntilMonth(data.annualSavingsSummary.entries, selectedMonth);
@@ -860,13 +910,16 @@ export default async function Home({ searchParams }: HomeProps) {
         <section className="sticky top-0 z-30 -mx-6 flex flex-col gap-4 border-b border-white/10 bg-[#0b1020]/95 px-6 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.22)] backdrop-blur lg:flex-row lg:items-end lg:justify-between">
           <SectionNav sections={SECTIONS} selectedMonth={selectedMonth} />
 
-          {selectedSection !== "historial" ? <MonthSelect months={MONTHS_2026} selectedMonth={selectedMonth} section={selectedSection ?? "mes"} /> : null}
+          {selectedSection === "historial" ? <YearSelect years={annualYears} selectedYear={selectedYear} selectedMonth={selectedMonth} section="historial" /> : selectedSection === "mes" ? <MonthSelect months={MONTHS_2026} selectedMonth={selectedMonth} section="mes" /> : null}
         </section>
 
         {selectedSection === "mes" ? (
           <>
-            <section className="flex flex-col gap-4">
+            <section>
               <h2 className="text-4xl font-semibold text-white">{selectedMonth}</h2>
+            </section>
+
+            <section className="sticky top-[150px] z-20 -mx-6 border-y border-white/10 bg-[#0b1020]/95 px-6 py-4 shadow-[0_14px_28px_rgba(0,0,0,0.22)] backdrop-blur sm:top-[132px] lg:top-[100px]">
               <div className="flex flex-wrap gap-2">
                 <a href="#pasivos" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.12em] text-zinc-200 transition hover:border-[#5ab94e]/60 hover:text-white">PASIVOS</a>
                 <a href="#ahorro" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.12em] text-zinc-200 transition hover:border-[#5ab94e]/60 hover:text-white">AHORRO</a>
@@ -1032,33 +1085,114 @@ export default async function Home({ searchParams }: HomeProps) {
               </div>
             </section>
           </>
-        ) : selectedSection === "historial" ? (
-          <section className="flex flex-col gap-4">
+        ) : selectedSection === "herramientas" ? (
+          <section className="flex flex-col gap-5">
             <div>
-              <h2 className="text-xl font-semibold">HISTORIAL DE INGRESOS ANUALES</h2>
-              <p className="mt-1 text-sm text-zinc-400">Datos reflejados desde la pestaÃ±a Seguimiento ingresos.</p>
+              <h2 className="text-xl font-semibold">HERRAMIENTAS</h2>
+              <p className="mt-1 text-sm text-zinc-400">Accesos de ejecucion para facturacion y auditoria operativa.</p>
             </div>
 
-            <div className="grid gap-4">
-              {data.annualIncomeHistory.map((item, index) => {
-                const previousItem = data.annualIncomeHistory[index - 1];
+            <div className="grid gap-4 md:grid-cols-2">
+              <a href="/facturacion" className="group rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur transition hover:border-[#5ab94e]/60 hover:bg-[#5ab94e]/10">
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#5ab94e]">Facturacion</p>
+                <h3 className="mt-3 text-2xl font-semibold text-white">Generador de facturas</h3>
+                <p className="mt-3 text-sm leading-6 text-zinc-400">Crear facturas desde formulario, calcular base, IVA e IRPF y preparar el documento para imprimir o guardar.</p>
+                <span className="mt-5 inline-flex rounded-lg bg-[#5ab94e] px-4 py-2 text-sm font-semibold text-slate-950 transition group-hover:bg-[#6dcc62]">Abrir herramienta</span>
+              </a>
 
-                return (
-                  <AnnualIncomeHistoryCard
-                    key={item.year}
-                    year={item.year}
-                    total={item.total}
-                    average={item.average}
-                    comparison={item.comparison}
-                    monthlyComparison={item.monthlyComparison}
-                    entries={item.entries}
-                    previousYear={previousItem?.year}
-                    previousTotal={previousItem?.total}
-                    previousEntries={previousItem?.entries}
-                  />
-                );
-              })}
+              <a href="/forseti/horas-auditoria" className="group rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur transition hover:border-[#5ab94e]/60 hover:bg-[#5ab94e]/10">
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#5ab94e]">Auditoria de horas</p>
+                <h3 className="mt-3 text-2xl font-semibold text-white">Comparador de horas</h3>
+                <p className="mt-3 text-sm leading-6 text-zinc-400">Revisar diferencias por dia, tramos y total antes de aplicar cambios sobre HORAS TRABAJO 2026.</p>
+                <span className="mt-5 inline-flex rounded-lg bg-[#5ab94e] px-4 py-2 text-sm font-semibold text-slate-950 transition group-hover:bg-[#6dcc62]">Abrir herramienta</span>
+              </a>
             </div>
+          </section>
+        ) : selectedSection === "historial" ? (
+          <section className="flex flex-col gap-6">
+            <div>
+              <h2 className="text-xl font-semibold">RESUMENES ANUALES</h2>
+              <p className="mt-1 text-sm text-zinc-400">Datos reflejados desde la pestaña Seguimiento ingresos y la ficha Reparto de ingresos.</p>
+            </div>
+
+            <section className="sticky top-[150px] z-20 -mx-6 border-y border-white/10 bg-[#0b1020]/95 px-6 py-4 shadow-[0_14px_28px_rgba(0,0,0,0.22)] backdrop-blur sm:top-[132px] lg:top-[100px]">
+              <div className="flex flex-wrap gap-2">
+                <a href="#ingresos-anuales" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.12em] text-zinc-200 transition hover:border-[#5ab94e]/60 hover:text-white">INGRESOS</a>
+                <a href="#pasivos-anuales" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.12em] text-zinc-200 transition hover:border-[#5ab94e]/60 hover:text-white">PASIVOS</a>
+                <a href="#ahorro-anual" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.12em] text-zinc-200 transition hover:border-[#5ab94e]/60 hover:text-white">AHORRO</a>
+              </div>
+            </section>
+
+            <section id="ingresos-anuales" className="scroll-mt-32 flex flex-col gap-4">
+              <div>
+                <h3 className="text-xl font-semibold">HISTORIAL DE INGRESOS ANUALES</h3>
+                <p className="mt-1 text-sm text-zinc-400">Comparativa anual de ingresos netos registrados.</p>
+              </div>
+
+              <div className="grid gap-4">
+                {selectedAnnualIncomeHistory.map((item) => {
+                  const previousItem = data.annualIncomeHistory.find((historyItem) => historyItem.year === String(Number(item.year) - 1));
+
+                  return (
+                    <AnnualIncomeHistoryCard
+                      key={item.year}
+                      year={item.year}
+                      total={item.total}
+                      average={item.average}
+                      comparison={item.comparison}
+                      monthlyComparison={item.monthlyComparison}
+                      entries={item.entries}
+                      previousYear={previousItem?.year}
+                      previousTotal={previousItem?.total}
+                      previousEntries={previousItem?.entries}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+
+            <section id="pasivos-anuales" className="scroll-mt-32 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
+              <div>
+                <h3 className="text-xl font-semibold">PASIVOS ANUALES</h3>
+                <p className="mt-1 text-sm text-zinc-400">Resumen anual del resultado con pasivos incorporados cuando el dato esta disponible.</p>
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                <KpiCard accent="glow" title="ULTIMO ANO REGISTRADO" description="Ano mas reciente disponible en el historial." value={selectedAnnualIncome?.year ?? selectedYear ?? "--"} />
+                <KpiCard accent="aqua" title="TOTAL ANUAL CON PASIVOS" description="Total anual calculado con pasivos cuando existe lectura mensual." value={selectedAnnualIncome?.total ?? "--"} />
+                <KpiCard accent="deep" title="MEDIA MENSUAL" description="Media mensual del ultimo ano registrado." value={selectedAnnualIncome?.average ?? "--"} />
+              </div>
+            </section>
+
+            <section id="ahorro-anual" className="scroll-mt-32 flex flex-col gap-4">
+              <div>
+                <h3 className="text-xl font-semibold">AHORRO ANUAL</h3>
+                <p className="mt-1 text-sm text-zinc-400">Resumen anual de ahorro segun la ficha Reparto de ingresos.</p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <KpiCard accent="aqua" title="TOTAL AHORRADO" description={`Ahorro acumulado en ${selectedYear}.`} value={selectedAnnualSavingsTotal} />
+                <KpiCard accent="glass" title="MEDIA MENSUAL" description="Media mensual de ahorro registrada." value={selectedAnnualSavingsAverage} />
+                <KpiCard accent="glow" title="MESES REGISTRADOS" description="Meses con datos en el resumen anual." value={`${selectedAnnualSavingsEntries.length}`} />
+              </div>
+
+              <AnnualValueChart entries={selectedAnnualSavingsEntries} valueKey="savings" colorClass="bg-blue-300" shadowColor="shadow-[0_0_18px_rgba(147,197,253,0.18)]" />
+            </section>
+
+            <section className="scroll-mt-32 flex flex-col gap-4">
+              <div>
+                <h3 className="text-xl font-semibold">INVERSIONES ANUALES</h3>
+                <p className="mt-1 text-sm text-zinc-400">Resumen anual del capital destinado a inversion segun la ficha Reparto de ingresos.</p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <KpiCard accent="deep" title="TOTAL INVERTIDO" description={`Inversion acumulada en ${selectedYear}.`} value={selectedAnnualInvestmentTotal} />
+                <KpiCard accent="glass" title="BENEFICIO BASE" description="Beneficio anual usado como base de reparto." value={selectedAnnualProfitTotal} />
+                <KpiCard accent="glow" title="MESES REGISTRADOS" description="Meses con datos en el resumen anual." value={`${selectedAnnualSavingsEntries.length}`} />
+              </div>
+
+              <AnnualValueChart entries={selectedAnnualSavingsEntries} valueKey="investment" colorClass="bg-yellow-300" shadowColor="shadow-[0_0_18px_rgba(253,224,71,0.18)]" />
+            </section>
           </section>
         ) : null}
       </main>
