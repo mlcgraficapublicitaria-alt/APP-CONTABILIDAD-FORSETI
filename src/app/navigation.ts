@@ -43,3 +43,20 @@ export const SECTIONS = [
   { id: "historial", label: "RESUMENES ANUALES" },
   { id: "herramientas", label: "HERRAMIENTAS" },
 ];
+
+export const TOOLS = [
+  {
+    id: "horas-auditoria",
+    label: "Auditoria de horas",
+    title: "Comparador de horas",
+    description: "Revisar diferencias por dia, tramos y total antes de aplicar cambios sobre HORAS TRABAJO 2026.",
+    href: "/forseti/horas-auditoria",
+  },
+  {
+    id: "facturacion",
+    label: "Facturacion",
+    title: "Generador de facturas",
+    description: "Crear facturas desde formulario, calcular base, IVA e IRPF y preparar el documento para imprimir o guardar.",
+    href: "/facturacion",
+  },
+];

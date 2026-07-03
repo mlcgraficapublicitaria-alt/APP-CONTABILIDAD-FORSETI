@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import { getDefaultMonthLabel, SECTIONS } from "@/app/navigation";
 import { SectionNav } from "@/app/section-nav";
+import { ToolsNav } from "@/app/tools-nav";
 import { hasValidSession } from "@/lib/auth";
 import { HoursAuditClient } from "./hours-audit-client";
 
@@ -68,6 +69,7 @@ export default async function ForsetiHorasAuditoriaPage() {
 
         <section className="flex flex-col gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-end lg:justify-between">
           <SectionNav sections={SECTIONS} selectedMonth={selectedMonth} activeSectionOverride="herramientas" />
+          <ToolsNav activeTool="horas-auditoria" />
         </section>
 
         <section className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-5 shadow-sm backdrop-blur">

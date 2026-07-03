@@ -33,6 +33,7 @@ export type HoursCompareResult = {
   pdfDays: DayHours[];
   sheetDays: DayHours[];
   sheetClientTotalMinutes: number;
+  billingInfo?: ClientBillingInfo;
   pdfDebugRows?: string[];
 };
 
@@ -40,4 +41,14 @@ export type HoursApplyResult = {
   updatedDays: string[];
   skippedDays: string[];
   message: string;
+};
+
+export type ClientBillingInfo = {
+  currentBaseAmount: number | null;
+  currentBaseLabel: string;
+  currentTotalMinutes: number;
+  projectedBaseAmount: number | null;
+  projectedBaseLabel: string;
+  projectedTotalMinutes: number;
+  hourlyRate: number | null;
 };

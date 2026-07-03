@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { MonthSelect } from "./month-select";
 import { YearSelect } from "./year-select";
 import { SectionNav } from "./section-nav";
+import { ToolsNav } from "./tools-nav";
 import { ClientHoursEditor } from "./client-hours-editor";
 import { getDefaultMonthLabel, MONTHS_2026, SECTIONS } from "./navigation";
 import { hasValidSession } from "@/lib/auth";
@@ -1110,21 +1111,7 @@ export default async function Home({ searchParams }: HomeProps) {
               <p className="mt-1 text-sm text-zinc-400">Accesos de ejecucion para facturacion y auditoria operativa.</p>
             </div>
 
-            <div className="grid w-full max-w-4xl justify-items-center gap-4 md:grid-cols-2">
-              <a href="/facturacion" className="group flex w-full max-w-md flex-col items-center rounded-2xl border border-white/10 bg-white/5 p-5 text-center shadow-sm backdrop-blur transition hover:border-[#5ab94e]/60 hover:bg-[#5ab94e]/10">
-                <p className="w-full text-center text-sm font-semibold uppercase tracking-[0.22em] text-[#5ab94e]">Facturacion</p>
-                <h3 className="mx-auto mt-3 w-full max-w-xs text-center text-2xl font-semibold text-white">Generador de facturas</h3>
-                <p className="mx-auto mt-3 w-full max-w-sm text-center text-sm leading-6 text-zinc-400">Crear facturas desde formulario, calcular base, IVA e IRPF y preparar el documento para imprimir o guardar.</p>
-                <span className="mx-auto mt-5 inline-flex justify-center rounded-lg bg-[#5ab94e] px-4 py-2 text-center text-sm font-semibold text-slate-950 transition group-hover:bg-[#6dcc62]">Abrir herramienta</span>
-              </a>
-
-              <a href="/forseti/horas-auditoria" className="group flex w-full max-w-md flex-col items-center rounded-2xl border border-white/10 bg-white/5 p-5 text-center shadow-sm backdrop-blur transition hover:border-[#5ab94e]/60 hover:bg-[#5ab94e]/10">
-                <p className="w-full text-center text-sm font-semibold uppercase tracking-[0.22em] text-[#5ab94e]">Auditoria de horas</p>
-                <h3 className="mx-auto mt-3 w-full max-w-xs text-center text-2xl font-semibold text-white">Comparador de horas</h3>
-                <p className="mx-auto mt-3 w-full max-w-sm text-center text-sm leading-6 text-zinc-400">Revisar diferencias por dia, tramos y total antes de aplicar cambios sobre HORAS TRABAJO 2026.</p>
-                <span className="mx-auto mt-5 inline-flex justify-center rounded-lg bg-[#5ab94e] px-4 py-2 text-center text-sm font-semibold text-slate-950 transition group-hover:bg-[#6dcc62]">Abrir herramienta</span>
-              </a>
-            </div>
+            <ToolsNav layout="cards" />
           </section>
         ) : selectedSection === "historial" ? (
           <section className="flex flex-col gap-6">

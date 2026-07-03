@@ -1,11 +1,19 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { getDefaultMonthLabel, MONTHS_2026 } from "@/app/navigation";
 import { applyHoursAction, compareHoursAction, type AuditActionState } from "./actions";
 
 const initialState: AuditActionState = {};
 const AUDIT_CLIENTS = ["SPANISH-CHEESE", "GRUPO DIM", "MLCDESIGN"] as const;
+const AUDIT_INVOICE_CLIENT_STORAGE_KEY = "forseti.audit.invoiceClients";
+
+type SavedInvoiceClient = {
+  id: string;
+  legalName: string;
+  details: string;
+};
 
 function formatMinutes(minutes: number) {
   const sign = minutes > 0 ? "+" : minutes < 0 ? "-" : "";
@@ -13,11 +21,52 @@ function formatMinutes(minutes: number) {
   return `${sign}${String(Math.floor(abs / 60)).padStart(2, "0")}:${String(abs % 60).padStart(2, "0")}`;
 }
 
+function normalizeLookup(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9]+/gi, "")
+    .toUpperCase();
+}
+
+function readStoredInvoiceClientMap() {
+  try {
+    return JSON.parse(window.localStorage.getItem(AUDIT_INVOICE_CLIENT_STORAGE_KEY) || "{}") as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+function buildInvoiceHref(result: NonNullable<AuditActionState["result"]>, invoiceClient?: SavedInvoiceClient) {
+  const params = new URLSearchParams({
+    origen: "auditoria",
+    cliente: result.client,
+    mes: result.month,
+    servicio: `Servicios ${result.month} - ${result.client}`,
+  });
+
+  if (invoiceClient) params.set("clienteId", invoiceClient.id);
+
+  if (result.billingInfo?.projectedBaseAmount !== null && result.billingInfo?.projectedBaseAmount !== undefined) {
+    params.set("base", result.billingInfo.projectedBaseAmount.toFixed(2));
+  }
+
+  return `/facturacion?${params.toString()}`;
+}
+
 export function HoursAuditClient() {
   const [compareState, compareFormAction, comparing] = useActionState(compareHoursAction, initialState);
   const [applyState, applyFormAction, applying] = useActionState(applyHoursAction, initialState);
   const [confirmed, setConfirmed] = useState(false);
+  const [selectedAuditClient, setSelectedAuditClient] = useState<(typeof AUDIT_CLIENTS)[number]>("SPANISH-CHEESE");
+  const [savedClients, setSavedClients] = useState<SavedInvoiceClient[]>([]);
+  const [selectedInvoiceClientId, setSelectedInvoiceClientId] = useState("");
+  const [clientStatus, setClientStatus] = useState("");
   const defaultMonth = getDefaultMonthLabel();
+  const selectedInvoiceClient = useMemo(
+    () => savedClients.find((client) => client.id === selectedInvoiceClientId),
+    [savedClients, selectedInvoiceClientId],
+  );
   const differences = compareState.result?.differences ?? [];
   const payload = compareState.result
     ? JSON.stringify({
@@ -29,6 +78,44 @@ export function HoursAuditClient() {
   const pdfTotal = compareState.result?.pdfDays.reduce((sum, day) => sum + day.totalMinutes, 0) ?? 0;
   const sheetTotal = compareState.result?.sheetClientTotalMinutes ?? 0;
   const totalDiff = pdfTotal - sheetTotal;
+  const invoiceHref = compareState.result ? buildInvoiceHref(compareState.result, selectedInvoiceClient) : "/facturacion";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadClients() {
+      try {
+        const response = await fetch("/api/facturacion/clientes", { cache: "no-store" });
+        if (!response.ok) throw new Error("No se pudieron cargar las fichas.");
+        const data = (await response.json()) as { clients?: SavedInvoiceClient[] };
+        if (!cancelled) setSavedClients(data.clients ?? []);
+      } catch {
+        if (!cancelled) setClientStatus("No se pudieron cargar las fichas guardadas.");
+      }
+    }
+
+    loadClients();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const matchingClient = savedClients.find((client) => normalizeLookup(client.legalName) === normalizeLookup(selectedAuditClient));
+    const storedClientId = readStoredInvoiceClientMap()[selectedAuditClient];
+    const storedClientExists = savedClients.some((client) => client.id === storedClientId);
+    setSelectedInvoiceClientId(storedClientExists ? storedClientId : matchingClient?.id ?? "");
+  }, [savedClients, selectedAuditClient]);
+
+  useEffect(() => {
+    if (!selectedInvoiceClientId) return;
+
+    const currentMap = readStoredInvoiceClientMap();
+    window.localStorage.setItem(
+      AUDIT_INVOICE_CLIENT_STORAGE_KEY,
+      JSON.stringify({ ...currentMap, [selectedAuditClient]: selectedInvoiceClientId }),
+    );
+  }, [selectedAuditClient, selectedInvoiceClientId]);
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -48,7 +135,12 @@ export function HoursAuditClient() {
 
           <label className="block">
             <span className="text-sm font-medium text-zinc-200">Cliente</span>
-            <select name="client" className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-slate-950/70 px-4 text-sm text-white outline-none">
+            <select
+              name="client"
+              value={selectedAuditClient}
+              onChange={(event) => setSelectedAuditClient(event.target.value as (typeof AUDIT_CLIENTS)[number])}
+              className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-slate-950/70 px-4 text-sm text-white outline-none"
+            >
               {AUDIT_CLIENTS.map((client) => (
                 <option key={client} value={client}>
                   {client}
@@ -56,6 +148,26 @@ export function HoursAuditClient() {
               ))}
             </select>
           </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-zinc-200">Ficha de facturacion</span>
+            <select
+              value={selectedInvoiceClientId}
+              onChange={(event) => setSelectedInvoiceClientId(event.target.value)}
+              className="mt-2 h-11 w-full rounded-lg border border-white/10 bg-slate-950/70 px-4 text-sm text-white outline-none"
+            >
+              <option value="">Usar solo el nombre del cliente</option>
+              {savedClients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.legalName}
+                </option>
+              ))}
+            </select>
+            <span className="mt-2 block text-xs leading-5 text-zinc-500">
+              La ficha seleccionada se pasara automaticamente a la factura.
+            </span>
+          </label>
+          {clientStatus ? <p className="rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">{clientStatus}</p> : null}
 
           <label className="block">
             <span className="text-sm font-medium text-zinc-200">PDF de HORAS</span>
@@ -132,6 +244,23 @@ export function HoursAuditClient() {
           </div>
         ) : null}
 
+        {compareState.result ? (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-white/10 bg-slate-950/50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Base actual en el mes</p>
+              <p className="mt-2 text-2xl font-semibold text-white">
+                {compareState.result.billingInfo?.currentBaseLabel ?? "—"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-[#5ab94e]/30 bg-[#5ab94e]/12 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d7f0a7]">Base al facturar tras aplicar</p>
+              <p className="mt-2 text-2xl font-semibold text-white">
+                {compareState.result.billingInfo?.projectedBaseLabel ?? "—"}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         <div className="mt-5 overflow-hidden rounded-xl border border-white/10">
           <div className="grid grid-cols-[0.8fr_1.4fr_1.4fr_0.7fr] gap-3 border-b border-white/10 bg-slate-950/70 px-4 py-3 text-xs font-semibold text-zinc-400">
             <p>Dia</p>
@@ -180,13 +309,24 @@ export function HoursAuditClient() {
             />
             Confirmo que quiero aplicar solo las diferencias detectadas al Sheet.
           </label>
-          <button
-            type="submit"
-            disabled={!confirmed || applying || differences.length === 0}
-            className="rounded-lg border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {applying ? "Aplicando..." : "Aplicar cambios"}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={!confirmed || applying || differences.length === 0}
+              className="rounded-lg border border-white/10 bg-slate-950/60 px-4 py-2.5 text-sm font-semibold text-zinc-200 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {applying ? "Aplicando..." : "Aplicar cambios"}
+            </button>
+            <Link
+              href={invoiceHref}
+              className={`rounded-lg bg-[#5ab94e] px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-[#6dcc62] ${
+                compareState.result?.billingInfo?.projectedBaseAmount ? "" : "pointer-events-none opacity-50"
+              }`}
+              aria-disabled={!compareState.result?.billingInfo?.projectedBaseAmount}
+            >
+              Hacer factura
+            </Link>
+          </div>
           {applyState.error ? (
             <p className="rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
               {applyState.error}

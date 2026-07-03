@@ -5,7 +5,7 @@ import { compareHours } from "@/lib/forseti-hours-compare";
 import { applyHourDifferences } from "@/lib/forseti-hours-apply";
 import { readMonthlyHoursPdfFromDrive } from "@/lib/forseti-hours-drive";
 import { extractPdfDebugRows, extractPdfHours } from "@/lib/forseti-hours-pdf";
-import { readSheetClientTotalMinutes, readSheetMonthHours } from "@/lib/forseti-hours-sheet";
+import { readSheetClientBillingInfo, readSheetClientTotalMinutes, readSheetMonthHours } from "@/lib/forseti-hours-sheet";
 import { hasGoogleServiceAccountCredentials } from "@/lib/google-service-account";
 import type { AuditClient, HoursCompareResult } from "@/lib/forseti-hours-types";
 
@@ -54,7 +54,10 @@ export async function compareHoursAction(_state: AuditActionState, formData: For
       return { error: "No he podido extraer dias/tramos del PDF. Revisa que sea el PDF mensual de HORAS correcto." };
     }
 
-    return { result: compareHours(month, client, pdfDays, sheetDays, sheetClientTotalMinutes, pdfDebugRows) };
+    const pdfTotalMinutes = pdfDays.reduce((sum, day) => sum + day.totalMinutes, 0);
+    const billingInfo = await readSheetClientBillingInfo(month, client, pdfTotalMinutes);
+
+    return { result: compareHours(month, client, pdfDays, sheetDays, sheetClientTotalMinutes, billingInfo, pdfDebugRows) };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "No se pudo completar la comparacion.",

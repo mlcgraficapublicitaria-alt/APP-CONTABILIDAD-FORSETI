@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useState } from "react";
 
 type SavedInvoiceClient = {
@@ -460,7 +461,53 @@ function normalizeSavedClients(clients: SavedInvoiceClient[], client: SavedInvoi
   return [...nextClients, client].sort((a, b) => a.legalName.localeCompare(b.legalName, "es"));
 }
 
+function normalizeLookup(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z0-9]+/gi, "")
+    .toUpperCase();
+}
+
+function displayClientName(value: string) {
+  const normalized = normalizeLookup(value);
+  if (normalized === "SPANISHCHEESE") return "SPANISH CHEESE";
+  if (normalized === "GRUPODIM") return "GRUPO DIM";
+  if (normalized === "MLCDESIGN" || normalized === "MLCDESING") return "MLC DESIGN";
+  return value;
+}
+
+function formatInvoiceBaseParam(value: string) {
+  const parsed = parseDecimal(value);
+  return parsed > 0 ? parsed.toFixed(2).replace(".", ",") : "";
+}
+
+function invoiceDateFromMonth(value: string) {
+  const [monthName = "", yearValue = ""] = value.split(" ");
+  const year = Number(yearValue);
+  const monthIndex = [
+    "ENERO",
+    "FEBRERO",
+    "MARZO",
+    "ABRIL",
+    "MAYO",
+    "JUNIO",
+    "JULIO",
+    "AGOSTO",
+    "SEPTIEMBRE",
+    "OCTUBRE",
+    "NOVIEMBRE",
+    "DICIEMBRE",
+  ].indexOf(normalizeLookup(monthName));
+
+  if (!Number.isFinite(year) || monthIndex < 0) return new Date().toISOString().slice(0, 10);
+
+  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+  return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+}
+
 export function FacturacionClient() {
+  const searchParams = useSearchParams();
   const [form, setForm] = useState(INITIAL_STATE);
   const [generated, setGenerated] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -517,6 +564,64 @@ export function FacturacionClient() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    const base = searchParams.get("base");
+    const client = searchParams.get("cliente");
+    const clientId = searchParams.get("clienteId");
+    const origin = searchParams.get("origen");
+    const service = searchParams.get("servicio");
+    const month = searchParams.get("mes");
+
+    if (!base && !client && !clientId && !service && !month && !origin) return;
+
+    const clientName = client ? displayClientName(client) : "";
+    const normalizedClient = normalizeLookup(clientName);
+    const savedClient =
+      savedClients.find((item) => item.id === clientId) ??
+      savedClients.find((item) => normalizeLookup(item.legalName) === normalizedClient);
+    const auditOrigin = origin === "auditoria";
+
+    setForm((current) => ({
+      ...current,
+      documentName: month ? `Factura ${clientName || "cliente"} - ${month}` : current.documentName,
+      invoiceDate: auditOrigin && month ? invoiceDateFromMonth(month) : current.invoiceDate,
+      clientName: savedClient?.legalName ?? (clientName || current.clientName),
+      clientDetails: savedClient?.details ?? current.clientDetails,
+      billedService: service || current.billedService,
+      baseAmount: base ? formatInvoiceBaseParam(base) : current.baseAmount,
+    }));
+    setSelectedClientId(savedClient?.id ?? "");
+    setGenerated(false);
+
+    if (auditOrigin) {
+      let cancelled = false;
+
+      async function loadNextInvoiceNumber() {
+        try {
+          const response = await fetch(`/api/facturacion/siguiente-numero?serie=${encodeURIComponent(INITIAL_STATE.invoiceSeries)}`, {
+            cache: "no-store",
+          });
+          if (!response.ok) return;
+          const data = (await response.json()) as { formattedNumber?: string; series?: string };
+          if (cancelled || !data.formattedNumber) return;
+          const formattedNumber = data.formattedNumber;
+          setForm((current) => ({
+            ...current,
+            invoiceSeries: data.series || current.invoiceSeries,
+            invoiceNumber: formattedNumber,
+          }));
+        } catch {
+          // La factura sigue siendo editable si no se puede leer la numeracion.
+        }
+      }
+
+      loadNextInvoiceNumber();
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [savedClients, searchParams]);
 
   function updateField<Key extends keyof InvoiceFormState>(key: Key, value: InvoiceFormState[Key]) {
     setForm((current) => ({ ...current, [key]: value }));

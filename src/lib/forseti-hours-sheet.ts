@@ -1,7 +1,9 @@
-import type { AuditClient, DayHours, WorkSegment } from "./forseti-hours-types";
+import type { AuditClient, ClientBillingInfo, DayHours, WorkSegment } from "./forseti-hours-types";
 
 const SHEET_ID = "1C-4g6B4iiQzCuiWiDGi-YyTm1Tm5Z88bIrTOhlKSsQo";
 const SHEETS_READ_TIMEOUT_MS = 12_000;
+const DEFAULT_INVOICE_VAT_RATE = 21;
+const DEFAULT_INVOICE_IRPF_RATE = 15;
 
 function parseCsv(csv: string) {
   const rows: string[][] = [];
@@ -75,6 +77,32 @@ function parseDurationMinutes(value: string) {
   if (!match) return null;
   const sign = match[1].startsWith("-") ? -1 : 1;
   return sign * (Math.abs(Number(match[1])) * 60 + Number(match[2]));
+}
+
+function parseMoney(value: string) {
+  const normalized = value
+    .replace(/\s/g, "")
+    .replace("€", "")
+    .replace("â‚¬", "")
+    .replace("EUR", "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function formatMoney(value: number) {
+  return new Intl.NumberFormat("es-ES", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function invoiceTotalToTaxBase(totalAmount: number) {
+  const multiplier = 1 + (DEFAULT_INVOICE_VAT_RATE - DEFAULT_INVOICE_IRPF_RATE) / 100;
+  return totalAmount / multiplier;
 }
 
 function normalizeClient(value: string) {
@@ -165,4 +193,32 @@ export async function readSheetClientTotalMinutes(month: string, client: AuditCl
   }
 
   return 0;
+}
+
+export async function readSheetClientBillingInfo(
+  month: string,
+  client: AuditClient,
+  projectedTotalMinutes: number,
+): Promise<ClientBillingInfo | undefined> {
+  const rows = await getSheetRange(month, "A10:H80");
+  const aliases = clientAliases(client);
+  const row = rows.find((items) => aliases.includes(normalizeClient(items[1] ?? "")));
+
+  if (!row) return undefined;
+
+  const currentInvoiceTotal = parseMoney(row[2] ?? "");
+  const currentBaseAmount = currentInvoiceTotal !== null ? invoiceTotalToTaxBase(currentInvoiceTotal) : null;
+  const currentTotalMinutes = parseDurationMinutes(row[3] ?? "") ?? 0;
+  const hourlyRate = currentBaseAmount !== null && currentTotalMinutes > 0 ? currentBaseAmount / (currentTotalMinutes / 60) : null;
+  const projectedBaseAmount = hourlyRate !== null ? hourlyRate * (projectedTotalMinutes / 60) : currentBaseAmount;
+
+  return {
+    currentBaseAmount,
+    currentBaseLabel: currentBaseAmount !== null ? formatMoney(currentBaseAmount) : "—",
+    currentTotalMinutes,
+    projectedBaseAmount,
+    projectedBaseLabel: projectedBaseAmount !== null ? formatMoney(projectedBaseAmount) : "—",
+    projectedTotalMinutes,
+    hourlyRate,
+  };
 }

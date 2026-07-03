@@ -1,4 +1,4 @@
-import type { AuditClient, DayHours, HoursCompareResult, HoursDifference, WorkSegment } from "./forseti-hours-types";
+import type { AuditClient, ClientBillingInfo, DayHours, HoursCompareResult, HoursDifference, WorkSegment } from "./forseti-hours-types";
 
 function formatSegment(segment: WorkSegment) {
   return `${segment.start}-${segment.end}`;
@@ -80,6 +80,7 @@ export function compareHours(
   pdfDays: DayHours[],
   sheetDays: DayHours[],
   sheetClientTotalMinutes: number,
+  billingInfo?: ClientBillingInfo,
   pdfDebugRows?: string[],
 ): HoursCompareResult {
   const pdfByDate = new Map(pdfDays.map((day) => [day.date, day]));
@@ -102,6 +103,7 @@ export function compareHours(
     pdfDays,
     sheetDays,
     sheetClientTotalMinutes,
+    billingInfo,
     pdfDebugRows,
   };
 }
