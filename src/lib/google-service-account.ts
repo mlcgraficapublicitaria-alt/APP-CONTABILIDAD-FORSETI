@@ -2,7 +2,7 @@ import { createSign } from "crypto";
 import { existsSync, readFileSync } from "fs";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
-const FORSETI_OAUTH_CONFIG_PATH = "/data/.openclaw/workspace/forseti/integrations/google-drive/config.json";
+const DEFAULT_FORSETI_OAUTH_CONFIG_PATH = "/data/.openclaw/workspace/forseti/integrations/google-drive/config.json";
 const GOOGLE_AUTH_TIMEOUT_MS = 12_000;
 
 type ServiceAccountCredentials = {
@@ -114,10 +114,11 @@ function getForsetiOAuthCredentials(): ForsetiOAuthCredentials | null {
     };
   }
 
-  if (!existsSync(/* turbopackIgnore: true */ FORSETI_OAUTH_CONFIG_PATH)) return null;
+  const configPath = getFirstEnvValue(["FORSETI_OAUTH_CONFIG_PATH", "GOOGLE_OAUTH_CONFIG_PATH"]) || DEFAULT_FORSETI_OAUTH_CONFIG_PATH;
+  if (!existsSync(/* turbopackIgnore: true */ configPath)) return null;
 
   try {
-    const raw = readFileSync(/* turbopackIgnore: true */ FORSETI_OAUTH_CONFIG_PATH, "utf8");
+    const raw = readFileSync(/* turbopackIgnore: true */ configPath, "utf8");
     const parsed = JSON.parse(raw) as {
       auth?: { clientId?: string; clientSecret?: string; refreshToken?: string; tokenUri?: string };
     };
@@ -179,7 +180,7 @@ async function getForsetiOAuthAccessToken() {
   const oauth = getForsetiOAuthCredentials();
   if (!oauth) {
     throw new Error(
-      "Faltan credenciales Google: no hay service account cargada y tampoco se ha encontrado OAuth operativo (ni por variables de entorno ni por integración local de FORSETI).",
+      "Faltan credenciales Google: configura GOOGLE_SERVICE_ACCOUNT_JSON_BASE64, GOOGLE_APPLICATION_CREDENTIALS, credenciales OAuth por variables de entorno, o FORSETI_OAUTH_CONFIG_PATH apuntando al config.json de la integracion Google Drive.",
     );
   }
 

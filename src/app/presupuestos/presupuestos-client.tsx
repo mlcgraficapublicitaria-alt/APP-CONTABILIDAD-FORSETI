@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useState } from "react";
 
-type SavedInvoiceClient = {
+type SavedBudgetClient = {
   id: string;
   legalName: string;
   details: string;
@@ -16,9 +16,9 @@ type DriveFolderOption = {
   webViewLink?: string;
 };
 
-type InvoiceFormState = {
+type BudgetFormState = {
   documentName: string;
-  invoiceDate: string;
+  budgetDate: string;
   invoiceSeries: string;
   invoiceNumber: string;
   articleCode: string;
@@ -36,13 +36,19 @@ type InvoiceFormState = {
   baseAmount: string;
   vatRate: string;
   irpfRate: string;
+  serviceTitle: string;
+  attentionLine: string;
+  generalObjective: string;
+  includedServices: string;
+  annualBreakdown: string;
+  closingNote: string;
 };
 
-const INITIAL_STATE: InvoiceFormState = {
-  documentName: "Factura MLC Design",
-  invoiceDate: new Date().toISOString().slice(0, 10),
-  invoiceSeries: "A",
-  invoiceNumber: "000430",
+const INITIAL_STATE: BudgetFormState = {
+  documentName: "Presupuesto MLC Design",
+  budgetDate: new Date().toISOString().slice(0, 10),
+  invoiceSeries: "P",
+  invoiceNumber: "000001",
   articleCode: "H",
   issuerName: "MARIANO LUJAN CANOVAS",
   issuerTaxId: "47078608-T",
@@ -58,6 +64,15 @@ const INITIAL_STATE: InvoiceFormState = {
   baseAmount: "",
   vatRate: "21",
   irpfRate: "15",
+  serviceTitle: "SERVICIOS WEB Y POSICIONAMIENTO SEO",
+  attentionLine: "",
+  generalObjective: "Mantener una presencia digital constante mediante la publicacion mensual de contenidos optimizados, su difusion en redes sociales y la generacion de recursos visuales para fortalecer la imagen de marca.",
+  includedServices:
+    "Creacion de contenido SEO y adaptaciones para redes sociales\nSe redactara contenido mensual optimizado con palabras clave relevantes. Cada contenido se adaptara como publicacion para redes sociales con su copy correspondiente.\n\nPublicaciones en redes sociales\nA partir del contenido web, se publicara de forma planificada en redes sociales, asegurando la coherencia visual y de mensaje con el branding.\n\nContenidos audiovisuales\nSe crearan recursos visuales entre videos tipo reel e imagenes graficas, destinados a campanas promocionales o publicaciones clave.",
+  annualBreakdown:
+    "Redaccion de contenido web SEO + adaptacion RRSS: 3.600 EUR\nPublicacion y gestion mensual en redes sociales: 1.800 EUR\nCreacion de videos e imagenes promocionales: 3.000 EUR\nCoordinacion general e informes trimestrales: 1.600 EUR",
+  closingNote:
+    "Este plan tiene un enfoque basico y sostenible, ideal para mantener visibilidad durante todo el ano sin necesidad de un despliegue de alta intensidad.",
 };
 
 function parseDecimal(value: string) {
@@ -96,7 +111,7 @@ function formatDate(value: string) {
 }
 
 function sanitizeDocumentName(value: string) {
-  return (value || "factura")
+  return (value || "presupuesto")
     .trim()
     .replace(/[\\/:*?"<>|]+/g, "-")
     .replace(/\s+/g, "-")
@@ -117,7 +132,25 @@ function multilineToHtml(value: string) {
   return escapeHtml(value).replaceAll("\n", "<br />");
 }
 
-function buildInvoiceCode(form: InvoiceFormState) {
+function paragraphsToHtml(value: string) {
+  return value
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => `<p>${multilineToHtml(paragraph)}</p>`)
+    .join("");
+}
+
+function linesToHtml(value: string) {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => `<li>${escapeHtml(line)}</li>`)
+    .join("");
+}
+
+function buildBudgetCode(form: BudgetFormState) {
   const series = form.invoiceSeries.trim();
   const number = form.invoiceNumber.trim();
 
@@ -127,7 +160,7 @@ function buildInvoiceCode(form: InvoiceFormState) {
   return "Sin numeracion";
 }
 
-function buildIssuerCircleLines(form: InvoiceFormState) {
+function buildIssuerCircleLines(form: BudgetFormState) {
   return [
     form.issuerName,
     form.issuerAddress,
@@ -137,7 +170,7 @@ function buildIssuerCircleLines(form: InvoiceFormState) {
   ].filter(Boolean);
 }
 
-function buildClientCircleLines(form: InvoiceFormState) {
+function buildClientCircleLines(form: BudgetFormState) {
   if (!form.clientDetails.trim()) {
     return [form.clientName || "CLIENTE", "Direccion pendiente", "CIF pendiente"];
   }
@@ -145,26 +178,32 @@ function buildClientCircleLines(form: InvoiceFormState) {
   return [form.clientName || "CLIENTE", ...form.clientDetails.split("\n").map((item) => item.trim()).filter(Boolean)];
 }
 
-function buildPrintableInvoiceDocument(
-  form: InvoiceFormState,
+function buildPrintableBudgetDocument(
+  form: BudgetFormState,
   summary: { vatRate: number; irpfRate: number; vatAmount: number; irpfAmount: number; totalAmount: number; baseAmount: number },
 ) {
-  const invoiceTitle = escapeHtml(form.documentName || "Factura");
-  const invoiceCode = escapeHtml(buildInvoiceCode(form));
+  const budgetTitle = escapeHtml(form.documentName || "presupuesto");
+  const budgetCode = escapeHtml(buildBudgetCode(form));
   const issuerCircleLines = buildIssuerCircleLines(form).map(escapeHtml).join("<br />");
   const clientCircleLines = buildClientCircleLines(form).map(escapeHtml).join("<br />");
   const billedService = multilineToHtml(form.billedService || "SERVICIO");
   const issuerBank = escapeHtml(form.issuerBankAccount || "");
   const issuerPhone = escapeHtml(form.issuerPhone || "");
   const issuerEmail = escapeHtml(form.issuerEmail || "");
-  const invoiceDate = escapeHtml(formatDate(form.invoiceDate) || form.invoiceDate);
+  const budgetDate = escapeHtml(formatDate(form.budgetDate) || form.budgetDate);
   const articleCode = escapeHtml((form.articleCode || "H").trim());
+  const serviceTitle = escapeHtml(form.serviceTitle || form.billedService || "SERVICIO");
+  const attentionLine = escapeHtml(form.attentionLine || form.clientName || "CLIENTE");
+  const generalObjective = paragraphsToHtml(form.generalObjective || "");
+  const includedServices = paragraphsToHtml(form.includedServices || "");
+  const annualBreakdown = linesToHtml(form.annualBreakdown || "");
+  const closingNote = paragraphsToHtml(form.closingNote || "");
 
   return `<!doctype html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <title>${invoiceTitle}</title>
+    <title>${budgetTitle}</title>
     <style>
       :root {
         --blue: #74c6ec;
@@ -342,6 +381,80 @@ function buildPrintableInvoiceDocument(
         color: var(--blue);
         font-weight: 300;
       }
+      .detail-sheet {
+        page-break-before: always;
+        padding-top: 20mm;
+      }
+      .detail-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 18mm;
+        align-items: flex-start;
+      }
+      .detail-kicker {
+        color: var(--blue);
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .detail-title {
+        margin-top: 10px;
+        max-width: 112mm;
+        color: #1f1f1f;
+        font-size: 28px;
+        line-height: 1.16;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .detail-contact {
+        min-width: 48mm;
+        text-align: right;
+        color: #1f1f1f;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .detail-contact strong {
+        display: block;
+        color: #1f1f1f;
+        font-size: 26px;
+        line-height: 1;
+      }
+      .detail-section {
+        margin-top: 22mm;
+      }
+      .detail-section.compact {
+        margin-top: 14mm;
+      }
+      .detail-section h2 {
+        margin: 0 0 8px;
+        color: #1f1f1f;
+        font-size: 17px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .detail-section p {
+        margin: 0 0 10px;
+        color: #333333;
+        font-size: 15px;
+        line-height: 1.48;
+      }
+      .detail-section ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .detail-section li {
+        margin: 0 0 8px;
+        color: #333333;
+        font-size: 15px;
+        line-height: 1.42;
+      }
+      .detail-total {
+        margin-top: 10px;
+        color: #1f1f1f;
+        font-size: 18px;
+        font-weight: 700;
+      }
       @page { size: A4; margin: 0; }
     </style>
   </head>
@@ -353,8 +466,8 @@ function buildPrintableInvoiceDocument(
           <div class="brand-name"><strong>MLC</strong><span>DESIGN</span></div>
         </div>
         <div class="doc-meta">
-          <div class="date">FECHA: ${invoiceDate}</div>
-          <div class="code">FACTURA Nº ${invoiceCode}</div>
+          <div class="date">FECHA: ${budgetDate}</div>
+          <div class="code">PRESUPUESTO No. ${budgetCode}</div>
         </div>
       </section>
 
@@ -407,7 +520,7 @@ function buildPrintableInvoiceDocument(
               <th class="right">CUOTA IVA</th>
               <th class="right">% IRPF</th>
               <th class="right">CUOTA IRPF</th>
-              <th class="right">TOTAL FACTURA</th>
+              <th class="right">TOTAL PRESUPUESTO</th>
             </tr>
           </thead>
           <tbody>
@@ -432,6 +545,40 @@ function buildPrintableInvoiceDocument(
         </div>
         <div class="mark">MLC<span>DESIGN</span></div>
       </footer>
+    </main>
+    <main class="sheet detail-sheet">
+      <section class="detail-top">
+        <div>
+          <div class="detail-kicker">DESGLOSE DE PRESUPUESTO</div>
+          <div class="detail-title">${serviceTitle}</div>
+          <div class="date" style="margin-top: 14px;">Att.: ${attentionLine}</div>
+        </div>
+        <div class="detail-contact">
+          <strong>MLC<span style="color: var(--blue); font-weight: 300;">DESIGN</span></strong>
+          ${issuerPhone}<br />
+          ${issuerEmail}
+        </div>
+      </section>
+
+      <section class="detail-section">
+        <h2>Objetivo general</h2>
+        ${generalObjective}
+      </section>
+
+      <section class="detail-section compact">
+        <h2>Servicios incluidos</h2>
+        ${includedServices}
+      </section>
+
+      <section class="detail-section compact">
+        <h2>Desglose de presupuesto</h2>
+        <ul>${annualBreakdown}</ul>
+        <div class="detail-total">Total: ${formatMoney(summary.baseAmount)} IVA no incluido</div>
+      </section>
+
+      <section class="detail-section compact">
+        ${closingNote}
+      </section>
     </main>
   </body>
 </html>`;
@@ -462,7 +609,27 @@ function circleLinesForPreview(lines: string[]) {
   return lines.map((line) => <p key={line}>{line}</p>);
 }
 
-function normalizeSavedClients(clients: SavedInvoiceClient[], client: SavedInvoiceClient) {
+function textBlocksForPreview(value: string) {
+  return value
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => (
+      <p key={paragraph} className="whitespace-pre-line">
+        {paragraph}
+      </p>
+    ));
+}
+
+function lineItemsForPreview(value: string) {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => <li key={line}>{line}</li>);
+}
+
+function normalizeSavedClients(clients: SavedBudgetClient[], client: SavedBudgetClient) {
   const nextClients = clients.filter((item) => item.id !== client.id);
   return [...nextClients, client].sort((a, b) => a.legalName.localeCompare(b.legalName, "es"));
 }
@@ -488,7 +655,7 @@ function formatInvoiceBaseParam(value: string) {
   return parsed > 0 ? parsed.toFixed(2).replace(".", ",") : "";
 }
 
-function invoiceDateFromMonth(value: string) {
+function budgetDateFromMonth(value: string) {
   const [monthName = "", yearValue = ""] = value.split(" ");
   const year = Number(yearValue);
   const monthIndex = [
@@ -512,12 +679,12 @@ function invoiceDateFromMonth(value: string) {
   return `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 }
 
-export function FacturacionClient() {
+export function PresupuestosClient() {
   const searchParams = useSearchParams();
   const [form, setForm] = useState(INITIAL_STATE);
   const [generated, setGenerated] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [savedClients, setSavedClients] = useState<SavedInvoiceClient[]>([]);
+  const [savedClients, setSavedClients] = useState<SavedBudgetClient[]>([]);
   const [selectedClientId, setSelectedClientId] = useState("");
   const [clientStatus, setClientStatus] = useState("");
   const [driveFolderQuery, setDriveFolderQuery] = useState("");
@@ -546,8 +713,8 @@ export function FacturacionClient() {
     };
   }, [form.baseAmount, form.irpfRate, form.vatRate]);
 
-  const previewDocumentName = form.documentName.trim() || "Factura";
-  const previewInvoiceCode = buildInvoiceCode(form);
+  const previewDocumentName = form.documentName.trim() || "presupuesto";
+  const previewBudgetCode = buildBudgetCode(form);
   const issuerCircleLines = buildIssuerCircleLines(form);
   const clientCircleLines = buildClientCircleLines(form);
   const printDisabled =
@@ -563,7 +730,7 @@ export function FacturacionClient() {
       try {
         const response = await fetch("/api/facturacion/clientes", { cache: "no-store" });
         if (!response.ok) throw new Error("No se pudieron cargar las fichas.");
-        const data = (await response.json()) as { clients?: SavedInvoiceClient[] };
+        const data = (await response.json()) as { clients?: SavedBudgetClient[] };
         if (!cancelled) setSavedClients(data.clients ?? []);
       } catch {
         if (!cancelled) setClientStatus("No se pudieron cargar las fichas guardadas.");
@@ -595,11 +762,13 @@ export function FacturacionClient() {
 
     setForm((current) => ({
       ...current,
-      documentName: month ? `Factura ${clientName || "cliente"} - ${month}` : current.documentName,
-      invoiceDate: auditOrigin && month ? invoiceDateFromMonth(month) : current.invoiceDate,
+      documentName: month ? `Presupuesto ${clientName || "cliente"} - ${month}` : current.documentName,
+      budgetDate: auditOrigin && month ? budgetDateFromMonth(month) : current.budgetDate,
       clientName: savedClient?.legalName ?? (clientName || current.clientName),
       clientDetails: savedClient?.details ?? current.clientDetails,
       billedService: service || current.billedService,
+      serviceTitle: service || current.serviceTitle,
+      attentionLine: savedClient?.legalName ?? (clientName || current.attentionLine),
       baseAmount: base ? formatInvoiceBaseParam(base) : current.baseAmount,
     }));
     setSelectedClientId(savedClient?.id ?? "");
@@ -608,7 +777,7 @@ export function FacturacionClient() {
     if (auditOrigin) {
       let cancelled = false;
 
-      async function loadNextInvoiceNumber() {
+      async function loadNextBudgetNumber() {
         try {
           const response = await fetch(`/api/facturacion/siguiente-numero?serie=${encodeURIComponent(INITIAL_STATE.invoiceSeries)}`, {
             cache: "no-store",
@@ -623,18 +792,18 @@ export function FacturacionClient() {
             invoiceNumber: formattedNumber,
           }));
         } catch {
-          // La factura sigue siendo editable si no se puede leer la numeracion.
+          // El presupuesto sigue siendo editable si no se puede leer la numeracion.
         }
       }
 
-      loadNextInvoiceNumber();
+      loadNextBudgetNumber();
       return () => {
         cancelled = true;
       };
     }
   }, [savedClients, searchParams]);
 
-  function updateField<Key extends keyof InvoiceFormState>(key: Key, value: InvoiceFormState[Key]) {
+  function updateField<Key extends keyof BudgetFormState>(key: Key, value: BudgetFormState[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
@@ -672,7 +841,7 @@ export function FacturacionClient() {
         }),
       });
 
-      const data = (await response.json().catch(() => ({}))) as { client?: SavedInvoiceClient; error?: string };
+      const data = (await response.json().catch(() => ({}))) as { client?: SavedBudgetClient; error?: string };
       if (!response.ok || !data.client) throw new Error(data.error || "No se pudo guardar la ficha.");
 
       setSavedClients((current) => normalizeSavedClients(current, data.client!));
@@ -683,15 +852,15 @@ export function FacturacionClient() {
     }
   }
 
-  function handleGenerateInvoice() {
+  function handleGenerateBudget() {
     setGenerated(true);
   }
 
-  function handlePrintInvoice() {
+  function handlePrintBudget() {
     const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1080,height=1440");
     if (!printWindow) return;
 
-    const html = buildPrintableInvoiceDocument(form, summary);
+    const html = buildPrintableBudgetDocument(form, summary);
     printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
@@ -718,7 +887,7 @@ export function FacturacionClient() {
     }
   }
 
-  async function handleSaveInvoiceToDrive() {
+  async function handleSaveBudgetToDrive() {
     if (!selectedDriveFolderId) {
       setDriveStatus("Selecciona una carpeta de Drive antes de guardar.");
       return;
@@ -728,13 +897,13 @@ export function FacturacionClient() {
     setDriveStatus("Guardando documento en Drive...");
 
     try {
-      const html = buildPrintableInvoiceDocument(form, summary);
+      const html = buildPrintableBudgetDocument(form, summary);
       const response = await fetch("/api/drive/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           folderId: selectedDriveFolderId,
-          fileName: sanitizeDocumentName(`${previewDocumentName}-${previewInvoiceCode}`),
+          fileName: sanitizeDocumentName(`${previewDocumentName}-${previewBudgetCode}`),
           html,
         }),
       });
@@ -751,8 +920,9 @@ export function FacturacionClient() {
     }
   }
 
-  const renderInvoicePreview = (className = "") => (
-    <article className={`overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.12)] ${className}`}> 
+  const renderBudgetPreview = (className = "") => (
+    <div className={`flex flex-col gap-5 ${className}`}>
+      <article className="w-full overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.12)]"> 
           <div className="px-8 pt-8 pb-0">
             <div className="flex items-start justify-between gap-8">
               <div className="flex items-center gap-3">
@@ -761,10 +931,10 @@ export function FacturacionClient() {
                 </div>
               </div>
               <div className="pt-2 text-right">
-                <p className="text-[18px] font-medium text-sky-400">FECHA: {formatDate(form.invoiceDate) || "Sin fecha"}</p>
+                <p className="text-[18px] font-medium text-sky-400">FECHA: {formatDate(form.budgetDate) || "Sin fecha"}</p>
                 <div className="mt-6 text-right font-light tracking-[0.02em] text-slate-200">
-                  <p className="text-[28px] leading-tight">FACTURA Nº</p>
-                  <p className="mt-1 text-[26px] leading-tight">{previewInvoiceCode}</p>
+                  <p className="text-[28px] leading-tight">PRESUPUESTO No.</p>
+                  <p className="mt-1 text-[26px] leading-tight">{previewBudgetCode}</p>
                 </div>
               </div>
             </div>
@@ -818,7 +988,7 @@ export function FacturacionClient() {
                     <th className="pb-3 text-right font-normal">CUOTA IVA</th>
                     <th className="pb-3 text-right font-normal">% IRPF</th>
                     <th className="pb-3 text-right font-normal">CUOTA IRPF</th>
-                    <th className="pb-3 text-right font-normal">TOTAL FACTURA</th>
+                    <th className="pb-3 text-right font-normal">TOTAL PRESUPUESTO</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -847,7 +1017,47 @@ export function FacturacionClient() {
               MLC<span className="font-light text-sky-300">DESIGN</span>
             </div>
           </div>
-        </article>
+      </article>
+
+      <article className="w-full rounded-[30px] border border-slate-200 bg-white px-8 py-8 text-left text-slate-900 shadow-[0_18px_55px_rgba(15,23,42,0.12)]">
+        <div className="flex items-start justify-between gap-8">
+          <div>
+            <p className="text-[22px] font-bold uppercase tracking-[0.08em] text-sky-400">DESGLOSE DE PRESUPUESTO</p>
+            <h2 className="mt-3 max-w-[520px] text-[28px] font-bold uppercase leading-tight text-slate-900">
+              {form.serviceTitle || form.billedService || "SERVICIO"}
+            </h2>
+            <p className="mt-3 text-[15px] text-slate-500">Att.: {form.attentionLine || form.clientName || "CLIENTE"}</p>
+          </div>
+          <div className="min-w-40 text-right text-[15px] leading-6 text-slate-700">
+            <p className="text-[28px] font-semibold leading-none text-slate-950">
+              MLC<span className="font-light text-sky-400">DESIGN</span>
+            </p>
+            <p className="mt-3">{form.issuerPhone || "Telefono"}</p>
+            <p>{form.issuerEmail || "email@dominio.com"}</p>
+          </div>
+        </div>
+
+        <div className="mt-12 space-y-8 text-[15px] leading-6 text-slate-700">
+          <section>
+            <h3 className="mb-3 text-[17px] font-bold uppercase tracking-[0.04em] text-slate-950">Objetivo general</h3>
+            <div className="space-y-3">{textBlocksForPreview(form.generalObjective)}</div>
+          </section>
+
+          <section>
+            <h3 className="mb-3 text-[17px] font-bold uppercase tracking-[0.04em] text-slate-950">Servicios incluidos</h3>
+            <div className="space-y-3">{textBlocksForPreview(form.includedServices)}</div>
+          </section>
+
+          <section>
+            <h3 className="mb-3 text-[17px] font-bold uppercase tracking-[0.04em] text-slate-950">Desglose de presupuesto</h3>
+            <ul className="list-disc space-y-2 pl-5">{lineItemsForPreview(form.annualBreakdown)}</ul>
+            <p className="mt-4 text-[18px] font-bold text-slate-950">Total: {formatMoney(summary.baseAmount)} IVA no incluido</p>
+          </section>
+
+          <section className="space-y-3">{textBlocksForPreview(form.closingNote)}</section>
+        </div>
+      </article>
+    </div>
   );
 
   return (
@@ -859,10 +1069,10 @@ export function FacturacionClient() {
               Plantilla tipo MLC
             </p>
             <h2 className="mx-auto mt-2 w-full max-w-sm text-center text-2xl font-semibold text-white">
-              Factura basada en el ejemplo subido
+              Presupuesto basado en la plantilla de facturas
             </h2>
             <p className="mx-auto mt-3 w-full max-w-sm text-center text-sm leading-6 text-slate-300">
-              Esta versión replica la estructura del PDF de ejemplo: cabecera limpia, número grande, círculos de emisor y cliente, tabla simple, resumen fiscal y pie negro.
+              Esta version adapta la estructura de facturas para preparar presupuestos con cabecera limpia, numero grande, cliente, tabla simple, resumen fiscal y pie negro.
             </p>
           </div>
         </div>
@@ -875,8 +1085,8 @@ export function FacturacionClient() {
 
         <div className="mx-auto mt-4 grid w-full max-w-lg justify-items-center gap-4 sm:grid-cols-3">
           <div>
-            <FormField label="Fecha de factura" htmlFor={`${baseId}-date`}>
-              <input id={`${baseId}-date`} type="date" className={fieldClassName} value={form.invoiceDate} onChange={(event) => updateField("invoiceDate", event.target.value)} />
+            <FormField label="Fecha de presupuesto" htmlFor={`${baseId}-date`}>
+              <input id={`${baseId}-date`} type="date" className={fieldClassName} value={form.budgetDate} onChange={(event) => updateField("budgetDate", event.target.value)} />
             </FormField>
           </div>
           <div>
@@ -986,6 +1196,43 @@ export function FacturacionClient() {
           </div>
         </div>
 
+        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Desglose del servicio</p>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-12">
+            <div className="lg:col-span-8">
+              <FormField label="Titulo del servicio" htmlFor={`${baseId}-service-title`}>
+                <input id={`${baseId}-service-title`} className={fieldClassName} value={form.serviceTitle} onChange={(event) => updateField("serviceTitle", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="lg:col-span-4">
+              <FormField label="Att." htmlFor={`${baseId}-attention`}>
+                <input id={`${baseId}-attention`} className={fieldClassName} value={form.attentionLine} onChange={(event) => updateField("attentionLine", event.target.value)} placeholder={form.clientName || "Cliente"} />
+              </FormField>
+            </div>
+            <div className="lg:col-span-12">
+              <FormField label="Objetivo general" htmlFor={`${baseId}-objective`}>
+                <textarea id={`${baseId}-objective`} className={`${fieldClassName} min-h-28 resize-y`} value={form.generalObjective} onChange={(event) => updateField("generalObjective", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="lg:col-span-12">
+              <FormField label="Servicios incluidos" htmlFor={`${baseId}-included-services`}>
+                <textarea id={`${baseId}-included-services`} className={`${fieldClassName} min-h-44 resize-y`} value={form.includedServices} onChange={(event) => updateField("includedServices", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="lg:col-span-12">
+              <FormField label="Desglose economico" htmlFor={`${baseId}-annual-breakdown`}>
+                <textarea id={`${baseId}-annual-breakdown`} className={`${fieldClassName} min-h-32 resize-y`} value={form.annualBreakdown} onChange={(event) => updateField("annualBreakdown", event.target.value)} />
+              </FormField>
+            </div>
+            <div className="lg:col-span-12">
+              <FormField label="Nota final" htmlFor={`${baseId}-closing-note`}>
+                <textarea id={`${baseId}-closing-note`} className={`${fieldClassName} min-h-24 resize-y`} value={form.closingNote} onChange={(event) => updateField("closingNote", event.target.value)} />
+              </FormField>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-6 grid gap-4 lg:grid-cols-12">
           <div className="lg:col-span-6">
             <FormField label="Base imponible" htmlFor={`${baseId}-base`}>
@@ -1009,10 +1256,10 @@ export function FacturacionClient() {
         </div>
 
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <button type="button" onClick={handleGenerateInvoice} className="rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
-            Generar factura
+          <button type="button" onClick={handleGenerateBudget} className="rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
+            Generar presupuesto
           </button>
-          <button type="button" onClick={handlePrintInvoice} disabled={printDisabled} className="rounded-2xl border border-white/12 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
+          <button type="button" onClick={handlePrintBudget} disabled={printDisabled} className="rounded-2xl border border-white/12 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
             Imprimir o guardar PDF
           </button>
         </div>
@@ -1026,7 +1273,7 @@ export function FacturacionClient() {
                 className={fieldClassName}
                 value={driveFolderQuery}
                 onChange={(event) => setDriveFolderQuery(event.target.value)}
-                placeholder="JULIO 2026, FACTURAS..."
+                placeholder="JULIO 2026, PRESUPUESTOS..."
               />
             </FormField>
             <button type="button" onClick={handleSearchDriveFolders} disabled={isDriveBusy} className="min-h-11 rounded-2xl border border-white/12 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
@@ -1048,7 +1295,7 @@ export function FacturacionClient() {
           </div>
 
           <div className="mt-4 flex justify-center">
-            <button type="button" onClick={handleSaveInvoiceToDrive} disabled={printDisabled || isDriveBusy || !selectedDriveFolderId} className="rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44] disabled:cursor-not-allowed disabled:opacity-40">
+            <button type="button" onClick={handleSaveBudgetToDrive} disabled={printDisabled || isDriveBusy || !selectedDriveFolderId} className="rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44] disabled:cursor-not-allowed disabled:opacity-40">
               Guardar documento en Drive
             </button>
           </div>
@@ -1064,7 +1311,7 @@ export function FacturacionClient() {
           </div>
           <div className="flex flex-col items-center gap-3 text-center">
             <div>
-              <p className="text-sm text-slate-500">Factura Nº {previewInvoiceCode}</p>
+              <p className="text-sm text-slate-500">Presupuesto No. {previewBudgetCode}</p>
               <p className="mt-1 text-xl font-semibold text-slate-950">{formatMoney(summary.totalAmount)}</p>
             </div>
             <button type="button" onClick={() => setIsPreviewOpen(true)} className="w-full max-w-xs rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto">
@@ -1075,13 +1322,13 @@ export function FacturacionClient() {
 
         <div className="relative mx-auto h-[420px] w-full max-w-[320px] overflow-hidden rounded-[30px] border border-slate-200 bg-white sm:h-auto sm:max-w-[760px] sm:overflow-visible sm:border-0 sm:bg-transparent">
           <div className="absolute left-1/2 top-1/2 w-[760px] origin-center -translate-x-1/2 -translate-y-1/2 scale-[0.24] min-[390px]:scale-[0.26] sm:static sm:w-auto sm:translate-x-0 sm:translate-y-0 sm:scale-100">
-            {renderInvoicePreview("w-[760px] sm:w-full")}
+            {renderBudgetPreview("w-[760px] sm:w-full")}
           </div>
         </div>
       </div>
 
       {isPreviewOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur sm:p-6" role="dialog" aria-modal="true" aria-label="Vista previa ampliada de factura">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur sm:p-6" role="dialog" aria-modal="true" aria-label="Vista previa ampliada de presupuesto">
           <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[28px] bg-[#f7f7f5] shadow-2xl">
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 text-slate-950 sm:px-5">
               <div>
@@ -1093,7 +1340,7 @@ export function FacturacionClient() {
               </button>
             </div>
             <div className="overflow-auto p-3 sm:p-6">
-              <div className="mx-auto w-[760px] max-w-full">{renderInvoicePreview("w-[760px]")}</div>
+              <div className="mx-auto w-[760px] max-w-full">{renderBudgetPreview("w-[760px]")}</div>
             </div>
           </div>
         </div>
@@ -1101,3 +1348,5 @@ export function FacturacionClient() {
     </section>
   );
 }
+
+

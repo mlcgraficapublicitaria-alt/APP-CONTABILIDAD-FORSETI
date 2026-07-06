@@ -50,11 +50,13 @@ Supported alternatives:
 - `GOOGLE_APPLICATION_CREDENTIALS` pointing to a service account JSON file
 - `GOOGLE_SERVICE_ACCOUNT_EMAIL` + `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
 - OAuth fallback via `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` + `GOOGLE_OAUTH_REFRESH_TOKEN` (+ optional `GOOGLE_OAUTH_TOKEN_URI`)
+- `FORSETI_OAUTH_CONFIG_PATH` pointing to an already-authorized Google Drive integration `config.json`
 
 Notes:
 
 - The service account must have access to the target Google Sheet as **Editor**.
 - If Google Drive is used to read monthly PDFs, the same service account must also have access to the relevant Drive folders/files.
+- If Drive upload is used for invoices/budgets, the credential must have write access to the destination folders.
 - `.env*` is ignored by Git. Keep real secrets only in local environment files or production secret storage.
 
 ### Production deployment
@@ -72,6 +74,12 @@ GOOGLE_OAUTH_CLIENT_ID
 GOOGLE_OAUTH_CLIENT_SECRET
 GOOGLE_OAUTH_REFRESH_TOKEN
 GOOGLE_OAUTH_TOKEN_URI
+```
+
+or point the app to an already-authorized local integration file:
+
+```env
+FORSETI_OAUTH_CONFIG_PATH="C:\path\to\google-drive\config.json"
 ```
 
 Do not commit real credentials or a real `.env` file to the repository.

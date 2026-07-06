@@ -59,4 +59,11 @@ export const TOOLS = [
     description: "Crear facturas desde formulario, calcular base, IVA e IRPF y preparar el documento para imprimir o guardar.",
     href: "/facturacion",
   },
+  {
+    id: "presupuestos",
+    label: "Presupuestos",
+    title: "Generador de presupuestos",
+    description: "Crear presupuestos desde formulario, calcular base, IVA e IRPF y preparar el documento para imprimir o guardar.",
+    href: "/presupuestos",
+  },
 ];
