@@ -16,6 +16,15 @@ type DriveFolderOption = {
   webViewLink?: string;
 };
 
+type InvoiceSummary = {
+  baseAmount: number;
+  vatRate: number;
+  irpfRate: number;
+  vatAmount: number;
+  irpfAmount: number;
+  totalAmount: number;
+};
+
 type InvoiceFormState = {
   documentName: string;
   invoiceDate: string;
@@ -155,7 +164,7 @@ function buildClientCircleLines(form: InvoiceFormState) {
 
 function buildPrintableInvoiceDocument(
   form: InvoiceFormState,
-  summary: { vatRate: number; irpfRate: number; vatAmount: number; irpfAmount: number; totalAmount: number; baseAmount: number },
+  summary: InvoiceSummary,
 ) {
   const invoiceTitle = escapeHtml(buildInvoiceDocumentName(form));
   const invoiceCode = escapeHtml(buildInvoiceCode(form));
@@ -661,6 +670,51 @@ export function FacturacionClient() {
     !form.billedService.trim() ||
     summary.baseAmount <= 0;
 
+  async function loadNextInvoiceNumber(series = form.invoiceSeries) {
+    const response = await fetch(`/api/facturacion/siguiente-numero?serie=${encodeURIComponent(series || "A")}`, {
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error("No se pudo leer el siguiente número de factura.");
+
+    const data = (await response.json()) as { formattedNumber?: string; series?: string };
+    if (!data.formattedNumber) throw new Error("No se pudo leer el siguiente número de factura.");
+    const formattedNumber = data.formattedNumber;
+
+    setForm((current) => ({
+      ...current,
+      invoiceSeries: data.series || current.invoiceSeries,
+      invoiceNumber: formattedNumber,
+    }));
+
+    return formattedNumber;
+  }
+
+  async function registerCurrentInvoice(renderedHtml = buildPrintableInvoiceDocument(form, summary)) {
+    const response = await fetch("/api/facturacion/facturas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        documentName: previewDocumentName,
+        series: form.invoiceSeries,
+        number: form.invoiceNumber,
+        issueDate: form.invoiceDate,
+        clientName: form.clientName,
+        clientDetails: form.clientDetails,
+        articleCode: form.articleCode,
+        serviceDescription: form.billedService,
+        subtotalAmount: summary.baseAmount,
+        vatRate: summary.vatRate,
+        vatAmount: summary.vatAmount,
+        irpfRate: summary.irpfRate,
+        irpfAmount: summary.irpfAmount,
+        totalAmount: summary.totalAmount,
+        renderedHtml,
+      }),
+    });
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    if (!response.ok) throw new Error(data.error || "No se pudo guardar la numeración de la factura.");
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -676,6 +730,34 @@ export function FacturacionClient() {
     }
 
     loadClients();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadInitialInvoiceNumber() {
+      try {
+        const response = await fetch(`/api/facturacion/siguiente-numero?serie=${encodeURIComponent(INITIAL_STATE.invoiceSeries)}`, {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as { formattedNumber?: string; series?: string };
+        if (cancelled || !data.formattedNumber) return;
+        const formattedNumber = data.formattedNumber;
+        setForm((current) => ({
+          ...current,
+          invoiceSeries: data.series || current.invoiceSeries,
+          invoiceNumber: formattedNumber,
+        }));
+      } catch {
+        // La factura sigue siendo editable si no se puede leer la numeración.
+      }
+    }
+
+    loadInitialInvoiceNumber();
     return () => {
       cancelled = true;
     };
@@ -792,8 +874,18 @@ export function FacturacionClient() {
     setGenerated(true);
   }
 
-  function handlePrintInvoice() {
-    openPrintablePreview(printPreviewRef.current, previewDocumentName);
+  async function handlePrintInvoice() {
+    setDriveStatus("Guardando número de factura...");
+
+    try {
+      await registerCurrentInvoice();
+      openPrintablePreview(printPreviewRef.current, previewDocumentName);
+      const nextNumber = await loadNextInvoiceNumber(form.invoiceSeries);
+      setGenerated(false);
+      setDriveStatus(`Factura ${previewInvoiceCode} registrada. Siguiente número preparado: ${form.invoiceSeries}/${nextNumber}.`);
+    } catch (error) {
+      setDriveStatus(error instanceof Error ? error.message : "No se pudo guardar la numeración de la factura.");
+    }
   }
 
   async function handleSearchDriveFolders() {
@@ -840,7 +932,11 @@ export function FacturacionClient() {
         error?: string;
       };
       if (!response.ok || !data.file) throw new Error(data.error || "No se pudo guardar el documento en Drive.");
-      setDriveStatus(data.file.webViewLink ? `Guardado en Drive: ${data.file.name} - ${data.file.webViewLink}` : `Guardado en Drive: ${data.file.name}`);
+      await registerCurrentInvoice(html);
+      const nextNumber = await loadNextInvoiceNumber(form.invoiceSeries);
+      setGenerated(false);
+      const driveMessage = data.file.webViewLink ? `Guardado en Drive: ${data.file.name} - ${data.file.webViewLink}` : `Guardado en Drive: ${data.file.name}`;
+      setDriveStatus(`${driveMessage}. Factura ${previewInvoiceCode} registrada. Siguiente número preparado: ${form.invoiceSeries}/${nextNumber}.`);
     } catch (error) {
       setDriveStatus(error instanceof Error ? error.message : "No se pudo guardar el documento en Drive.");
     } finally {
