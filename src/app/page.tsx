@@ -236,30 +236,30 @@ function ClientBillingCard({
   const logoSrc = tone === "spanishCheese" ? "/logo-spanish-cheese-transparent.png" : tone === "grupoDim" ? "/logo-grupo-dim.jpeg" : null;
   const description =
     tone === "spanishCheese"
-      ? "FacturaciÃ³n y horas del cliente en el mes seleccionado de Spanish Cheese, especialista en exportaciÃ³n internacional de quesos y embutidos de calidad."
+      ? "Facturación y horas del cliente en el mes seleccionado de Spanish Cheese, especialista en exportación internacional de quesos y embutidos de calidad."
       : tone === "grupoDim"
-        ? "FacturaciÃ³n y horas en el mes seleccionado del cliente Grupo Dim, especialista en reformas e interiorismo."
-        : "FacturaciÃ³n y horas del cliente en el mes seleccionado.";
+        ? "Facturación y horas en el mes seleccionado del cliente Grupo Dim, especialista en reformas e interiorismo."
+        : "Facturación y horas del cliente en el mes seleccionado.";
 
   const metricCards = [
     {
       label: "ACTUAL",
       rows: [
-        { term: "FacturaciÃ³n", value: actual },
+        { term: "Facturación", value: actual },
         { term: "Horas", value: hours },
       ],
     },
     {
-      label: "PREVISION",
+      label: "PREVISIÓN",
       rows: [
-        { term: "FacturaciÃ³n", value: prevision },
+        { term: "Facturación", value: prevision },
         { term: "Horas", value: previsionHours },
       ],
     },
     {
       label: "DIFERENCIA",
       rows: [
-        { term: "FacturaciÃ³n", value: diff },
+        { term: "Facturación", value: diff },
         { term: "Horas", value: diffHours },
       ],
     },
@@ -305,7 +305,7 @@ function ClientBillingCard({
                     {card.rows.map((row) => (
                       <div key={`${client}-${card.label}-${row.term}`}>
                         <dt className={termClasses}>{row.term}</dt>
-                        <dd className={`mt-1 font-medium ${valueClasses}`}>{row.value || "â€”"}</dd>
+                        <dd className={`mt-1 font-medium ${valueClasses}`}>{row.value || "—"}</dd>
                       </div>
                     ))}
                   </dl>
@@ -337,7 +337,7 @@ function MlcdProjectBillingCard({ projects }: { projects: Array<{ client: string
             <div className="flex h-[77px] w-[211px] items-center justify-start overflow-hidden">
               <Image src="/logo-mlc-design.png" alt="MLC Design logo" width={178} height={100} className="max-h-full w-auto object-contain" />
             </div>
-            <p className="mt-1 min-h-10 text-sm leading-5 text-sky-950/70">FacturaciÃ³n por proyecto de agencia MLCdesign registrada para trabajos freelance del mes.</p>
+            <p className="mt-1 min-h-10 text-sm leading-5 text-sky-950/70">Facturación por proyecto de agencia MLCdesign registrada para trabajos freelance del mes.</p>
           </div>
         </div>
 
@@ -371,7 +371,7 @@ function MlcdProjectBillingCard({ projects }: { projects: Array<{ client: string
 }
 
 function parseEuroValue(value: string) {
-  const normalized = value.replace(/\s/g, "").replace("â‚¬", "").replace(/\./g, "").replace(",", ".");
+  const normalized = value.replace(/\s/g, "").replace("€", "").replace(/\./g, "").replace(",", ".");
   const parsed = Number.parseFloat(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -394,11 +394,11 @@ function ComparisonTrendIcon({ current, previous }: { current: number; previous:
 
   return (
     <span
-      aria-label={isBetter ? "Mejor que el aÃ±o anterior" : "Peor que el aÃ±o anterior"}
+      aria-label={isBetter ? "Mejor que el año anterior" : "Peor que el año anterior"}
       className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full shadow-[0_6px_14px_rgba(0,0,0,0.35)] ring-2 ${
         isBetter ? "bg-emerald-400 text-emerald-950 ring-emerald-200/80" : "bg-red-500 text-white ring-red-200/80"
       }`}
-      title={isBetter ? "Mejor que el aÃ±o anterior" : "Peor que el aÃ±o anterior"}
+      title={isBetter ? "Mejor que el año anterior" : "Peor que el año anterior"}
     >
       <svg aria-hidden="true" viewBox="0 0 16 16" className="h-5 w-5" fill="none">
         <path
@@ -424,9 +424,9 @@ function AnnualResultIcon({ current, previous }: { current: string; previous?: s
   if (currentValue === previousValue) {
     return (
       <span
-        aria-label="Resultado igual al aÃ±o anterior"
+        aria-label="Resultado igual al año anterior"
         className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-zinc-500 text-white shadow-[0_6px_14px_rgba(0,0,0,0.35)] ring-2 ring-zinc-200/70"
-        title="Resultado igual al aÃ±o anterior"
+        title="Resultado igual al año anterior"
       >
         <svg aria-hidden="true" viewBox="0 0 16 16" className="h-5 w-5" fill="none">
           <path d="M4 6.25H12M4 9.75H12" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
@@ -473,7 +473,7 @@ function getAccumulatedSavingsUntilMonth(entries: Array<{ month: string; savings
 }
 
 function formatPercentage(value: number) {
-  if (!Number.isFinite(value)) return "â€”";
+  if (!Number.isFinite(value)) return "—";
 
   return new Intl.NumberFormat("es-ES", {
     style: "percent",
@@ -660,7 +660,7 @@ function MonthlyComparisonChart({
   if (!previousYear || !previousEntries?.length) {
     return (
       <div className="rounded-2xl border border-white/10 bg-slate-950/30 p-4 text-sm text-zinc-400">
-        Sin aÃ±o anterior disponible para comparar.
+        Sin año anterior disponible para comparar.
       </div>
     );
   }
@@ -908,12 +908,12 @@ export default async function Home({ searchParams }: HomeProps) {
                 className="h-auto w-40 drop-shadow-[0_10px_24px_rgba(0,0,0,0.75)] sm:w-48"
               />
               <h1 className="mt-4 hidden text-2xl font-semibold text-white md:block">
-                Administracion y contabilidad
+                Administración y contabilidad
               </h1>
             </div>
 
             <h1 className="absolute bottom-6 left-1/2 z-10 w-[calc(100%-2rem)] -translate-x-1/2 whitespace-nowrap text-center text-[clamp(18px,5.2vw,22px)] font-semibold text-white md:hidden">
-              Administracion y contabilidad
+              Administración y contabilidad
             </h1>
 
             {data.notice ? (
@@ -942,7 +942,7 @@ export default async function Home({ searchParams }: HomeProps) {
               <div className="flex flex-wrap gap-2">
                 <a href="#pasivos" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.12em] text-zinc-200 transition hover:border-[#5ab94e]/60 hover:text-white">PASIVOS</a>
                 <a href="#ahorro" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.12em] text-zinc-200 transition hover:border-[#5ab94e]/60 hover:text-white">AHORRO</a>
-                <a href="#inversion" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.12em] text-zinc-200 transition hover:border-[#5ab94e]/60 hover:text-white">INVERSION</a>
+                <a href="#inversion" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold tracking-[0.12em] text-zinc-200 transition hover:border-[#5ab94e]/60 hover:text-white">INVERSIÓN</a>
               </div>
             </section>
 
@@ -951,7 +951,7 @@ export default async function Home({ searchParams }: HomeProps) {
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <KpiCard shadowClass={getSummaryShadow(selectedMonth, 0)} toneClass={SUMMARY_CARD_TONE} title="TOTAL HORAS" description="Suma de horas trabajadas en el mes seleccionado." value={data.totalHours} />
-                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 1)} toneClass={SUMMARY_CARD_TONE} title="HORAS AL DÃA" description="Media diaria registrada para el mes seleccionado." value={data.hoursPerDay} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 1)} toneClass={SUMMARY_CARD_TONE} title="HORAS AL DÍA" description="Media diaria registrada para el mes seleccionado." value={data.hoursPerDay} />
                 <KpiCard shadowClass={getSummaryShadow(selectedMonth, 2)} toneClass={SUMMARY_CARD_TONE} title="TOTAL FACTURADO" description="Importe total facturado antes restar retenciones de IVA y IRPF." value={data.totalFactura} />
                 <KpiCard shadowClass={getSummaryShadow(selectedMonth, 3)} toneClass={SUMMARY_CARD_TONE} title="TOTAL NETO" description="Ingresos netos del mes antes de sumar pasivos adicionales." value={data.totalNeto} />
                 <KpiCard shadowClass={getSummaryShadow(selectedMonth, 4)} toneClass={SUMMARY_CARD_TONE} title="NETO CON PASIVOS" description="Total neto incluyendo ingresos pasivos del mes." value={data.netoConPasivos} />
@@ -961,7 +961,7 @@ export default async function Home({ searchParams }: HomeProps) {
                   shadowClass="bg-emerald-400"
                   toneClass="border-emerald-200/80 bg-[#d7fbe8] text-emerald-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_20px_rgba(0,0,0,0.16)] [&_.kpi-value]:text-emerald-950"
                   title="BENEFICIO TOTAL"
-                  description="Resultado neto despuÃ©s de descontar gastos."
+                  description="Resultado neto después de descontar gastos."
                   value={data.beneficioNeto}
                 />
               </div>
@@ -970,13 +970,13 @@ export default async function Home({ searchParams }: HomeProps) {
             <section className="flex flex-col gap-4">
               <div>
                 <h2 className="text-xl font-semibold">REPARTO DEL BENEFICIO TOTAL</h2>
-                <p className="mt-1 text-sm text-zinc-400">DistribuciÃ³n del beneficio segÃºn la ficha Reparto de ingresos.</p>
+                <p className="mt-1 text-sm text-zinc-400">Distribución del beneficio según la ficha Reparto de ingresos.</p>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
                 <div className="grid gap-5">
                   <BenefitSplitBar label="AHORRO" value={data.repartoBeneficio.ahorro} total={data.beneficioNeto} className="bg-blue-300" />
-                  <BenefitSplitBar label="INVERSION" value={data.repartoBeneficio.inversion} total={data.beneficioNeto} className="bg-yellow-300" />
+                  <BenefitSplitBar label="INVERSIÓN" value={data.repartoBeneficio.inversion} total={data.beneficioNeto} className="bg-yellow-300" />
                   <BenefitSplitBar label="OCIO" value={data.repartoBeneficio.ocio} total={data.beneficioNeto} className="bg-red-300" />
                 </div>
               </div>
@@ -985,7 +985,7 @@ export default async function Home({ searchParams }: HomeProps) {
             <section className="flex flex-col gap-4">
               <div>
                 <h2 className="text-xl font-semibold">RESUMEN DE FACTURACION POR CLIENTE</h2>
-                <p className="mt-1 text-sm text-zinc-400">FacturaciÃ³n del mes de clientes retainer activos.</p>
+                <p className="mt-1 text-sm text-zinc-400">Facturación del mes de clientes retainer activos.</p>
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2">
@@ -1011,13 +1011,13 @@ export default async function Home({ searchParams }: HomeProps) {
             <section id="pasivos" className="scroll-mt-32 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
               <div>
                 <h2 className="text-xl font-semibold">PASIVOS</h2>
-                <p className="mt-1 text-sm text-zinc-400">Calculado por diferencia para el mes seleccionado; el desglose solo aparece cuando se ha rastreado la formula concreta de ese mes.</p>
+                <p className="mt-1 text-sm text-zinc-400">Calculado por diferencia para el mes seleccionado; el desglose solo aparece cuando se ha rastreado la fórmula concreta de ese mes.</p>
               </div>
 
               <div className="mt-5 grid gap-4 md:grid-cols-3">
                 <KpiCard shadowClass={getSummaryShadow(selectedMonth, 0)} toneClass={SUMMARY_CARD_TONE} title="TOTAL PASIVOS" description="Suma total de pasivos este mes." value={data.ingresosPasivos} />
                 <KpiCard shadowClass={getSummaryShadow(selectedMonth, 1)} toneClass={SUMMARY_CARD_TONE} title="BASE SIN PASIVOS" description="Total neto usado como punto de partida." value={data.totalNeto} />
-                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 2)} toneClass={SUMMARY_CARD_TONE} title="RESULTADO CON PASIVOS" description="Neto final despues de sumar pasivos." value={data.netoConPasivos} />
+                <KpiCard shadowClass={getSummaryShadow(selectedMonth, 2)} toneClass={SUMMARY_CARD_TONE} title="RESULTADO CON PASIVOS" description="Neto final después de sumar pasivos." value={data.netoConPasivos} />
               </div>
 
               {data.pasivosDetalle.length > 0 ? (
@@ -1094,11 +1094,11 @@ export default async function Home({ searchParams }: HomeProps) {
             <section id="inversion" className="scroll-mt-32 flex flex-col gap-4">
               <div>
                 <h2 className="text-xl font-semibold">INVERSION</h2>
-                <p className="mt-1 text-sm text-zinc-400">Distribucion de las inversiones registradas para el mes seleccionado.</p>
+                <p className="mt-1 text-sm text-zinc-400">Distribución de las inversiones registradas para el mes seleccionado.</p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
-                <KpiCard accent="deep" title="FONDO DE INVERSION" description="Capital destinado a fondos de inversion." value="—" />
+                <KpiCard accent="deep" title="FONDO DE INVERSIÓN" description="Capital destinado a fondos de inversión." value="—" />
                 <KpiCard accent="glass" title="CRIPTOMONEDAS" description="Capital destinado a criptoactivos." value="—" />
                 <KpiCard accent="glow" title="COLECCIONABLES" description="Capital destinado a piezas coleccionables." value="—" />
               </div>
@@ -1108,7 +1108,7 @@ export default async function Home({ searchParams }: HomeProps) {
           <section className="flex flex-col items-center gap-5 text-center">
             <div className="mx-auto max-w-2xl">
               <h2 className="text-xl font-semibold">HERRAMIENTAS</h2>
-              <p className="mt-1 text-sm text-zinc-400">Accesos de ejecucion para facturacion y auditoria operativa.</p>
+              <p className="mt-1 text-sm text-zinc-400">Accesos de ejecución para facturación y auditoría operativa.</p>
             </div>
 
             <ToolsNav layout="cards" />
@@ -1116,7 +1116,7 @@ export default async function Home({ searchParams }: HomeProps) {
         ) : selectedSection === "historial" ? (
           <section className="flex flex-col gap-6">
             <div>
-              <h2 className="text-xl font-semibold">RESUMENES ANUALES</h2>
+              <h2 className="text-xl font-semibold">RESÚMENES ANUALES</h2>
               <p className="mt-1 text-sm text-zinc-400">Datos reflejados desde la pestaña Seguimiento ingresos y la ficha Reparto de ingresos.</p>
             </div>
 
@@ -1159,20 +1159,20 @@ export default async function Home({ searchParams }: HomeProps) {
             <section id="pasivos-anuales" className="scroll-mt-32 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
               <div>
                 <h3 className="text-xl font-semibold">PASIVOS ANUALES</h3>
-                <p className="mt-1 text-sm text-zinc-400">Resumen anual del resultado con pasivos incorporados cuando el dato esta disponible.</p>
+                <p className="mt-1 text-sm text-zinc-400">Resumen anual del resultado con pasivos incorporados cuando el dato está disponible.</p>
               </div>
 
               <div className="mt-5 grid gap-4 md:grid-cols-3">
-                <KpiCard accent="glow" title="ULTIMO ANO REGISTRADO" description="Ano mas reciente disponible en el historial." value={selectedAnnualIncome?.year ?? selectedYear ?? "--"} />
+                <KpiCard accent="glow" title="ÚLTIMO AÑO REGISTRADO" description="Año más reciente disponible en el historial." value={selectedAnnualIncome?.year ?? selectedYear ?? "--"} />
                 <KpiCard accent="aqua" title="TOTAL ANUAL CON PASIVOS" description="Total anual calculado con pasivos cuando existe lectura mensual." value={selectedAnnualIncome?.total ?? "--"} />
-                <KpiCard accent="deep" title="MEDIA MENSUAL" description="Media mensual del ultimo ano registrado." value={selectedAnnualIncome?.average ?? "--"} />
+                <KpiCard accent="deep" title="MEDIA MENSUAL" description="Media mensual del último año registrado." value={selectedAnnualIncome?.average ?? "--"} />
               </div>
             </section>
 
             <section id="ahorro-anual" className="scroll-mt-32 flex flex-col gap-4">
               <div>
                 <h3 className="text-xl font-semibold">AHORRO ANUAL</h3>
-                <p className="mt-1 text-sm text-zinc-400">Resumen anual de ahorro segun la ficha Reparto de ingresos.</p>
+                <p className="mt-1 text-sm text-zinc-400">Resumen anual de ahorro según la ficha Reparto de ingresos.</p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
@@ -1187,11 +1187,11 @@ export default async function Home({ searchParams }: HomeProps) {
             <section className="scroll-mt-32 flex flex-col gap-4">
               <div>
                 <h3 className="text-xl font-semibold">INVERSIONES ANUALES</h3>
-                <p className="mt-1 text-sm text-zinc-400">Resumen anual del capital destinado a inversion segun la ficha Reparto de ingresos.</p>
+                <p className="mt-1 text-sm text-zinc-400">Resumen anual del capital destinado a inversión según la ficha Reparto de ingresos.</p>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
-                <KpiCard accent="deep" title="TOTAL INVERTIDO" description={`Inversion acumulada en ${selectedYear}.`} value={selectedAnnualInvestmentTotal} />
+                <KpiCard accent="deep" title="TOTAL INVERTIDO" description={`Inversión acumulada en ${selectedYear}.`} value={selectedAnnualInvestmentTotal} />
                 <KpiCard accent="glass" title="BENEFICIO BASE" description="Beneficio anual usado como base de reparto." value={selectedAnnualProfitTotal} />
                 <KpiCard accent="glow" title="MESES REGISTRADOS" description="Meses con datos en el resumen anual." value={`${selectedAnnualSavingsEntries.length}`} />
               </div>

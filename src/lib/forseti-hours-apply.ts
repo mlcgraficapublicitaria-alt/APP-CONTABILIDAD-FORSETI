@@ -98,7 +98,7 @@ export async function applyHourDifferences(
     updatedDays,
     skippedDays,
     message: updatedDays.length
-      ? `${updatedDays.length} dias actualizados en HORAS TRABAJO.`
-      : "No habia dias actualizables.",
+      ? `${updatedDays.length} días actualizados en HORAS TRABAJO.`
+      : "No había días actualizables.",
   };
 }

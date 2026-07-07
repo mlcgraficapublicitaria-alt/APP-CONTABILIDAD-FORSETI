@@ -70,7 +70,7 @@ export function DashboardHelpButtons() {
     <section className="flex flex-wrap items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] p-3">
       <HelpModal title="Que es un expediente fiscal" triggerLabel="Ayuda: expedientes">
         <p>Un expediente fiscal es una carpeta de trabajo para una renta concreta. Dentro se agrupan contribuyente, ejercicio, documentos, datos clave, validaciones, resumen preliminar y auditoria.</p>
-        <p className="mt-3">La idea es ordenar el trabajo antes de la revision final. FORSETI no presenta declaraciones automaticamente.</p>
+        <p className="mt-3">La idea es ordenar el trabajo antes de la revisión final. FORSETI no presenta declaraciones automáticamente.</p>
       </HelpModal>
       <HelpModal title="Validaciones y resumen" triggerLabel="Ayuda: validaciones">
         <p>Las validaciones revisan si faltan documentos, NIF/NIE o datos clave. Sirven para detectar bloqueos y pendientes.</p>
@@ -93,18 +93,18 @@ export function CaseHelpButtons() {
         <DocumentHelpContent variant="case" />
       </HelpModal>
       <HelpModal title="Datos clave" triggerLabel="Ayuda: datos">
-        <p>Los datos clave son informacion importante del expediente: identidad, ingresos, alquileres, deducciones o cualquier dato que afecte a la revision.</p>
+        <p>Los datos clave son información importante del expediente: identidad, ingresos, alquileres, deducciones o cualquier dato que afecte a la revisión.</p>
         <p className="mt-3">Cada dato debe marcarse como confirmado, estimado o pendiente. Si no hay fuente fiable, dejalo como pendiente.</p>
       </HelpModal>
       <HelpModal title="Incidencias y faltantes" triggerLabel="Ayuda: incidencias">
         <p>Las incidencias son avisos que FORSETI genera cuando falta algo o hay un punto que revisar. Un aviso señala un pendiente; un error señala algo mas critico.</p>
       </HelpModal>
       <HelpModal title="Resumen preliminar" triggerLabel="Ayuda: resumen">
-        <p>El resumen preliminar cuenta documentos faltantes, incidencias abiertas y datos confirmados o pendientes. Sirve para saber si el expediente esta maduro para revision final.</p>
+        <p>El resumen preliminar cuenta documentos faltantes, incidencias abiertas y datos confirmados o pendientes. Sirve para saber si el expediente está maduro para revisión final.</p>
         <p className="mt-3">No es una declaracion fiscal ni una recomendacion final.</p>
       </HelpModal>
-      <HelpModal title="Auditoria y trazabilidad" triggerLabel="Ayuda: auditoria">
-        <p>La auditoria registra acciones relevantes: crear expediente, registrar documentos, cambiar datos o ejecutar validaciones. Sirve para saber que cambio, cuando y bajo que sesion.</p>
+      <HelpModal title="Auditoría y trazabilidad" triggerLabel="Ayuda: auditoría">
+        <p>La auditoría registra acciones relevantes: crear expediente, registrar documentos, cambiar datos o ejecutar validaciones. Sirve para saber qué cambió, cuándo y bajo qué sesión.</p>
       </HelpModal>
     </section>
   );
@@ -190,7 +190,7 @@ function getRequirementHelp(code: string) {
     deductions: {
       what: "Justificantes de gastos o situaciones que pueden dar derecho a deducciones o reducciones.",
       where: ["Entidad receptora del donativo.", "Banco o gestora de plan de pensiones.", "Guarderia, colegio profesional, sindicato u organismo autonomico.", "Documentacion familiar o de discapacidad si aplica."],
-      warning: "No todas las deducciones aplican en todas las comunidades autonomas. Dejalo pendiente si no esta claro.",
+      warning: "No todas las deducciones aplican en todas las comunidades autónomas. Déjalo pendiente si no está claro.",
     },
     banking: {
       what: "Cuenta bancaria usada para domiciliar pagos o recibir devoluciones.",

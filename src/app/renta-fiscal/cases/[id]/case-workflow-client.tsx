@@ -62,7 +62,7 @@ export function CaseWorkflowClient({ taxCaseId, requirements }: WorkflowProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold text-white">Registrar documento</h2>
           <HelpModal title="Como registrar un documento" triggerLabel="Ayuda">
-            <p>Este formulario sirve para marcar que un documento ya esta recibido o localizado dentro del expediente.</p>
+            <p>Este formulario sirve para marcar que un documento ya está recibido o localizado dentro del expediente.</p>
             <ul className="mt-3 list-disc space-y-2 pl-5">
               <li><span className="font-semibold text-white">Tipo de documento:</span> selecciona a que requisito del checklist pertenece, por ejemplo DNI/NIE, datos fiscales AEAT o certificado de ingresos.</li>
               <li><span className="font-semibold text-white">Nombre del documento:</span> escribe un nombre reconocible, por ejemplo datos-fiscales-aeat-2026.pdf.</li>

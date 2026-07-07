@@ -57,12 +57,12 @@ export default async function ForsetiHorasAuditoriaPage() {
                 className="h-auto w-40 drop-shadow-[0_10px_24px_rgba(0,0,0,0.75)] sm:w-48"
               />
               <h1 className="mt-4 hidden text-2xl font-semibold text-white md:block">
-                Administracion y contabilidad
+                Administración y contabilidad
               </h1>
             </div>
 
             <h1 className="absolute bottom-6 left-1/2 z-10 w-[calc(100%-2rem)] -translate-x-1/2 whitespace-nowrap text-center text-[clamp(18px,5.2vw,22px)] font-semibold text-white md:hidden">
-              Administracion y contabilidad
+              Administración y contabilidad
             </h1>
           </div>
         </header>
@@ -76,13 +76,13 @@ export default async function ForsetiHorasAuditoriaPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-300">
-                Auditoria de horas
+                Auditoría de horas
               </p>
               <h2 className="mt-2 text-3xl font-semibold text-white">
                 Comparar PDF mensual con HORAS TRABAJO 2026
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-300">
-                Revisa diferencias por dia, tramos y total antes de aplicar cambios en HORAS TRABAJO 2026.
+                Revisa diferencias por día, tramos y total antes de aplicar cambios en HORAS TRABAJO 2026.
               </p>
             </div>
           </div>

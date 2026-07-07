@@ -39,7 +39,7 @@ export function Model130Analyzer({ taxCaseId }: Model130AnalyzerProps) {
         <div>
           <h2 className="text-xl font-semibold text-white">Analizar modelo 130</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
-            Sube el PDF del modelo 130 para detectar puntos de revision sobre pagos fraccionados de IRPF, ingresos, gastos, retenciones y coherencia con el perfil.
+            Sube el PDF del modelo 130 para detectar puntos de revisión sobre pagos fraccionados de IRPF, ingresos, gastos, retenciones y coherencia con el perfil.
           </p>
         </div>
         <HelpModal title="Como ayuda el analisis del modelo 130" triggerLabel="Ayuda">
@@ -47,10 +47,10 @@ export function Model130Analyzer({ taxCaseId }: Model130AnalyzerProps) {
           <ul className="mt-3 list-disc space-y-2 pl-5">
             <li>Comprueba si el documento parece un modelo 130.</li>
             <li>Busca indicios de ingresos, gastos deducibles, retenciones y pagos fraccionados anteriores.</li>
-            <li>Propone puntos de revision para evitar pagar de mas o mezclar conceptos que no pertenecen a la actividad.</li>
+            <li>Propone puntos de revisión para evitar pagar de más o mezclar conceptos que no pertenecen a la actividad.</li>
           </ul>
           <p className="mt-3 rounded-md border border-amber-300/25 bg-amber-300/10 p-3 text-amber-100">
-            No sustituye la revision fiscal. Sirve para preparar una comprobacion mas fina antes de cerrar la renta o contrastarla en la plataforma oficial.
+            No sustituye la revisión fiscal. Sirve para preparar una comprobación más fina antes de cerrar la renta o contrastarla en la plataforma oficial.
           </p>
         </HelpModal>
       </div>

@@ -83,8 +83,8 @@ export async function analyzeModel130Pdf(buffer: ArrayBuffer, profile: TaxProfil
 
   if (profile?.rentalIncome) {
     reviewPoints.push({
-      title: "Separar alquileres de actividad economica",
-      detail: "El perfil indica alquileres. Comprueba si son rendimientos inmobiliarios o actividad economica, porque no siempre pertenecen al modelo 130.",
+      title: "Separar alquileres de actividad económica",
+      detail: "El perfil indica alquileres. Comprueba si son rendimientos inmobiliarios o actividad económica, porque no siempre pertenecen al modelo 130.",
       priority: "media" as const,
     });
   }
@@ -92,7 +92,7 @@ export async function analyzeModel130Pdf(buffer: ArrayBuffer, profile: TaxProfil
   if (profile?.investmentIncome) {
     reviewPoints.push({
       title: "No mezclar inversiones con actividad profesional",
-      detail: "Dividendos, intereses o ganancias de inversion normalmente no forman parte del modelo 130. Revisa que no se hayan mezclado conceptos.",
+      detail: "Dividendos, intereses o ganancias de inversión normalmente no forman parte del modelo 130. Revisa que no se hayan mezclado conceptos.",
       priority: "baja" as const,
     });
   }

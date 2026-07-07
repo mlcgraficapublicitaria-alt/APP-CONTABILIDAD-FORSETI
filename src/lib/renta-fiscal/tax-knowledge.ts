@@ -11,10 +11,10 @@ export const TAX_KNOWLEDGE_SOURCES: TaxKnowledgeSource[] = [
   {
     id: "deducciones-generales-autonomicas",
     title: "Deducciones generales y autonomicas",
-    description: "Fuente oficial para revisar deducciones aplicables segun ejercicio y comunidad autonoma.",
+    description: "Fuente oficial para revisar deducciones aplicables según ejercicio y comunidad autónoma.",
     url: "https://sede.agenciatributaria.gob.es/Sede/ayuda/manuales-videos-folletos/manuales-practicos/irpf-2025/c16-deducciones-generales-cuota/introduccion/deducciones-generales-autonomicas-aplicables.html",
     updateSummary: "Comprobar deducciones estatales y autonomicas vigentes antes de marcar una deduccion como aplicable.",
-    reviewItems: ["Ejercicio fiscal", "Comunidad autonoma", "Situacion familiar", "Vivienda", "Donativos, discapacidad o familia numerosa"],
+    reviewItems: ["Ejercicio fiscal", "Comunidad autónoma", "Situación familiar", "Vivienda", "Donativos, discapacidad o familia numerosa"],
   },
   {
     id: "modelo-303",
@@ -30,6 +30,6 @@ export const TAX_KNOWLEDGE_SOURCES: TaxKnowledgeSource[] = [
     description: "Instrucciones oficiales para pagos fraccionados de empresarios y profesionales.",
     url: "https://sede.agenciatributaria.gob.es/Sede/impuestos-tasas/impuesto-sobre-renta-personas-fisicas/modelo-130-irpf______esionales-estimacion-directa-fraccionado_/instrucciones.html",
     updateSummary: "Comprobar instrucciones de pagos fraccionados de IRPF antes de revisar ingresos, gastos, retenciones y pagos anteriores.",
-    reviewItems: ["Ingresos de actividad", "Gastos deducibles", "Retenciones soportadas", "Pagos fraccionados anteriores", "Obligacion segun perfil"],
+    reviewItems: ["Ingresos de actividad", "Gastos deducibles", "Retenciones soportadas", "Pagos fraccionados anteriores", "Obligación según perfil"],
   },
 ];

@@ -48,7 +48,7 @@ export async function POST() {
   return ok({
     checkedAt,
     sources,
-    notice: "Fuentes oficiales revisadas. Si una huella cambia, FORSETI marcara posible actualizacion para revision manual.",
+    notice: "Fuentes oficiales revisadas. Si una huella cambia, FORSETI marcará posible actualización para revisión manual.",
   });
 }
 

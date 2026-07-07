@@ -61,7 +61,7 @@ export async function analyzeModel303Pdf(buffer: ArrayBuffer, profile: TaxProfil
   if (!detected.mentionsDeductibleVat) {
     reviewPoints.push({
       title: "Revisar si hay IVA soportado deducible no reflejado",
-      detail: "No se detectan menciones claras a IVA deducible. Comprueba facturas de gastos afectos a la actividad, suministros, herramientas, servicios profesionales o bienes de inversion.",
+      detail: "No se detectan menciones claras a IVA deducible. Comprueba facturas de gastos afectos a la actividad, suministros, herramientas, servicios profesionales o bienes de inversión.",
       priority: "alta" as const,
     });
   }
@@ -93,7 +93,7 @@ export async function analyzeModel303Pdf(buffer: ArrayBuffer, profile: TaxProfil
   if (profile?.investmentIncome) {
     reviewPoints.push({
       title: "Separar inversiones de actividad con IVA",
-      detail: "El perfil indica inversiones. No mezcles rendimientos financieros con operaciones sujetas a IVA salvo que exista actividad economica que lo justifique.",
+      detail: "El perfil indica inversiones. No mezcles rendimientos financieros con operaciones sujetas a IVA salvo que exista actividad económica que lo justifique.",
       priority: "baja" as const,
     });
   }

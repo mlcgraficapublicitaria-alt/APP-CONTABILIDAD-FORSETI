@@ -70,7 +70,7 @@ function buildDifference(date: string, pdf: DayHours | undefined, sheet: DayHour
     diffLabel: formatDiff(diffMinutes),
     diffMinutes,
     type: hasSegmentMismatch ? "segment-mismatch" : "total-mismatch",
-    detail: hasSegmentMismatch ? "Diferencia de entrada/salida o numero de tramos." : "Diferencia de total diario.",
+    detail: hasSegmentMismatch ? "Diferencia de entrada/salida o número de tramos." : "Diferencia de total diario.",
   };
 }
 

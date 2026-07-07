@@ -1,8 +1,8 @@
 export function formatCaseStatus(status: string) {
   const labels: Record<string, string> = {
     DRAFT: "Borrador",
-    IN_REVIEW: "En revision",
-    READY: "Listo para revision",
+    IN_REVIEW: "En revisión",
+    READY: "Listo para revisión",
     CLOSED: "Cerrado",
   };
   return labels[status] ?? status;

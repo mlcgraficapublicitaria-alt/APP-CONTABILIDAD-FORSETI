@@ -69,7 +69,7 @@ export function TaxKnowledgeRefresh() {
         <div>
           <h3 className="text-xl font-semibold text-white">Refrescar deducciones y modelos oficiales</h3>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
-            Las deducciones pueden cambiar por año y comunidad autonoma. FORSETI comprueba enlaces oficiales y te recuerda revisar la fuente antes de dar nada por confirmado.
+            Las deducciones pueden cambiar por año y comunidad autónoma. FORSETI comprueba enlaces oficiales y te recuerda revisar la fuente antes de dar nada por confirmado.
           </p>
           <p className="mt-3 inline-flex rounded-md border border-emerald-300/25 bg-emerald-300/10 px-2 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-100">
             Sin IA

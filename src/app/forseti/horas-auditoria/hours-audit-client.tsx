@@ -120,7 +120,7 @@ export function HoursAuditClient() {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
       <form action={compareFormAction} className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
-        <h2 className="text-xl font-semibold text-white">Fuentes de auditoria</h2>
+        <h2 className="text-xl font-semibold text-white">Fuentes de auditoría</h2>
         <div className="mt-5 space-y-4">
           <label className="block">
             <span className="text-sm font-medium text-zinc-200">Mes</span>
@@ -150,7 +150,7 @@ export function HoursAuditClient() {
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-zinc-200">Ficha de facturacion</span>
+            <span className="text-sm font-medium text-zinc-200">Ficha de facturación</span>
             <select
               value={selectedInvoiceClientId}
               onChange={(event) => setSelectedInvoiceClientId(event.target.value)}
@@ -217,7 +217,7 @@ export function HoursAuditClient() {
           <div>
             <h2 className="text-xl font-semibold text-white">Diferencias detectadas</h2>
             <p className="mt-1 text-sm text-zinc-400">
-              Comparacion por dia, tramos y total diario.
+              Comparación por día, tramos y total diario.
             </p>
           </div>
           <span className="rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-100">

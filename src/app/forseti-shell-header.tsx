@@ -43,12 +43,12 @@ export function ForsetiShellHeader() {
             className="h-auto w-40 drop-shadow-[0_10px_24px_rgba(0,0,0,0.75)] sm:w-48"
           />
           <h1 className="mt-4 hidden text-2xl font-semibold text-white md:block">
-            Administracion y contabilidad
+            Administración y contabilidad
           </h1>
         </div>
 
         <h1 className="absolute bottom-6 left-1/2 z-10 w-[calc(100%-2rem)] -translate-x-1/2 whitespace-nowrap text-center text-[clamp(18px,5.2vw,22px)] font-semibold text-white md:hidden">
-          Administracion y contabilidad
+          Administración y contabilidad
         </h1>
       </div>
     </header>

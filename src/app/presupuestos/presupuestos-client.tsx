@@ -66,13 +66,13 @@ const INITIAL_STATE: BudgetFormState = {
   irpfRate: "15",
   serviceTitle: "SERVICIOS WEB Y POSICIONAMIENTO SEO",
   attentionLine: "",
-  generalObjective: "Mantener una presencia digital constante mediante la publicacion mensual de contenidos optimizados, su difusion en redes sociales y la generacion de recursos visuales para fortalecer la imagen de marca.",
+  generalObjective: "Mantener una presencia digital constante mediante la publicación mensual de contenidos optimizados, su difusión en redes sociales y la generación de recursos visuales para fortalecer la imagen de marca.",
   includedServices:
-    "Creacion de contenido SEO y adaptaciones para redes sociales\nSe redactara contenido mensual optimizado con palabras clave relevantes. Cada contenido se adaptara como publicacion para redes sociales con su copy correspondiente.\n\nPublicaciones en redes sociales\nA partir del contenido web, se publicara de forma planificada en redes sociales, asegurando la coherencia visual y de mensaje con el branding.\n\nContenidos audiovisuales\nSe crearan recursos visuales entre videos tipo reel e imagenes graficas, destinados a campanas promocionales o publicaciones clave.",
+    "Creación de contenido SEO y adaptaciones para redes sociales\nSe redactará contenido mensual optimizado con palabras clave relevantes. Cada contenido se adaptará como publicación para redes sociales con su copy correspondiente.\n\nPublicaciones en redes sociales\nA partir del contenido web, se publicará de forma planificada en redes sociales, asegurando la coherencia visual y de mensaje con el branding.\n\nContenidos audiovisuales\nSe crearán recursos visuales entre vídeos tipo reel e imágenes gráficas, destinados a campañas promocionales o publicaciones clave.",
   annualBreakdown:
     "Redaccion de contenido web SEO + adaptacion RRSS: 3.600 EUR\nPublicacion y gestion mensual en redes sociales: 1.800 EUR\nCreacion de videos e imagenes promocionales: 3.000 EUR\nCoordinacion general e informes trimestrales: 1.600 EUR",
   closingNote:
-    "Este plan tiene un enfoque basico y sostenible, ideal para mantener visibilidad durante todo el ano sin necesidad de un despliegue de alta intensidad.",
+    "Este plan tiene un enfoque básico y sostenible, ideal para mantener visibilidad durante todo el año sin necesidad de un despliegue de alta intensidad.",
 };
 
 function parseDecimal(value: string) {
@@ -304,7 +304,7 @@ function buildPrintableBudgetDocument(
         display: flex;
         align-items: center;
         justify-content: center;
-        line-height: 1.35;
+        line-height: 1.12;
       }
       .circle.issuer {
         background: var(--blue);
@@ -317,7 +317,7 @@ function buildPrintableBudgetDocument(
       .circle .title {
         font-weight: 700;
         font-size: 18px;
-        margin-bottom: 8px;
+        margin-bottom: 5px;
       }
       .items {
         margin-top: 76px;
@@ -943,13 +943,13 @@ export function PresupuestosClient() {
 
             <div className="mt-10 flex items-start justify-between gap-6">
               <div className="flex h-[210px] w-[210px] items-center justify-center rounded-full bg-sky-300 px-6 text-center text-white">
-                <div className="space-y-1 text-[14px] leading-[1.35]">
+                <div className="space-y-0.5 text-[14px] leading-[1.12]">
                   <p className="text-[17px] font-bold">{form.issuerName || "EMISOR"}</p>
                   {circleLinesForPreview(issuerCircleLines.slice(1))}
                 </div>
               </div>
               <div className="flex h-[210px] w-[210px] items-center justify-center rounded-full bg-[#1f1f1f] px-6 text-center text-white">
-                <div className="space-y-1 text-[14px] leading-[1.35]">
+                <div className="space-y-0.5 text-[14px] leading-[1.12]">
                   <p className="text-[17px] font-bold">{form.clientName || "CLIENTE"}</p>
                   {circleLinesForPreview(clientCircleLines.slice(1))}
                 </div>

@@ -265,7 +265,7 @@ function buildPrintableInvoiceDocument(
         display: flex;
         align-items: center;
         justify-content: center;
-        line-height: 1.35;
+        line-height: 1.12;
       }
       .circle.issuer {
         background: var(--blue);
@@ -278,7 +278,7 @@ function buildPrintableInvoiceDocument(
       .circle .title {
         font-weight: 700;
         font-size: 18px;
-        margin-bottom: 8px;
+        margin-bottom: 5px;
       }
       .items {
         margin-top: 76px;
@@ -773,13 +773,13 @@ export function FacturacionClient() {
 
             <div className="mt-10 flex items-start justify-between gap-6">
               <div className="flex h-[210px] w-[210px] items-center justify-center rounded-full bg-sky-300 px-6 text-center text-white">
-                <div className="space-y-1 text-[14px] leading-[1.35]">
+                <div className="space-y-0.5 text-[14px] leading-[1.12]">
                   <p className="text-[17px] font-bold">{form.issuerName || "EMISOR"}</p>
                   {circleLinesForPreview(issuerCircleLines.slice(1))}
                 </div>
               </div>
               <div className="flex h-[210px] w-[210px] items-center justify-center rounded-full bg-[#1f1f1f] px-6 text-center text-white">
-                <div className="space-y-1 text-[14px] leading-[1.35]">
+                <div className="space-y-0.5 text-[14px] leading-[1.12]">
                   <p className="text-[17px] font-bold">{form.clientName || "CLIENTE"}</p>
                   {circleLinesForPreview(clientCircleLines.slice(1))}
                 </div>

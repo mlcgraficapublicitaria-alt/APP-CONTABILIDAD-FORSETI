@@ -27,13 +27,13 @@ export default async function FacturacionPage() {
           <div className="flex flex-col items-center justify-center gap-4 text-center">
             <div className="flex w-full max-w-3xl flex-col items-center text-center">
               <p className="w-full text-center text-sm font-semibold uppercase tracking-[0.22em] text-[#b3d87d]">
-                Facturacion
+                Facturación
               </p>
               <h1 className="mx-auto mt-2 w-full max-w-2xl text-center text-3xl font-semibold text-white">
                 Generador de facturas con plantilla visual
               </h1>
               <p className="mx-auto mt-3 w-full max-w-2xl text-center text-sm leading-6 text-slate-200">
-                Crea facturas desde formulario, calcula base, IVA e IRPF y deja el documento preparado para impresion o guardado en PDF directamente desde Forseti.
+                Crea facturas desde formulario, calcula base, IVA e IRPF y deja el documento preparado para impresión o guardado en PDF directamente desde Forseti.
               </p>
             </div>
           </div>

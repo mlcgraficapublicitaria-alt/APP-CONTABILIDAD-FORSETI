@@ -83,12 +83,12 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
       {showBrand ? (
         <div className="text-center">
           <img src="/logos-forseti.png" alt="Forseti" width={220} height={78} className="mx-auto h-auto w-44" decoding="async" />
-          <h1 className="mt-3 text-[22px] font-semibold text-white">Administracion y contabilidad</h1>
+          <h1 className="mt-3 text-[22px] font-semibold text-white">Administración y contabilidad</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-400">Inicia sesion para consultar la contabilidad y el resumen mensual.</p>
         </div>
       ) : (
         <div className="text-center">
-          <h1 className="text-[22px] font-semibold text-white">Administracion y contabilidad</h1>
+          <h1 className="text-[22px] font-semibold text-white">Administración y contabilidad</h1>
           <p className="mt-2 text-sm leading-6 text-zinc-400">Inicia sesion para consultar la contabilidad y el resumen mensual.</p>
         </div>
       )}

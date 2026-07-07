@@ -33,7 +33,7 @@ export default async function PresupuestosPage() {
                 Generador de presupuestos con plantilla visual
               </h1>
               <p className="mx-auto mt-3 w-full max-w-2xl text-center text-sm leading-6 text-slate-200">
-                Crea presupuestos desde formulario, calcula base, IVA e IRPF y deja el documento preparado para impresion o guardado en PDF directamente desde Forseti.
+                Crea presupuestos desde formulario, calcula base, IVA e IRPF y deja el documento preparado para impresión o guardado en PDF directamente desde Forseti.
               </p>
             </div>
           </div>

@@ -83,7 +83,6 @@ function parseMoney(value: string) {
   const normalized = value
     .replace(/\s/g, "")
     .replace("€", "")
-    .replace("â‚¬", "")
     .replace("EUR", "")
     .replace(/\./g, "")
     .replace(",", ".");

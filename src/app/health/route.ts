@@ -10,7 +10,7 @@ export async function GET() {
       status: "degraded",
       service: "forseti-renta-fiscal",
       database: "unavailable",
-      message: "La aplicacion esta viva, pero la base de datos de Renta Fiscal no esta disponible.",
+      message: "La aplicación está viva, pero la base de datos de Renta Fiscal no está disponible.",
       detail: error instanceof Error ? error.message : "Error desconocido",
       timestamp: new Date().toISOString(),
     });

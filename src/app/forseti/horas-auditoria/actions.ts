@@ -51,7 +51,7 @@ export async function compareHoursAction(_state: AuditActionState, formData: For
     ]);
 
     if (pdfDays.length === 0) {
-      return { error: "No he podido extraer dias/tramos del PDF. Revisa que sea el PDF mensual de HORAS correcto." };
+      return { error: "No he podido extraer días/tramos del PDF. Revisa que sea el PDF mensual de HORAS correcto." };
     }
 
     const pdfTotalMinutes = pdfDays.reduce((sum, day) => sum + day.totalMinutes, 0);

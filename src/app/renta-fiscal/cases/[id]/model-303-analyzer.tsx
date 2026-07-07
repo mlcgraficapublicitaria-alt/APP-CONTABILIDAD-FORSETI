@@ -39,7 +39,7 @@ export function Model303Analyzer({ taxCaseId }: Model303AnalyzerProps) {
         <div>
           <h2 className="text-xl font-semibold text-white">Analizar modelo 303</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
-            Sube el PDF del modelo 303 para detectar puntos de revision sobre IVA, facturas y posibles deducciones segun el perfil del expediente.
+            Sube el PDF del modelo 303 para detectar puntos de revisión sobre IVA, facturas y posibles deducciones según el perfil del expediente.
           </p>
         </div>
         <HelpModal title="Como ayuda el analisis del modelo 303" triggerLabel="Ayuda">
@@ -47,7 +47,7 @@ export function Model303Analyzer({ taxCaseId }: Model303AnalyzerProps) {
           <ul className="mt-3 list-disc space-y-2 pl-5">
             <li>Comprueba si el documento parece un modelo 303.</li>
             <li>Busca señales de IVA deducible, actividad, devolucion o compensacion.</li>
-            <li>Propone puntos de revision: facturas, gastos afectos, saldos pendientes o incoherencias con el perfil.</li>
+            <li>Propone puntos de revisión: facturas, gastos afectos, saldos pendientes o incoherencias con el perfil.</li>
           </ul>
           <p className="mt-3 rounded-md border border-amber-300/25 bg-amber-300/10 p-3 text-amber-100">No confirma automaticamente que un gasto sea deducible. Siempre hay que contrastarlo con facturas, libros registro y normativa oficial.</p>
         </HelpModal>

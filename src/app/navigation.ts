@@ -40,21 +40,21 @@ export function getDefaultMonthLabel() {
 
 export const SECTIONS = [
   { id: "mes", label: "RESUMEN DEL MES" },
-  { id: "historial", label: "RESUMENES ANUALES" },
+  { id: "historial", label: "RESÚMENES ANUALES" },
   { id: "herramientas", label: "HERRAMIENTAS" },
 ];
 
 export const TOOLS = [
   {
     id: "horas-auditoria",
-    label: "Auditoria de horas",
+    label: "Auditoría de horas",
     title: "Comparador de horas",
-    description: "Revisar diferencias por dia, tramos y total antes de aplicar cambios sobre HORAS TRABAJO 2026.",
+    description: "Revisar diferencias por día, tramos y total antes de aplicar cambios sobre HORAS TRABAJO 2026.",
     href: "/forseti/horas-auditoria",
   },
   {
     id: "facturacion",
-    label: "Facturacion",
+    label: "Facturación",
     title: "Generador de facturas",
     description: "Crear facturas desde formulario, calcular base, IVA e IRPF y preparar el documento para imprimir o guardar.",
     href: "/facturacion",
