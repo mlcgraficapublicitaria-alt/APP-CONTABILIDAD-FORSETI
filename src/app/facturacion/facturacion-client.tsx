@@ -729,11 +729,11 @@ export function FacturacionClient() {
     async function loadClients() {
       try {
         const response = await fetch("/api/facturacion/clientes", { cache: "no-store" });
-        if (!response.ok) throw new Error("No se pudieron cargar las fichas.");
-        const data = (await response.json()) as { clients?: SavedInvoiceClient[] };
+        const data = (await response.json().catch(() => ({}))) as { clients?: SavedInvoiceClient[]; error?: string };
+        if (!response.ok || data.error) throw new Error(data.error || "No se pudieron cargar las fichas.");
         if (!cancelled) setSavedClients(data.clients ?? []);
-      } catch {
-        if (!cancelled) setClientStatus("No se pudieron cargar las fichas guardadas.");
+      } catch (error) {
+        if (!cancelled) setClientStatus(error instanceof Error ? error.message : "No se pudieron cargar las fichas guardadas.");
       }
     }
 

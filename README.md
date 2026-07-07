@@ -33,6 +33,23 @@ Password recovery email requires:
 
 Create a local `.env` from `.env.example`.
 
+### Database for invoices, budgets and client files
+
+Local development can use the `.forseti/` JSON fallback for invoice clients and numbering, but production must use a persistent MySQL database:
+
+```env
+DATABASE_URL="mysql://user:password@host:3306/forseti_db"
+```
+
+After configuring `DATABASE_URL` in production, run:
+
+```bash
+npm run prisma:deploy
+npm run db:seed
+```
+
+Without a production `DATABASE_URL`, saved client files and document numbers are not persistent.
+
 ### Google Sheets / Drive for production
 
 Preferred secret:
