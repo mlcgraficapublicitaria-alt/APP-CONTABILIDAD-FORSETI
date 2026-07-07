@@ -16,6 +16,15 @@ type DriveFolderOption = {
   webViewLink?: string;
 };
 
+type BudgetSummary = {
+  baseAmount: number;
+  vatRate: number;
+  irpfRate: number;
+  vatAmount: number;
+  irpfAmount: number;
+  totalAmount: number;
+};
+
 type BudgetFormState = {
   documentName: string;
   budgetDate: string;
@@ -48,7 +57,7 @@ const INITIAL_STATE: BudgetFormState = {
   documentName: "Presupuesto MLC Design",
   budgetDate: new Date().toISOString().slice(0, 10),
   invoiceSeries: "P",
-  invoiceNumber: "000001",
+  invoiceNumber: "000134",
   articleCode: "H",
   issuerName: "MARIANO LUJAN CANOVAS",
   issuerTaxId: "47078608-T",
@@ -180,7 +189,7 @@ function buildClientCircleLines(form: BudgetFormState) {
 
 function buildPrintableBudgetDocument(
   form: BudgetFormState,
-  summary: { vatRate: number; irpfRate: number; vatAmount: number; irpfAmount: number; totalAmount: number; baseAmount: number },
+  summary: BudgetSummary,
 ) {
   const budgetTitle = escapeHtml(form.documentName || "presupuesto");
   const budgetCode = escapeHtml(buildBudgetCode(form));
@@ -820,6 +829,51 @@ export function PresupuestosClient() {
     !form.billedService.trim() ||
     summary.baseAmount <= 0;
 
+  async function loadNextBudgetNumber(series = form.invoiceSeries) {
+    const response = await fetch(`/api/facturacion/siguiente-numero?serie=${encodeURIComponent(series || "P")}`, {
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error("No se pudo leer el siguiente número de presupuesto.");
+
+    const data = (await response.json()) as { formattedNumber?: string; series?: string };
+    if (!data.formattedNumber) throw new Error("No se pudo leer el siguiente número de presupuesto.");
+    const formattedNumber = data.formattedNumber;
+
+    setForm((current) => ({
+      ...current,
+      invoiceSeries: data.series || current.invoiceSeries,
+      invoiceNumber: formattedNumber,
+    }));
+
+    return formattedNumber;
+  }
+
+  async function registerCurrentBudget(renderedHtml = buildPrintableBudgetDocument(form, summary)) {
+    const response = await fetch("/api/facturacion/facturas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        documentName: `${previewDocumentName} - ${previewBudgetCode}`,
+        series: form.invoiceSeries,
+        number: form.invoiceNumber,
+        issueDate: form.budgetDate,
+        clientName: form.clientName,
+        clientDetails: form.clientDetails,
+        articleCode: form.articleCode,
+        serviceDescription: form.billedService,
+        subtotalAmount: summary.baseAmount,
+        vatRate: summary.vatRate,
+        vatAmount: summary.vatAmount,
+        irpfRate: summary.irpfRate,
+        irpfAmount: summary.irpfAmount,
+        totalAmount: summary.totalAmount,
+        renderedHtml,
+      }),
+    });
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    if (!response.ok) throw new Error(data.error || "No se pudo guardar la numeración del presupuesto.");
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -835,6 +889,34 @@ export function PresupuestosClient() {
     }
 
     loadClients();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadInitialBudgetNumber() {
+      try {
+        const response = await fetch(`/api/facturacion/siguiente-numero?serie=${encodeURIComponent(INITIAL_STATE.invoiceSeries)}`, {
+          cache: "no-store",
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as { formattedNumber?: string; series?: string };
+        if (cancelled || !data.formattedNumber) return;
+        const formattedNumber = data.formattedNumber;
+        setForm((current) => ({
+          ...current,
+          invoiceSeries: data.series || current.invoiceSeries,
+          invoiceNumber: formattedNumber,
+        }));
+      } catch {
+        // El presupuesto sigue siendo editable si no se puede leer la numeración.
+      }
+    }
+
+    loadInitialBudgetNumber();
     return () => {
       cancelled = true;
     };
@@ -953,8 +1035,18 @@ export function PresupuestosClient() {
     setGenerated(true);
   }
 
-  function handlePrintBudget() {
-    openPrintablePreview(printPreviewRef.current, previewDocumentName);
+  async function handlePrintBudget() {
+    setDriveStatus("Guardando número de presupuesto...");
+
+    try {
+      await registerCurrentBudget();
+      openPrintablePreview(printPreviewRef.current, previewDocumentName);
+      const nextNumber = await loadNextBudgetNumber(form.invoiceSeries);
+      setGenerated(false);
+      setDriveStatus(`Presupuesto ${previewBudgetCode} registrado. Siguiente número preparado: ${form.invoiceSeries}/${nextNumber}.`);
+    } catch (error) {
+      setDriveStatus(error instanceof Error ? error.message : "No se pudo guardar la numeración del presupuesto.");
+    }
   }
 
   async function handleSearchDriveFolders() {
@@ -1001,7 +1093,11 @@ export function PresupuestosClient() {
         error?: string;
       };
       if (!response.ok || !data.file) throw new Error(data.error || "No se pudo guardar el documento en Drive.");
-      setDriveStatus(data.file.webViewLink ? `Guardado en Drive: ${data.file.name} - ${data.file.webViewLink}` : `Guardado en Drive: ${data.file.name}`);
+      await registerCurrentBudget(html);
+      const nextNumber = await loadNextBudgetNumber(form.invoiceSeries);
+      setGenerated(false);
+      const driveMessage = data.file.webViewLink ? `Guardado en Drive: ${data.file.name} - ${data.file.webViewLink}` : `Guardado en Drive: ${data.file.name}`;
+      setDriveStatus(`${driveMessage}. Presupuesto ${previewBudgetCode} registrado. Siguiente número preparado: ${form.invoiceSeries}/${nextNumber}.`);
     } catch (error) {
       setDriveStatus(error instanceof Error ? error.message : "No se pudo guardar el documento en Drive.");
     } finally {
