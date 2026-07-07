@@ -198,7 +198,17 @@ async function getForsetiOAuthAccessToken() {
   });
 
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error_description ?? data.error ?? "No se pudo autenticar con Google OAuth.");
+  if (!response.ok) {
+    const message = String(data.error_description ?? data.error ?? "");
+    const normalized = message.toLowerCase();
+    if (normalized.includes("expired") || normalized.includes("revoked") || normalized.includes("invalid_grant")) {
+      throw new Error(
+        "La autorización de Google Drive ha caducado o fue revocada. Renueva el refresh token OAuth o configura una cuenta de servicio con acceso de escritura a la carpeta de Drive.",
+      );
+    }
+
+    throw new Error(message || "No se pudo autenticar con Google OAuth.");
+  }
   return String(data.access_token);
 }
 
