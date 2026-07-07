@@ -51,7 +51,7 @@ const INITIAL_STATE: InvoiceFormState = {
   documentName: "Factura MLC Design",
   invoiceDate: new Date().toISOString().slice(0, 10),
   invoiceSeries: "A",
-  invoiceNumber: "000430",
+  invoiceNumber: "000433",
   articleCode: "H",
   issuerName: "MARIANO LUJAN CANOVAS",
   issuerTaxId: "47078608-T",

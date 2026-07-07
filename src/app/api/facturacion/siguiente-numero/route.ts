@@ -3,7 +3,7 @@ import { ok, requireUser } from "@/lib/renta-fiscal/api";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-const FALLBACK_LAST_INVOICE_NUMBER = 430;
+const FALLBACK_LAST_INVOICE_NUMBER = 432;
 const localInvoicesPath = path.join(process.cwd(), ".forseti", "invoices.json");
 
 function formatInvoiceNumber(value: number) {
