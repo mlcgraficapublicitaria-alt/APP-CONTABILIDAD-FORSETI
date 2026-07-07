@@ -1,3 +1,6 @@
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { prisma } from "@/lib/renta-fiscal/prisma";
 import { badRequest, ok, readJson, requireUser } from "@/lib/renta-fiscal/api";
 
@@ -7,7 +10,7 @@ type SaveInvoiceClientBody = {
   details?: string;
 };
 
-function serializeInvoiceClient(client: {
+type InvoiceClientRecord = {
   id: string;
   legalName: string;
   taxId: string | null;
@@ -20,7 +23,15 @@ function serializeInvoiceClient(client: {
   email: string | null;
   phone: string | null;
   notes: string | null;
-}) {
+};
+
+const localClientsPath = path.join(process.cwd(), ".forseti", "invoice-clients.json");
+
+function hasMysqlDatabaseUrl() {
+  return (process.env.DATABASE_URL ?? "").startsWith("mysql://");
+}
+
+function serializeInvoiceClient(client: InvoiceClientRecord) {
   return {
     id: client.id,
     legalName: client.legalName,
@@ -37,9 +48,30 @@ function serializeInvoiceClient(client: {
   };
 }
 
+async function readLocalClients() {
+  try {
+    const content = await readFile(localClientsPath, "utf8");
+    const clients = JSON.parse(content) as InvoiceClientRecord[];
+    return Array.isArray(clients) ? clients : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeLocalClients(clients: InvoiceClientRecord[]) {
+  await mkdir(path.dirname(localClientsPath), { recursive: true });
+  await writeFile(localClientsPath, JSON.stringify(clients, null, 2), "utf8");
+}
+
 export async function GET() {
   const auth = await requireUser();
   if (!auth.user) return auth.response;
+
+  if (!hasMysqlDatabaseUrl()) {
+    const clients = await readLocalClients();
+    clients.sort((a, b) => a.legalName.localeCompare(b.legalName, "es"));
+    return ok({ clients: clients.map(serializeInvoiceClient) });
+  }
 
   const clients = await prisma.invoiceClient.findMany({
     orderBy: { legalName: "asc" },
@@ -57,6 +89,45 @@ export async function POST(request: Request) {
   if (!legalName) return badRequest("El nombre del cliente es obligatorio.");
 
   const details = body.details?.trim() || null;
+
+  if (!hasMysqlDatabaseUrl()) {
+    const clients = await readLocalClients();
+    const existingIndex = body.id
+      ? clients.findIndex((client) => client.id === body.id)
+      : clients.findIndex((client) => client.legalName.toLowerCase() === legalName.toLowerCase());
+
+    const client =
+      existingIndex >= 0
+        ? {
+            ...clients[existingIndex],
+            legalName,
+            notes: details,
+          }
+        : {
+            id: randomUUID(),
+            legalName,
+            taxId: null,
+            addressLine1: null,
+            addressLine2: null,
+            postalCode: null,
+            city: null,
+            province: null,
+            country: null,
+            email: null,
+            phone: null,
+            notes: details,
+          };
+
+    if (existingIndex >= 0) {
+      clients[existingIndex] = client;
+    } else {
+      clients.push(client);
+    }
+
+    await writeLocalClients(clients);
+    return ok({ client: serializeInvoiceClient(client) }, { status: existingIndex >= 0 ? 200 : 201 });
+  }
+
   const existing = body.id
     ? await prisma.invoiceClient.findUnique({ where: { id: body.id } })
     : await prisma.invoiceClient.findFirst({ where: { legalName } });

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 type SavedBudgetClient = {
   id: string;
@@ -584,6 +584,102 @@ function buildPrintableBudgetDocument(
 </html>`;
 }
 
+function openPrintableDocument(html: string) {
+  const printWindow = window.open("", "forseti-print-document", "popup,width=1080,height=1440");
+  if (!printWindow) return;
+
+  let didPrint = false;
+  const printDocument = () => {
+    if (didPrint) return;
+    didPrint = true;
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 250);
+  };
+
+  printWindow.addEventListener("load", printDocument, { once: true });
+  printWindow.addEventListener("afterprint", () => setTimeout(() => printWindow.close(), 500), { once: true });
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+
+  if (printWindow.document.readyState === "complete") {
+    printDocument();
+  }
+}
+
+function openPrintablePreview(element: HTMLElement | null, title: string) {
+  if (!element) return;
+
+  const printWindow = window.open("", "forseti-print-document", "popup,width=1080,height=1440");
+  if (!printWindow) return;
+
+  const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+    .map((node) => node.outerHTML)
+    .join("\n");
+
+  printWindow.document.open();
+  printWindow.document.write(`<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>${escapeHtml(title)}</title>
+    ${styles}
+    <style>
+      @page { size: A4; margin: 0; }
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: #f7f7f5;
+      }
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+      }
+      .forseti-print-root {
+        width: 760px;
+        background: #f7f7f5;
+      }
+      @media print {
+        html, body {
+          width: 210mm;
+          min-height: 297mm;
+          background: #f7f7f5 !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .forseti-print-root {
+          width: 760px;
+          margin: 0 auto;
+          zoom: 0.98;
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        .forseti-print-root > * {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="forseti-print-root">${element.innerHTML}</main>
+    <script>
+      window.addEventListener("load", () => {
+        setTimeout(() => {
+          window.focus();
+          window.print();
+        }, 250);
+      });
+      window.addEventListener("afterprint", () => setTimeout(() => window.close(), 500), { once: true });
+    </script>
+  </body>
+</html>`);
+  printWindow.document.close();
+}
+
 function FormField({
   label,
   htmlFor,
@@ -693,6 +789,7 @@ export function PresupuestosClient() {
   const [driveStatus, setDriveStatus] = useState("");
   const [isDriveBusy, setIsDriveBusy] = useState(false);
   const baseId = useId();
+  const printPreviewRef = useRef<HTMLDivElement>(null);
   const fieldClassName = inputClassName();
 
   const summary = useMemo(() => {
@@ -857,15 +954,7 @@ export function PresupuestosClient() {
   }
 
   function handlePrintBudget() {
-    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1080,height=1440");
-    if (!printWindow) return;
-
-    const html = buildPrintableBudgetDocument(form, summary);
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    openPrintablePreview(printPreviewRef.current, previewDocumentName);
   }
 
   async function handleSearchDriveFolders() {
@@ -1304,6 +1393,10 @@ export function PresupuestosClient() {
       </div>
 
       <div className="order-2 flex flex-col items-center rounded-[28px] border border-white/10 bg-[#f7f7f5] p-4 text-center text-slate-900 shadow-[0_20px_60px_rgba(0,0,0,0.3)] sm:p-6 xl:order-2">
+        <div ref={printPreviewRef} className="pointer-events-none fixed -left-[10000px] top-0 w-[760px]" aria-hidden="true">
+          {renderBudgetPreview("w-[760px]")}
+        </div>
+
         <div className="mb-4 flex w-full max-w-[760px] flex-col items-center gap-3 text-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#5d7f1f]">Vista previa</p>

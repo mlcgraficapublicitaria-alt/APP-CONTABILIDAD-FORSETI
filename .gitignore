@@ -37,6 +37,7 @@ dev-server*.log
 
 # local database
 prisma/dev.db
+.forseti/
 
 # vercel
 .vercel
