@@ -144,6 +144,14 @@ function buildInvoiceCode(form: InvoiceFormState) {
   return "Sin numeracion";
 }
 
+function stepFormattedNumber(value: string, step: number) {
+  const width = Math.max(value.trim().length, 1);
+  const current = Number.parseInt(value.replace(/\D/g, ""), 10);
+  const next = Math.max(1, (Number.isFinite(current) ? current : 1) + step);
+
+  return String(next).padStart(width, "0");
+}
+
 function buildIssuerCircleLines(form: InvoiceFormState) {
   return [
     form.issuerName,
@@ -1079,7 +1087,25 @@ export function FacturacionClient() {
           </div>
           <div>
             <FormField label="Numero" htmlFor={`${baseId}-number`}>
-              <input id={`${baseId}-number`} className={fieldClassName} value={form.invoiceNumber} onChange={(event) => updateField("invoiceNumber", event.target.value)} />
+              <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] gap-2">
+                <button
+                  type="button"
+                  className="min-h-11 rounded-xl border border-white/12 bg-white/6 text-lg font-semibold text-white transition hover:bg-white/10"
+                  title="Retroceder numero"
+                  onClick={() => updateField("invoiceNumber", stepFormattedNumber(form.invoiceNumber, -1))}
+                >
+                  -
+                </button>
+                <input id={`${baseId}-number`} className={fieldClassName} value={form.invoiceNumber} onChange={(event) => updateField("invoiceNumber", event.target.value)} />
+                <button
+                  type="button"
+                  className="min-h-11 rounded-xl border border-white/12 bg-white/6 text-lg font-semibold text-white transition hover:bg-white/10"
+                  title="Avanzar numero"
+                  onClick={() => updateField("invoiceNumber", stepFormattedNumber(form.invoiceNumber, 1))}
+                >
+                  +
+                </button>
+              </div>
             </FormField>
           </div>
         </div>
