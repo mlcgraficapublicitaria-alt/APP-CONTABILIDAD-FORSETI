@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { hasMysqlDatabaseUrl } from "@/lib/database-url";
 import { badRequest, ok, readJson, requireUser } from "@/lib/renta-fiscal/api";
 import { prisma } from "@/lib/renta-fiscal/prisma";
 
@@ -33,10 +34,6 @@ type LocalInvoice = {
 };
 
 const localInvoicesPath = path.join(process.cwd(), ".forseti", "invoices.json");
-
-function hasMysqlDatabaseUrl() {
-  return (process.env.DATABASE_URL ?? "").startsWith("mysql://");
-}
 
 function parseInvoiceNumber(value: string | number | undefined) {
   const normalized = String(value ?? "").replace(/\D/g, "");

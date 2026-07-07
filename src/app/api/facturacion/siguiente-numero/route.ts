@@ -2,6 +2,7 @@ import { prisma } from "@/lib/renta-fiscal/prisma";
 import { ok, requireUser } from "@/lib/renta-fiscal/api";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { hasMysqlDatabaseUrl } from "@/lib/database-url";
 
 const localInvoicesPath = path.join(process.cwd(), ".forseti", "invoices.json");
 
@@ -13,10 +14,6 @@ function getFallbackLastNumber(series: string) {
 
 function formatInvoiceNumber(value: number) {
   return String(value).padStart(6, "0");
-}
-
-function hasMysqlDatabaseUrl() {
-  return (process.env.DATABASE_URL ?? "").startsWith("mysql://");
 }
 
 async function readLocalLastInvoiceNumber(series: string) {

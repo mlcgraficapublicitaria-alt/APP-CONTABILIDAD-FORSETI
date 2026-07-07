@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { hasMysqlDatabaseUrl } from "@/lib/database-url";
 import { prisma } from "@/lib/renta-fiscal/prisma";
 import { badRequest, ok, readJson, requireUser } from "@/lib/renta-fiscal/api";
 
@@ -26,10 +27,6 @@ type InvoiceClientRecord = {
 };
 
 const localClientsPath = path.join(process.cwd(), ".forseti", "invoice-clients.json");
-
-function hasMysqlDatabaseUrl() {
-  return (process.env.DATABASE_URL ?? "").startsWith("mysql://");
-}
 
 function isProduction() {
   return process.env.NODE_ENV === "production";
