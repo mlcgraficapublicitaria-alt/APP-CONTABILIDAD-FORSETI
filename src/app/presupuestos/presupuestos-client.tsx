@@ -187,6 +187,18 @@ function buildClientCircleLines(form: BudgetFormState) {
   return [form.clientName || "CLIENTE", ...form.clientDetails.split("\n").map((item) => item.trim()).filter(Boolean)];
 }
 
+async function readApiError(response: Response, fallback: string) {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    const data = (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
+    return data?.error || data?.message || fallback;
+  }
+
+  const text = (await response.text().catch(() => "")).trim();
+  return text || fallback;
+}
+
 function buildPrintableBudgetDocument(
   form: BudgetFormState,
   summary: BudgetSummary,
@@ -1020,10 +1032,17 @@ export function PresupuestosClient() {
         }),
       });
 
-      const data = (await response.json().catch(() => ({}))) as { client?: SavedBudgetClient; error?: string };
-      if (!response.ok || !data.client) throw new Error(data.error || "No se pudo guardar la ficha.");
+      const data = response.ok
+        ? ((await response.json().catch(() => ({}))) as { client?: SavedBudgetClient; error?: string })
+        : null;
 
-      setSavedClients((current) => normalizeSavedClients(current, data.client!));
+      if (!response.ok) {
+        throw new Error(await readApiError(response, "No se pudo guardar la ficha."));
+      }
+
+      if (!data?.client) throw new Error(data?.error || "No se pudo guardar la ficha.");
+
+      setSavedClients((current) => normalizeSavedClients(current, data.client));
       setSelectedClientId(data.client.id);
       setClientStatus("Ficha guardada.");
     } catch (error) {
@@ -1537,5 +1556,4 @@ export function PresupuestosClient() {
     </section>
   );
 }
-
 

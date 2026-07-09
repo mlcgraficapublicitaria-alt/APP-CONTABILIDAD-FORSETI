@@ -66,8 +66,6 @@ Supported alternatives:
 - `GOOGLE_APPLICATION_CREDENTIALS_JSON`
 - `GOOGLE_APPLICATION_CREDENTIALS` pointing to a service account JSON file
 - `GOOGLE_SERVICE_ACCOUNT_EMAIL` + `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`
-- OAuth fallback via `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` + `GOOGLE_OAUTH_REFRESH_TOKEN` (+ optional `GOOGLE_OAUTH_TOKEN_URI`)
-- `FORSETI_OAUTH_CONFIG_PATH` pointing to an already-authorized Google Drive integration `config.json`
 
 Notes:
 
@@ -84,22 +82,29 @@ For production, configure one of these in the hosting platform/server:
 GOOGLE_SERVICE_ACCOUNT_JSON_BASE64
 ```
 
-or, if you are reusing the already-authorized OAuth integration instead of a service account:
-
-```env
-GOOGLE_OAUTH_CLIENT_ID
-GOOGLE_OAUTH_CLIENT_SECRET
-GOOGLE_OAUTH_REFRESH_TOKEN
-GOOGLE_OAUTH_TOKEN_URI
-```
-
-or point the app to an already-authorized local integration file:
-
-```env
-FORSETI_OAUTH_CONFIG_PATH="C:\path\to\google-drive\config.json"
-```
-
 Do not commit real credentials or a real `.env` file to the repository.
+
+### Prisma / MySQL schema
+
+The billing area depends on Prisma tables such as `InvoiceClient`, `InvoiceIssuerProfile`, and `InvoiceTemplate`.
+
+If production shows an error like:
+
+```text
+The table `InvoiceClient` does not exist in the current database
+```
+
+the deployed code is ahead of the active MySQL schema. Apply pending migrations before serving traffic:
+
+```bash
+npm run prisma:deploy
+```
+
+or use the production start command, which already runs migrations first:
+
+```bash
+npm start
+```
 
 You can start editing the dashboard by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

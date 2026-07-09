@@ -2,19 +2,12 @@ import { createSign } from "crypto";
 import { existsSync, readFileSync } from "fs";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
-const DEFAULT_FORSETI_OAUTH_CONFIG_PATH = "/data/.openclaw/workspace/forseti/integrations/google-drive/config.json";
+const DEFAULT_SERVICE_ACCOUNT_PATH = "/data/.secrets/forseti/google-service-account.json";
 const GOOGLE_AUTH_TIMEOUT_MS = 12_000;
 
 type ServiceAccountCredentials = {
   email: string;
   privateKey: string;
-};
-
-type ForsetiOAuthCredentials = {
-  clientId: string;
-  clientSecret: string;
-  refreshToken: string;
-  tokenUri: string;
 };
 
 function parseServiceAccountValue(value: string): ServiceAccountCredentials | null {
@@ -63,11 +56,9 @@ function parseServiceAccountJson(): ServiceAccountCredentials | null {
 }
 
 function parseServiceAccountFile(): ServiceAccountCredentials | null {
-  const filePath = getFirstEnvValue([
-    "GOOGLE_APPLICATION_CREDENTIALS",
-    "GOOGLE_SERVICE_ACCOUNT_FILE",
-    "GOOGLE_CREDENTIALS_FILE",
-  ]);
+  const filePath =
+    getFirstEnvValue(["GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_SERVICE_ACCOUNT_FILE", "GOOGLE_CREDENTIALS_FILE"]) ||
+    DEFAULT_SERVICE_ACCOUNT_PATH;
 
   if (!filePath || !existsSync(/* turbopackIgnore: true */ filePath)) return null;
 
@@ -98,53 +89,16 @@ function getGoogleCredentials(): ServiceAccountCredentials {
   return { email, privateKey };
 }
 
-function getForsetiOAuthCredentials(): ForsetiOAuthCredentials | null {
-  const clientId = getFirstEnvValue(["GOOGLE_OAUTH_CLIENT_ID", "FORSETI_GOOGLE_OAUTH_CLIENT_ID"]);
-  const clientSecret = getFirstEnvValue(["GOOGLE_OAUTH_CLIENT_SECRET", "FORSETI_GOOGLE_OAUTH_CLIENT_SECRET"]);
-  const refreshToken = getFirstEnvValue(["GOOGLE_OAUTH_REFRESH_TOKEN", "FORSETI_GOOGLE_OAUTH_REFRESH_TOKEN"]);
-  const tokenUri =
-    getFirstEnvValue(["GOOGLE_OAUTH_TOKEN_URI", "FORSETI_GOOGLE_OAUTH_TOKEN_URI"]) || TOKEN_URL;
-
-  if (clientId && clientSecret && refreshToken) {
-    return {
-      clientId,
-      clientSecret,
-      refreshToken,
-      tokenUri,
-    };
-  }
-
-  const configPath = getFirstEnvValue(["FORSETI_OAUTH_CONFIG_PATH", "GOOGLE_OAUTH_CONFIG_PATH"]) || DEFAULT_FORSETI_OAUTH_CONFIG_PATH;
-  if (!existsSync(/* turbopackIgnore: true */ configPath)) return null;
-
-  try {
-    const raw = readFileSync(/* turbopackIgnore: true */ configPath, "utf8");
-    const parsed = JSON.parse(raw) as {
-      auth?: { clientId?: string; clientSecret?: string; refreshToken?: string; tokenUri?: string };
-    };
-    const auth = parsed.auth;
-    if (!auth?.clientId || !auth.clientSecret || !auth.refreshToken || !auth.tokenUri) return null;
-    return {
-      clientId: auth.clientId,
-      clientSecret: auth.clientSecret,
-      refreshToken: auth.refreshToken,
-      tokenUri: auth.tokenUri,
-    };
-  } catch {
-    return null;
-  }
-}
-
 export function hasGoogleServiceAccountCredentials() {
   try {
     getGoogleCredentials();
     return true;
   } catch {
-    return Boolean(getForsetiOAuthCredentials());
+    return false;
   }
 }
 
-async function getServiceAccountAccessToken(scopes: string[]) {
+export async function getGoogleAccessToken(scopes: string[]) {
   const { email, privateKey } = getGoogleCredentials();
   const now = Math.floor(Date.now() / 1000);
   const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
@@ -174,52 +128,4 @@ async function getServiceAccountAccessToken(scopes: string[]) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.error_description ?? "No se pudo autenticar con Google.");
   return String(data.access_token);
-}
-
-async function getForsetiOAuthAccessToken() {
-  const oauth = getForsetiOAuthCredentials();
-  if (!oauth) {
-    throw new Error(
-      "Faltan credenciales Google: configura GOOGLE_SERVICE_ACCOUNT_JSON_BASE64, GOOGLE_APPLICATION_CREDENTIALS, credenciales OAuth por variables de entorno, o FORSETI_OAUTH_CONFIG_PATH apuntando al config.json de la integracion Google Drive.",
-    );
-  }
-
-  const response = await fetch(oauth.tokenUri, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    signal: timeoutSignal(GOOGLE_AUTH_TIMEOUT_MS),
-    body: new URLSearchParams({
-      client_id: oauth.clientId,
-      client_secret: oauth.clientSecret,
-      refresh_token: oauth.refreshToken,
-      grant_type: "refresh_token",
-    }),
-    cache: "no-store",
-  });
-
-  const data = await response.json();
-  if (!response.ok) {
-    const message = String(data.error_description ?? data.error ?? "");
-    const normalized = message.toLowerCase();
-    if (normalized.includes("expired") || normalized.includes("revoked") || normalized.includes("invalid_grant")) {
-      throw new Error(
-        "La autorización de Google Drive ha caducado o fue revocada. Renueva el refresh token OAuth o configura una cuenta de servicio con acceso de escritura a la carpeta de Drive.",
-      );
-    }
-
-    throw new Error(message || "No se pudo autenticar con Google OAuth.");
-  }
-  return String(data.access_token);
-}
-
-export async function getGoogleAccessToken(scopes: string[]) {
-  try {
-    return await getServiceAccountAccessToken(scopes);
-  } catch (error) {
-    if (parseServiceAccountJson() || parseServiceAccountFile()) {
-      throw error;
-    }
-
-    return getForsetiOAuthAccessToken();
-  }
 }
