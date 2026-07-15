@@ -1040,10 +1040,11 @@ export function PresupuestosClient() {
         throw new Error(await readApiError(response, "No se pudo guardar la ficha."));
       }
 
-      if (!data?.client) throw new Error(data?.error || "No se pudo guardar la ficha.");
+      const savedClient = data?.client;
+      if (!savedClient) throw new Error(data?.error || "No se pudo guardar la ficha.");
 
-      setSavedClients((current) => normalizeSavedClients(current, data.client));
-      setSelectedClientId(data.client.id);
+      setSavedClients((current) => normalizeSavedClients(current, savedClient));
+      setSelectedClientId(savedClient.id);
       setClientStatus("Ficha guardada.");
     } catch (error) {
       setClientStatus(error instanceof Error ? error.message : "No se pudo guardar la ficha.");
@@ -1556,4 +1557,3 @@ export function PresupuestosClient() {
     </section>
   );
 }
-
