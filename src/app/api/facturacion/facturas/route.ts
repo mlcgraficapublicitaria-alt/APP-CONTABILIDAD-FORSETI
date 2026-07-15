@@ -45,6 +45,10 @@ function decimalNumber(value: number | undefined) {
   return Number.isFinite(value) ? Number(value) : 0;
 }
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Error desconocido.";
+}
+
 async function readLocalInvoices() {
   try {
     const content = await readFile(localInvoicesPath, "utf8");
@@ -122,66 +126,74 @@ export async function POST(request: Request) {
   if (Number.isNaN(issueDate.getTime())) return badRequest("La fecha de factura no es válida.");
 
   if (!hasMysqlDatabaseUrl()) {
-    const invoices = await readLocalInvoices();
-    const existing = invoices.find((invoice) => invoice.series === series && invoice.number === number);
-    if (existing) return ok({ invoice: existing, existed: true });
+    try {
+      const invoices = await readLocalInvoices();
+      const existing = invoices.find((invoice) => invoice.series === series && invoice.number === number);
+      if (existing) return ok({ invoice: existing, existed: true });
 
-    const invoice: LocalInvoice = {
-      id: randomUUID(),
-      documentName,
-      series,
-      number,
-      issueDate: issueDate.toISOString(),
-      clientName,
-      createdAt: new Date().toISOString(),
-    };
-    invoices.push(invoice);
-    await writeLocalInvoices(invoices);
-    return ok({ invoice, existed: false }, { status: 201 });
+      const invoice: LocalInvoice = {
+        id: randomUUID(),
+        documentName,
+        series,
+        number,
+        issueDate: issueDate.toISOString(),
+        clientName,
+        createdAt: new Date().toISOString(),
+      };
+      invoices.push(invoice);
+      await writeLocalInvoices(invoices);
+      return ok({ invoice, existed: false }, { status: 201 });
+    } catch (error) {
+      return badRequest(`No se pudo guardar la factura localmente: ${errorMessage(error)}`);
+    }
   }
 
-  const existing = await prisma.invoice.findUnique({
-    where: { series_number: { series, number } },
-  });
-  if (existing) return ok({ invoice: existing, existed: true });
+  try {
+    const existing = await prisma.invoice.findUnique({
+      where: { series_number: { series, number } },
+    });
+    if (existing) return ok({ invoice: existing, existed: true });
 
-  const issuerProfile = await getDefaultIssuerProfile();
-  const template = await getDefaultTemplate();
-  const existingClient = await prisma.invoiceClient.findFirst({ where: { legalName: clientName } });
-  const client = existingClient
-    ? await prisma.invoiceClient.update({
-        where: { id: existingClient.id },
-        data: { notes: body.clientDetails?.trim() || undefined },
-      })
-    : await prisma.invoiceClient.create({
-        data: {
-          legalName: clientName,
-          notes: body.clientDetails?.trim() || null,
-        },
-      });
+    const issuerProfile = await getDefaultIssuerProfile();
+    const template = await getDefaultTemplate();
+    const existingClient = await prisma.invoiceClient.findFirst({ where: { legalName: clientName } });
+    const client = existingClient
+      ? await prisma.invoiceClient.update({
+          where: { id: existingClient.id },
+          data: { notes: body.clientDetails?.trim() || undefined },
+        })
+      : await prisma.invoiceClient.create({
+          data: {
+            legalName: clientName,
+            notes: body.clientDetails?.trim() || null,
+          },
+        });
 
-  const invoice = await prisma.invoice.create({
-    data: {
-      issuerProfileId: issuerProfile.id,
-      clientId: client.id,
-      templateId: template.id,
-      createdById: auth.user.id === "forseti-session-fallback" ? null : auth.user.id,
-      status: "ISSUED",
-      documentName,
-      series,
-      number,
-      issueDate,
-      articleCode: body.articleCode?.trim() || null,
-      serviceDescription,
-      subtotalAmount: decimalNumber(body.subtotalAmount),
-      vatRate: decimalNumber(body.vatRate),
-      vatAmount: decimalNumber(body.vatAmount),
-      irpfRate: decimalNumber(body.irpfRate),
-      irpfAmount: decimalNumber(body.irpfAmount),
-      totalAmount: decimalNumber(body.totalAmount),
-      renderedHtml: body.renderedHtml?.trim() || null,
-    },
-  });
+    const invoice = await prisma.invoice.create({
+      data: {
+        issuerProfileId: issuerProfile.id,
+        clientId: client.id,
+        templateId: template.id,
+        createdById: auth.user.id === "forseti-session-fallback" ? null : auth.user.id,
+        status: "ISSUED",
+        documentName,
+        series,
+        number,
+        issueDate,
+        articleCode: body.articleCode?.trim() || null,
+        serviceDescription,
+        subtotalAmount: decimalNumber(body.subtotalAmount),
+        vatRate: decimalNumber(body.vatRate),
+        vatAmount: decimalNumber(body.vatAmount),
+        irpfRate: decimalNumber(body.irpfRate),
+        irpfAmount: decimalNumber(body.irpfAmount),
+        totalAmount: decimalNumber(body.totalAmount),
+        renderedHtml: body.renderedHtml?.trim() || null,
+      },
+    });
 
-  return ok({ invoice, existed: false }, { status: 201 });
+    return ok({ invoice, existed: false }, { status: 201 });
+  } catch (error) {
+    return badRequest(`No se pudo guardar la factura en MySQL: ${errorMessage(error)}`);
+  }
 }
