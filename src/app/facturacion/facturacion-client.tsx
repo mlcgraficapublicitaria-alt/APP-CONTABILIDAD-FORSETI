@@ -719,8 +719,17 @@ export function FacturacionClient() {
         renderedHtml,
       }),
     });
-    const data = (await response.json().catch(() => ({}))) as { error?: string };
-    if (!response.ok) throw new Error(data.error || "No se pudo guardar la numeración de la factura.");
+    const responseText = await response.text();
+    let data: { error?: string } = {};
+    try {
+      data = responseText ? (JSON.parse(responseText) as { error?: string }) : {};
+    } catch {
+      // Conservamos el texto devuelto por el servidor para no ocultar errores de despliegue.
+    }
+    if (!response.ok) {
+      const serverMessage = responseText && !responseText.trimStart().startsWith("<") ? responseText.slice(0, 300) : "";
+      throw new Error(data.error || serverMessage || `No se pudo guardar la factura (HTTP ${response.status}).`);
+    }
   }
 
   useEffect(() => {

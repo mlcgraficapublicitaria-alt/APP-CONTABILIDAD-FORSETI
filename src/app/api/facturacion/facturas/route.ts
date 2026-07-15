@@ -65,14 +65,10 @@ async function writeLocalInvoices(invoices: LocalInvoice[]) {
 }
 
 async function getDefaultIssuerProfile() {
-  const existing = await prisma.invoiceIssuerProfile.findFirst({
-    where: { isDefault: true },
-    orderBy: { createdAt: "asc" },
-  });
-  if (existing) return existing;
-
-  return prisma.invoiceIssuerProfile.create({
-    data: {
+  return prisma.invoiceIssuerProfile.upsert({
+    where: { code: "MLC-DEFAULT" },
+    update: { isDefault: true },
+    create: {
       code: "MLC-DEFAULT",
       legalName: "MARIANO LUJAN CANOVAS",
       taxId: "47078608-T",
