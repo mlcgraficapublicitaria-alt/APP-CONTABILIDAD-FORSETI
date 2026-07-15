@@ -490,31 +490,6 @@ function buildPrintableInvoiceDocument(
 </html>`;
 }
 
-function openPrintableDocument(html: string) {
-  const printWindow = window.open("", "forseti-print-document", "popup,width=1080,height=1440");
-  if (!printWindow) return;
-
-  let didPrint = false;
-  const printDocument = () => {
-    if (didPrint) return;
-    didPrint = true;
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 250);
-  };
-
-  printWindow.addEventListener("load", printDocument, { once: true });
-  printWindow.addEventListener("afterprint", () => setTimeout(() => printWindow.close(), 500), { once: true });
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
-
-  if (printWindow.document.readyState === "complete") {
-    printDocument();
-  }
-}
-
 function openPrintablePreview(element: HTMLElement | null, title: string) {
   if (!element) return;
 
@@ -676,8 +651,10 @@ export function FacturacionClient() {
   const [isDriveBusy, setIsDriveBusy] = useState(false);
   const [issuedInvoices, setIssuedInvoices] = useState<IssuedInvoice[]>([]);
   const [invoiceHistoryStatus, setInvoiceHistoryStatus] = useState("");
+  const [historicalPrint, setHistoricalPrint] = useState<{ form: InvoiceFormState; summary: InvoiceSummary; title: string } | null>(null);
   const baseId = useId();
   const printPreviewRef = useRef<HTMLDivElement>(null);
+  const historicalPrintRef = useRef<HTMLDivElement>(null);
   const fieldClassName = inputClassName();
 
   const summary = useMemo(() => {
@@ -805,7 +782,7 @@ export function FacturacionClient() {
       irpfAmount: invoice.irpfAmount ?? 0,
       totalAmount: invoice.totalAmount ?? 0,
     };
-    openPrintableDocument(buildPrintableInvoiceDocument(historicalForm, historicalSummary));
+    setHistoricalPrint({ form: historicalForm, summary: historicalSummary, title: invoice.documentName });
   }
 
   useEffect(() => {
@@ -831,6 +808,11 @@ export function FacturacionClient() {
   useEffect(() => {
     void refreshIssuedInvoices();
   }, [refreshIssuedInvoices]);
+
+  useEffect(() => {
+    if (!historicalPrint) return;
+    openPrintablePreview(historicalPrintRef.current, historicalPrint.title);
+  }, [historicalPrint]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1041,7 +1023,9 @@ export function FacturacionClient() {
     }
   }
 
-  const renderInvoicePreview = (className = "") => (
+  const currentForm = form;
+  const currentSummary = summary;
+  const renderInvoicePreview = (className = "", form = currentForm, summary = currentSummary) => (
     <article className={`overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.12)] ${className}`}> 
           <div className="px-8 pt-8 pb-0">
             <div className="flex items-start justify-between gap-8">
@@ -1394,6 +1378,9 @@ export function FacturacionClient() {
       <div className="order-2 flex flex-col items-center rounded-[28px] border border-white/10 bg-[#f7f7f5] p-4 text-center text-slate-900 shadow-[0_20px_60px_rgba(0,0,0,0.3)] sm:p-6 xl:order-2">
         <div ref={printPreviewRef} className="pointer-events-none fixed -left-[10000px] top-0 w-[760px]" aria-hidden="true">
           {renderInvoicePreview("w-[760px]")}
+        </div>
+        <div ref={historicalPrintRef} className="pointer-events-none fixed -left-[10000px] top-0 w-[760px]" aria-hidden="true">
+          {historicalPrint ? renderInvoicePreview("w-[760px]", historicalPrint.form, historicalPrint.summary) : null}
         </div>
 
         <div className="mb-4 flex w-full max-w-[760px] flex-col items-center gap-3 text-center">
