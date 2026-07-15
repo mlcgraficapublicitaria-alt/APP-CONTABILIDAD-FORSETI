@@ -697,7 +697,7 @@ export function FacturacionClient() {
     return formattedNumber;
   }
 
-  async function registerCurrentInvoice(renderedHtml = buildPrintableInvoiceDocument(form, summary)) {
+  async function registerCurrentInvoice() {
     const response = await fetch("/api/facturacion/facturas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -716,7 +716,6 @@ export function FacturacionClient() {
         irpfRate: summary.irpfRate,
         irpfAmount: summary.irpfAmount,
         totalAmount: summary.totalAmount,
-        renderedHtml,
       }),
     });
     const responseText = await response.text();
@@ -949,7 +948,7 @@ export function FacturacionClient() {
         error?: string;
       };
       if (!response.ok || !data.file) throw new Error(data.error || "No se pudo guardar el documento en Drive.");
-      await registerCurrentInvoice(html);
+      await registerCurrentInvoice();
       const nextNumber = await loadNextInvoiceNumber(form.invoiceSeries);
       setGenerated(false);
       const driveMessage = data.file.webViewLink ? `Guardado en Drive: ${data.file.name} - ${data.file.webViewLink}` : `Guardado en Drive: ${data.file.name}`;
