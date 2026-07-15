@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 type SavedInvoiceClient = {
   id: string;
@@ -14,6 +14,34 @@ type DriveFolderOption = {
   id: string;
   name: string;
   webViewLink?: string;
+};
+
+type IssuedInvoice = {
+  id: string;
+  documentName: string;
+  series: string;
+  number: number;
+  issueDate: string;
+  clientName: string;
+  clientDetails?: string;
+  articleCode?: string;
+  serviceDescription?: string;
+  subtotalAmount?: number;
+  vatRate?: number;
+  vatAmount?: number;
+  irpfRate?: number;
+  irpfAmount?: number;
+  totalAmount?: number;
+  issuer?: {
+    legalName: string;
+    taxId: string;
+    addressLine1: string;
+    postalCode: string;
+    city: string;
+    email: string;
+    phone: string;
+    bankAccount: string;
+  };
 };
 
 type InvoiceSummary = {
@@ -646,6 +674,8 @@ export function FacturacionClient() {
   const [selectedDriveFolderId, setSelectedDriveFolderId] = useState("");
   const [driveStatus, setDriveStatus] = useState("");
   const [isDriveBusy, setIsDriveBusy] = useState(false);
+  const [issuedInvoices, setIssuedInvoices] = useState<IssuedInvoice[]>([]);
+  const [invoiceHistoryStatus, setInvoiceHistoryStatus] = useState("");
   const baseId = useId();
   const printPreviewRef = useRef<HTMLDivElement>(null);
   const fieldClassName = inputClassName();
@@ -677,6 +707,18 @@ export function FacturacionClient() {
     !form.clientName.trim() ||
     !form.billedService.trim() ||
     summary.baseAmount <= 0;
+
+  const refreshIssuedInvoices = useCallback(async () => {
+    try {
+      const response = await fetch("/api/facturacion/facturas", { cache: "no-store" });
+      const data = (await response.json().catch(() => ({}))) as { invoices?: IssuedInvoice[]; error?: string };
+      if (!response.ok) throw new Error(data.error || "No se pudieron cargar las facturas emitidas.");
+      setIssuedInvoices(data.invoices ?? []);
+      setInvoiceHistoryStatus("");
+    } catch (error) {
+      setInvoiceHistoryStatus(error instanceof Error ? error.message : "No se pudieron cargar las facturas emitidas.");
+    }
+  }, []);
 
   async function loadNextInvoiceNumber(series = form.invoiceSeries) {
     const response = await fetch(`/api/facturacion/siguiente-numero?serie=${encodeURIComponent(series || "A")}`, {
@@ -729,6 +771,41 @@ export function FacturacionClient() {
       const serverMessage = responseText && !responseText.trimStart().startsWith("<") ? responseText.slice(0, 300) : "";
       throw new Error(data.error || serverMessage || `No se pudo guardar la factura (HTTP ${response.status}).`);
     }
+    await refreshIssuedInvoices();
+  }
+
+  function handlePrintIssuedInvoice(invoice: IssuedInvoice) {
+    const historicalForm: InvoiceFormState = {
+      ...INITIAL_STATE,
+      documentName: invoice.documentName,
+      invoiceDate: invoice.issueDate.slice(0, 10),
+      invoiceSeries: invoice.series || "A",
+      invoiceNumber: String(invoice.number).padStart(6, "0"),
+      articleCode: invoice.articleCode || "H",
+      issuerName: invoice.issuer?.legalName || INITIAL_STATE.issuerName,
+      issuerTaxId: invoice.issuer?.taxId || INITIAL_STATE.issuerTaxId,
+      issuerAddress: invoice.issuer?.addressLine1 || INITIAL_STATE.issuerAddress,
+      issuerPostalCode: invoice.issuer?.postalCode || INITIAL_STATE.issuerPostalCode,
+      issuerCity: invoice.issuer?.city || INITIAL_STATE.issuerCity,
+      issuerEmail: invoice.issuer?.email || INITIAL_STATE.issuerEmail,
+      issuerPhone: invoice.issuer?.phone || INITIAL_STATE.issuerPhone,
+      issuerBankAccount: invoice.issuer?.bankAccount || INITIAL_STATE.issuerBankAccount,
+      clientName: invoice.clientName,
+      clientDetails: invoice.clientDetails || "",
+      billedService: invoice.serviceDescription || "Servicio",
+      baseAmount: String(invoice.subtotalAmount ?? 0),
+      vatRate: String(invoice.vatRate ?? 0),
+      irpfRate: String(invoice.irpfRate ?? 0),
+    };
+    const historicalSummary: InvoiceSummary = {
+      baseAmount: invoice.subtotalAmount ?? 0,
+      vatRate: invoice.vatRate ?? 0,
+      vatAmount: invoice.vatAmount ?? 0,
+      irpfRate: invoice.irpfRate ?? 0,
+      irpfAmount: invoice.irpfAmount ?? 0,
+      totalAmount: invoice.totalAmount ?? 0,
+    };
+    openPrintableDocument(buildPrintableInvoiceDocument(historicalForm, historicalSummary));
   }
 
   useEffect(() => {
@@ -750,6 +827,10 @@ export function FacturacionClient() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    void refreshIssuedInvoices();
+  }, [refreshIssuedInvoices]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1280,6 +1361,33 @@ export function FacturacionClient() {
             </button>
           </div>
           {driveStatus ? <p className="mt-3 break-words text-center text-xs font-semibold text-[#d7f0a7]">{driveStatus}</p> : null}
+        </div>
+
+        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Facturas emitidas</p>
+            <button type="button" onClick={() => void refreshIssuedInvoices()} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10">
+              Actualizar
+            </button>
+          </div>
+          {invoiceHistoryStatus ? <p className="mt-3 text-center text-xs font-semibold text-amber-300">{invoiceHistoryStatus}</p> : null}
+          <div className="mt-4 grid max-h-80 gap-2 overflow-y-auto pr-1">
+            {issuedInvoices.length ? (
+              issuedInvoices.map((invoice) => (
+                <div key={invoice.id} className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-center sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:text-left">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">{invoice.series}/{String(invoice.number).padStart(6, "0")} · {invoice.clientName}</p>
+                    <p className="mt-1 text-xs text-slate-300">{formatDate(invoice.issueDate.slice(0, 10))} · {formatMoney(invoice.totalAmount ?? 0)}</p>
+                  </div>
+                  <button type="button" onClick={() => handlePrintIssuedInvoice(invoice)} className="rounded-xl bg-[#87ba2f] px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-[#98cb44]">
+                    Descargar PDF
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="py-3 text-center text-sm text-slate-400">Todavía no hay facturas emitidas guardadas.</p>
+            )}
+          </div>
         </div>
       </div>
 

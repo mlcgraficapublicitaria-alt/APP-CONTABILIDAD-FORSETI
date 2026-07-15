@@ -30,6 +30,15 @@ type LocalInvoice = {
   number: number;
   issueDate: string;
   clientName: string;
+  clientDetails?: string;
+  articleCode?: string;
+  serviceDescription?: string;
+  subtotalAmount?: number;
+  vatRate?: number;
+  vatAmount?: number;
+  irpfRate?: number;
+  irpfAmount?: number;
+  totalAmount?: number;
   createdAt: string;
 };
 
@@ -104,6 +113,57 @@ async function getDefaultTemplate() {
   });
 }
 
+export async function GET() {
+  const auth = await requireUser();
+  if (!auth.user) return auth.response;
+
+  if (!hasMysqlDatabaseUrl()) {
+    const invoices = await readLocalInvoices();
+    return ok({ invoices: invoices.sort((a, b) => b.issueDate.localeCompare(a.issueDate)) });
+  }
+
+  try {
+    const invoices = await prisma.invoice.findMany({
+      where: { status: "ISSUED" },
+      include: { issuerProfile: true, client: true },
+      orderBy: [{ issueDate: "desc" }, { number: "desc" }],
+      take: 100,
+    });
+
+    return ok({
+      invoices: invoices.map((invoice) => ({
+        id: invoice.id,
+        documentName: invoice.documentName,
+        series: invoice.series ?? "A",
+        number: invoice.number,
+        issueDate: invoice.issueDate.toISOString().slice(0, 10),
+        clientName: invoice.client.legalName,
+        clientDetails: invoice.client.notes ?? "",
+        articleCode: invoice.articleCode ?? "H",
+        serviceDescription: invoice.serviceDescription,
+        subtotalAmount: Number(invoice.subtotalAmount),
+        vatRate: Number(invoice.vatRate),
+        vatAmount: Number(invoice.vatAmount),
+        irpfRate: Number(invoice.irpfRate),
+        irpfAmount: Number(invoice.irpfAmount),
+        totalAmount: Number(invoice.totalAmount),
+        issuer: {
+          legalName: invoice.issuerProfile.legalName,
+          taxId: invoice.issuerProfile.taxId ?? "",
+          addressLine1: invoice.issuerProfile.addressLine1 ?? "",
+          postalCode: invoice.issuerProfile.postalCode ?? "",
+          city: invoice.issuerProfile.city ?? "",
+          email: invoice.issuerProfile.email ?? "",
+          phone: invoice.issuerProfile.phone ?? "",
+          bankAccount: invoice.issuerProfile.bankAccount ?? "",
+        },
+      })),
+    });
+  } catch (error) {
+    return badRequest(`No se pudieron cargar las facturas emitidas: ${errorMessage(error)}`);
+  }
+}
+
 export async function POST(request: Request) {
   const auth = await requireUser();
   if (!auth.user) return auth.response;
@@ -134,6 +194,15 @@ export async function POST(request: Request) {
         number,
         issueDate: issueDate.toISOString(),
         clientName,
+        clientDetails: body.clientDetails?.trim() || "",
+        articleCode: body.articleCode?.trim() || "H",
+        serviceDescription,
+        subtotalAmount: decimalNumber(body.subtotalAmount),
+        vatRate: decimalNumber(body.vatRate),
+        vatAmount: decimalNumber(body.vatAmount),
+        irpfRate: decimalNumber(body.irpfRate),
+        irpfAmount: decimalNumber(body.irpfAmount),
+        totalAmount: decimalNumber(body.totalAmount),
         createdAt: new Date().toISOString(),
       };
       invoices.push(invoice);
