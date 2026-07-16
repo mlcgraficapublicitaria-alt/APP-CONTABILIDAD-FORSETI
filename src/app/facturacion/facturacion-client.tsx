@@ -198,6 +198,31 @@ function buildClientCircleLines(form: InvoiceFormState) {
   return [form.clientName || "CLIENTE", ...form.clientDetails.split("\n").map((item) => item.trim()).filter(Boolean)];
 }
 
+function invoiceToFormState(invoice: IssuedInvoice): InvoiceFormState {
+  return {
+    ...INITIAL_STATE,
+    documentName: invoice.documentName,
+    invoiceDate: invoice.issueDate.slice(0, 10),
+    invoiceSeries: invoice.series || "A",
+    invoiceNumber: String(invoice.number).padStart(6, "0"),
+    articleCode: invoice.articleCode || "H",
+    issuerName: invoice.issuer?.legalName || INITIAL_STATE.issuerName,
+    issuerTaxId: invoice.issuer?.taxId || INITIAL_STATE.issuerTaxId,
+    issuerAddress: invoice.issuer?.addressLine1 || INITIAL_STATE.issuerAddress,
+    issuerPostalCode: invoice.issuer?.postalCode || INITIAL_STATE.issuerPostalCode,
+    issuerCity: invoice.issuer?.city || INITIAL_STATE.issuerCity,
+    issuerEmail: invoice.issuer?.email || INITIAL_STATE.issuerEmail,
+    issuerPhone: invoice.issuer?.phone || INITIAL_STATE.issuerPhone,
+    issuerBankAccount: invoice.issuer?.bankAccount || INITIAL_STATE.issuerBankAccount,
+    clientName: invoice.clientName,
+    clientDetails: invoice.clientDetails || "",
+    billedService: invoice.serviceDescription || "Servicio",
+    baseAmount: String(invoice.subtotalAmount ?? 0),
+    vatRate: String(invoice.vatRate ?? 0),
+    irpfRate: String(invoice.irpfRate ?? 0),
+  };
+}
+
 function buildPrintableInvoiceDocument(
   form: InvoiceFormState,
   summary: InvoiceSummary,
@@ -650,6 +675,7 @@ export function FacturacionClient() {
   const [driveStatus, setDriveStatus] = useState("");
   const [isDriveBusy, setIsDriveBusy] = useState(false);
   const [issuedInvoices, setIssuedInvoices] = useState<IssuedInvoice[]>([]);
+  const [editingInvoiceId, setEditingInvoiceId] = useState("");
   const [invoiceHistoryStatus, setInvoiceHistoryStatus] = useState("");
   const [historicalPrint, setHistoricalPrint] = useState<{ form: InvoiceFormState; summary: InvoiceSummary; title: string } | null>(null);
   const baseId = useId();
@@ -677,8 +703,10 @@ export function FacturacionClient() {
 
   const previewDocumentName = buildInvoiceDocumentName(form);
   const previewInvoiceCode = buildInvoiceCode(form);
-  const issuerCircleLines = buildIssuerCircleLines(form);
-  const clientCircleLines = buildClientCircleLines(form);
+  const editingInvoice = useMemo(
+    () => issuedInvoices.find((invoice) => invoice.id === editingInvoiceId),
+    [editingInvoiceId, issuedInvoices],
+  );
   const printDisabled =
     !generated ||
     !form.clientName.trim() ||
@@ -697,7 +725,9 @@ export function FacturacionClient() {
     }
   }, []);
 
-  async function loadNextInvoiceNumber(series = form.invoiceSeries) {
+  async function loadNextInvoiceNumber(series = form.invoiceSeries, force = false) {
+    if (editingInvoiceId && !force) return form.invoiceNumber;
+
     const response = await fetch(`/api/facturacion/siguiente-numero?serie=${encodeURIComponent(series || "A")}`, {
       cache: "no-store",
     });
@@ -717,10 +747,12 @@ export function FacturacionClient() {
   }
 
   async function registerCurrentInvoice() {
+    const isEditing = Boolean(editingInvoiceId);
     const response = await fetch("/api/facturacion/facturas", {
-      method: "POST",
+      method: isEditing ? "PUT" : "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        id: isEditing ? editingInvoiceId : undefined,
         documentName: previewDocumentName,
         series: form.invoiceSeries,
         number: form.invoiceNumber,
@@ -735,6 +767,7 @@ export function FacturacionClient() {
         irpfRate: summary.irpfRate,
         irpfAmount: summary.irpfAmount,
         totalAmount: summary.totalAmount,
+        renderedHtml: buildPrintableInvoiceDocument(form, summary),
       }),
     });
     const responseText = await response.text();
@@ -752,28 +785,7 @@ export function FacturacionClient() {
   }
 
   function handlePrintIssuedInvoice(invoice: IssuedInvoice) {
-    const historicalForm: InvoiceFormState = {
-      ...INITIAL_STATE,
-      documentName: invoice.documentName,
-      invoiceDate: invoice.issueDate.slice(0, 10),
-      invoiceSeries: invoice.series || "A",
-      invoiceNumber: String(invoice.number).padStart(6, "0"),
-      articleCode: invoice.articleCode || "H",
-      issuerName: invoice.issuer?.legalName || INITIAL_STATE.issuerName,
-      issuerTaxId: invoice.issuer?.taxId || INITIAL_STATE.issuerTaxId,
-      issuerAddress: invoice.issuer?.addressLine1 || INITIAL_STATE.issuerAddress,
-      issuerPostalCode: invoice.issuer?.postalCode || INITIAL_STATE.issuerPostalCode,
-      issuerCity: invoice.issuer?.city || INITIAL_STATE.issuerCity,
-      issuerEmail: invoice.issuer?.email || INITIAL_STATE.issuerEmail,
-      issuerPhone: invoice.issuer?.phone || INITIAL_STATE.issuerPhone,
-      issuerBankAccount: invoice.issuer?.bankAccount || INITIAL_STATE.issuerBankAccount,
-      clientName: invoice.clientName,
-      clientDetails: invoice.clientDetails || "",
-      billedService: invoice.serviceDescription || "Servicio",
-      baseAmount: String(invoice.subtotalAmount ?? 0),
-      vatRate: String(invoice.vatRate ?? 0),
-      irpfRate: String(invoice.irpfRate ?? 0),
-    };
+    const historicalForm = invoiceToFormState(invoice);
     const historicalSummary: InvoiceSummary = {
       baseAmount: invoice.subtotalAmount ?? 0,
       vatRate: invoice.vatRate ?? 0,
@@ -783,6 +795,34 @@ export function FacturacionClient() {
       totalAmount: invoice.totalAmount ?? 0,
     };
     setHistoricalPrint({ form: historicalForm, summary: historicalSummary, title: invoice.documentName });
+  }
+
+  function handleEditIssuedInvoice(invoice: IssuedInvoice) {
+    const nextForm = invoiceToFormState(invoice);
+    setForm(nextForm);
+    setEditingInvoiceId(invoice.id);
+    setSelectedClientId("");
+    setGenerated(true);
+    setIsPreviewOpen(false);
+    setDriveStatus(`Editando factura ${nextForm.invoiceSeries}/${nextForm.invoiceNumber}.`);
+  }
+
+  async function handleCancelInvoiceEdit() {
+    const series = form.invoiceSeries || INITIAL_STATE.invoiceSeries;
+    setEditingInvoiceId("");
+    setGenerated(false);
+    setForm((current) => ({
+      ...INITIAL_STATE,
+      invoiceSeries: current.invoiceSeries || INITIAL_STATE.invoiceSeries,
+    }));
+    setDriveStatus("Edicion cancelada. Preparando una factura nueva...");
+
+    try {
+      const nextNumber = await loadNextInvoiceNumber(series, true);
+      setDriveStatus(`Edicion cancelada. Siguiente numero preparado: ${series}/${nextNumber}.`);
+    } catch (error) {
+      setDriveStatus(error instanceof Error ? error.message : "Edicion cancelada, pero no se pudo preparar el siguiente numero.");
+    }
   }
 
   useEffect(() => {
@@ -954,14 +994,20 @@ export function FacturacionClient() {
   }
 
   async function handlePrintInvoice() {
-    setDriveStatus("Guardando número de factura...");
+    const isEditing = Boolean(editingInvoiceId);
+    setDriveStatus(isEditing ? "Actualizando factura emitida..." : "Guardando número de factura...");
 
     try {
       await registerCurrentInvoice();
       openPrintablePreview(printPreviewRef.current, previewDocumentName);
-      const nextNumber = await loadNextInvoiceNumber(form.invoiceSeries);
       setGenerated(false);
-      setDriveStatus(`Factura ${previewInvoiceCode} registrada. Siguiente número preparado: ${form.invoiceSeries}/${nextNumber}.`);
+      if (isEditing) {
+        setEditingInvoiceId("");
+        setDriveStatus(`Factura ${previewInvoiceCode} actualizada.`);
+      } else {
+        const nextNumber = await loadNextInvoiceNumber(form.invoiceSeries);
+        setDriveStatus(`Factura ${previewInvoiceCode} registrada. Siguiente número preparado: ${form.invoiceSeries}/${nextNumber}.`);
+      }
     } catch (error) {
       setDriveStatus(error instanceof Error ? error.message : "No se pudo guardar la numeración de la factura.");
     }
@@ -1011,11 +1057,17 @@ export function FacturacionClient() {
         error?: string;
       };
       if (!response.ok || !data.file) throw new Error(data.error || "No se pudo guardar el documento en Drive.");
+      const isEditing = Boolean(editingInvoiceId);
       await registerCurrentInvoice();
-      const nextNumber = await loadNextInvoiceNumber(form.invoiceSeries);
       setGenerated(false);
       const driveMessage = data.file.webViewLink ? `Guardado en Drive: ${data.file.name} - ${data.file.webViewLink}` : `Guardado en Drive: ${data.file.name}`;
-      setDriveStatus(`${driveMessage}. Factura ${previewInvoiceCode} registrada. Siguiente número preparado: ${form.invoiceSeries}/${nextNumber}.`);
+      if (isEditing) {
+        setEditingInvoiceId("");
+        setDriveStatus(`${driveMessage}. Factura ${previewInvoiceCode} actualizada.`);
+      } else {
+        const nextNumber = await loadNextInvoiceNumber(form.invoiceSeries);
+        setDriveStatus(`${driveMessage}. Factura ${previewInvoiceCode} registrada. Siguiente número preparado: ${form.invoiceSeries}/${nextNumber}.`);
+      }
     } catch (error) {
       setDriveStatus(error instanceof Error ? error.message : "No se pudo guardar el documento en Drive.");
     } finally {
@@ -1025,7 +1077,12 @@ export function FacturacionClient() {
 
   const currentForm = form;
   const currentSummary = summary;
-  const renderInvoicePreview = (className = "", form = currentForm, summary = currentSummary) => (
+  const renderInvoicePreview = (className = "", form = currentForm, summary = currentSummary) => {
+    const invoiceCode = buildInvoiceCode(form);
+    const localIssuerCircleLines = buildIssuerCircleLines(form);
+    const localClientCircleLines = buildClientCircleLines(form);
+
+    return (
     <article className={`overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.12)] ${className}`}> 
           <div className="px-8 pt-8 pb-0">
             <div className="flex items-start justify-between gap-8">
@@ -1038,7 +1095,7 @@ export function FacturacionClient() {
                 <p className="text-[18px] font-medium text-sky-400">FECHA: {formatDate(form.invoiceDate) || "Sin fecha"}</p>
                 <div className="mt-6 text-right font-light tracking-[0.02em] text-slate-200">
                   <p className="text-[28px] leading-tight">FACTURA Nº</p>
-                  <p className="mt-1 text-[26px] leading-tight">{previewInvoiceCode}</p>
+                  <p className="mt-1 text-[26px] leading-tight">{invoiceCode}</p>
                 </div>
               </div>
             </div>
@@ -1049,13 +1106,13 @@ export function FacturacionClient() {
               <div className="flex h-[210px] w-[210px] items-center justify-center rounded-full bg-sky-300 px-6 text-center text-white">
                 <div className="space-y-0.5 text-[14px] leading-[1.12]">
                   <p className="text-[17px] font-bold">{form.issuerName || "EMISOR"}</p>
-                  {circleLinesForPreview(issuerCircleLines.slice(1))}
+                  {circleLinesForPreview(localIssuerCircleLines.slice(1))}
                 </div>
               </div>
               <div className="flex h-[210px] w-[210px] items-center justify-center rounded-full bg-[#1f1f1f] px-6 text-center text-white">
                 <div className="space-y-0.5 text-[14px] leading-[1.12]">
                   <p className="text-[17px] font-bold">{form.clientName || "CLIENTE"}</p>
-                  {circleLinesForPreview(clientCircleLines.slice(1))}
+                  {circleLinesForPreview(localClientCircleLines.slice(1))}
                 </div>
               </div>
             </div>
@@ -1122,7 +1179,8 @@ export function FacturacionClient() {
             </div>
           </div>
         </article>
-  );
+    );
+  };
 
   return (
     <section className="grid gap-6 xl:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.55fr)] xl:items-start">
@@ -1146,6 +1204,15 @@ export function FacturacionClient() {
             <input id={`${baseId}-document`} className={`${fieldClassName} cursor-default`} value={previewDocumentName} readOnly />
           </FormField>
         </div>
+
+        {editingInvoice ? (
+          <div className="mx-auto mt-4 w-full max-w-lg rounded-2xl border border-[#87ba2f]/35 bg-[#87ba2f]/12 px-4 py-3 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d7f0a7]">Editando factura emitida</p>
+            <p className="mt-1 text-sm font-semibold text-white">
+              {editingInvoice.series}/{String(editingInvoice.number).padStart(6, "0")} · {editingInvoice.clientName}
+            </p>
+          </div>
+        ) : null}
 
         <div className="mx-auto mt-4 grid w-full max-w-lg justify-items-center gap-4 sm:grid-cols-3">
           <div>
@@ -1305,8 +1372,13 @@ export function FacturacionClient() {
             Generar factura
           </button>
           <button type="button" onClick={handlePrintInvoice} disabled={printDisabled} className="rounded-2xl border border-white/12 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40">
-            Imprimir o guardar PDF
+            {editingInvoiceId ? "Actualizar e imprimir PDF" : "Imprimir o guardar PDF"}
           </button>
+          {editingInvoiceId ? (
+            <button type="button" onClick={() => void handleCancelInvoiceEdit()} className="rounded-2xl border border-amber-300/40 bg-amber-300/10 px-5 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/15">
+              Cancelar edicion
+            </button>
+          ) : null}
         </div>
 
         <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
@@ -1341,7 +1413,7 @@ export function FacturacionClient() {
 
           <div className="mt-4 flex justify-center">
             <button type="button" onClick={handleSaveInvoiceToDrive} disabled={printDisabled || isDriveBusy || !selectedDriveFolderId} className="rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44] disabled:cursor-not-allowed disabled:opacity-40">
-              Guardar documento en Drive
+              {editingInvoiceId ? "Actualizar y guardar en Drive" : "Guardar documento en Drive"}
             </button>
           </div>
           {driveStatus ? <p className="mt-3 break-words text-center text-xs font-semibold text-[#d7f0a7]">{driveStatus}</p> : null}
@@ -1361,11 +1433,17 @@ export function FacturacionClient() {
                 <div key={invoice.id} className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-center sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:text-left">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-white">{invoice.series}/{String(invoice.number).padStart(6, "0")} · {invoice.clientName}</p>
+                    <p className="mt-1 truncate text-xs font-semibold text-[#d7f0a7]">{invoice.documentName}</p>
                     <p className="mt-1 text-xs text-slate-300">{formatDate(invoice.issueDate.slice(0, 10))} · {formatMoney(invoice.totalAmount ?? 0)}</p>
                   </div>
-                  <button type="button" onClick={() => handlePrintIssuedInvoice(invoice)} className="rounded-xl bg-[#87ba2f] px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-[#98cb44]">
-                    Descargar PDF
-                  </button>
+                  <div className="flex flex-wrap justify-center gap-2 sm:justify-end">
+                    <button type="button" onClick={() => handleEditIssuedInvoice(invoice)} className="rounded-xl border border-white/12 bg-white/6 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10">
+                      Editar
+                    </button>
+                    <button type="button" onClick={() => handlePrintIssuedInvoice(invoice)} className="rounded-xl bg-[#87ba2f] px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-[#98cb44]">
+                      PDF
+                    </button>
+                  </div>
                 </div>
               ))
             ) : (

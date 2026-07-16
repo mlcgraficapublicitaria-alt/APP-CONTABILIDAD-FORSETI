@@ -6,6 +6,7 @@ import { badRequest, ok, readJson, requireUser } from "@/lib/renta-fiscal/api";
 import { prisma } from "@/lib/renta-fiscal/prisma";
 
 type RegisterInvoiceBody = {
+  id?: string;
   documentName?: string;
   series?: string;
   number?: string | number;
@@ -39,6 +40,7 @@ type LocalInvoice = {
   irpfRate?: number;
   irpfAmount?: number;
   totalAmount?: number;
+  renderedHtml?: string;
   createdAt: string;
 };
 
@@ -111,6 +113,39 @@ async function getDefaultTemplate() {
       isDefault: true,
     },
   });
+}
+
+async function resolveInvoiceClient(clientName: string, clientDetails?: string) {
+  const existingClient = await prisma.invoiceClient.findFirst({ where: { legalName: clientName } });
+  return existingClient
+    ? prisma.invoiceClient.update({
+        where: { id: existingClient.id },
+        data: { notes: clientDetails?.trim() || undefined },
+      })
+    : prisma.invoiceClient.create({
+        data: {
+          legalName: clientName,
+          notes: clientDetails?.trim() || null,
+        },
+      });
+}
+
+function buildInvoiceData(body: RegisterInvoiceBody, documentName: string, series: string, number: number, issueDate: Date, serviceDescription: string) {
+  return {
+    documentName,
+    series,
+    number,
+    issueDate,
+    articleCode: body.articleCode?.trim() || null,
+    serviceDescription,
+    subtotalAmount: decimalNumber(body.subtotalAmount),
+    vatRate: decimalNumber(body.vatRate),
+    vatAmount: decimalNumber(body.vatAmount),
+    irpfRate: decimalNumber(body.irpfRate),
+    irpfAmount: decimalNumber(body.irpfAmount),
+    totalAmount: decimalNumber(body.totalAmount),
+    renderedHtml: body.renderedHtml?.trim() || null,
+  };
 }
 
 export async function GET() {
@@ -203,6 +238,7 @@ export async function POST(request: Request) {
         irpfRate: decimalNumber(body.irpfRate),
         irpfAmount: decimalNumber(body.irpfAmount),
         totalAmount: decimalNumber(body.totalAmount),
+        renderedHtml: body.renderedHtml?.trim() || "",
         createdAt: new Date().toISOString(),
       };
       invoices.push(invoice);
@@ -221,18 +257,7 @@ export async function POST(request: Request) {
 
     const issuerProfile = await getDefaultIssuerProfile();
     const template = await getDefaultTemplate();
-    const existingClient = await prisma.invoiceClient.findFirst({ where: { legalName: clientName } });
-    const client = existingClient
-      ? await prisma.invoiceClient.update({
-          where: { id: existingClient.id },
-          data: { notes: body.clientDetails?.trim() || undefined },
-        })
-      : await prisma.invoiceClient.create({
-          data: {
-            legalName: clientName,
-            notes: body.clientDetails?.trim() || null,
-          },
-        });
+    const client = await resolveInvoiceClient(clientName, body.clientDetails);
 
     const invoice = await prisma.invoice.create({
       data: {
@@ -241,11 +266,53 @@ export async function POST(request: Request) {
         templateId: template.id,
         createdById: auth.user.id === "forseti-session-fallback" ? null : auth.user.id,
         status: "ISSUED",
+        ...buildInvoiceData(body, documentName, series, number, issueDate, serviceDescription),
+      },
+    });
+
+    return ok({ invoice, existed: false }, { status: 201 });
+  } catch (error) {
+    return badRequest(`No se pudo guardar la factura en MySQL: ${errorMessage(error)}`);
+  }
+}
+
+export async function PUT(request: Request) {
+  const auth = await requireUser();
+  if (!auth.user) return auth.response;
+
+  const body = await readJson<RegisterInvoiceBody>(request);
+  const invoiceId = body.id?.trim();
+  const series = body.series?.trim() || "A";
+  const number = parseInvoiceNumber(body.number);
+  const clientName = body.clientName?.trim();
+  const documentName = body.documentName?.trim();
+  const serviceDescription = body.serviceDescription?.trim() || "Servicio";
+  const issueDate = body.issueDate ? new Date(body.issueDate) : new Date();
+
+  if (!invoiceId) return badRequest("La factura que quieres editar no esta identificada.");
+  if (!number) return badRequest("El numero de factura es obligatorio.");
+  if (!clientName) return badRequest("El cliente de la factura es obligatorio.");
+  if (!documentName) return badRequest("El nombre del documento es obligatorio.");
+  if (Number.isNaN(issueDate.getTime())) return badRequest("La fecha de factura no es valida.");
+
+  if (!hasMysqlDatabaseUrl()) {
+    try {
+      const invoices = await readLocalInvoices();
+      const invoiceIndex = invoices.findIndex((invoice) => invoice.id === invoiceId);
+      if (invoiceIndex < 0) return badRequest("No se encontro la factura emitida para editar.");
+
+      const duplicate = invoices.find((invoice) => invoice.id !== invoiceId && invoice.series === series && invoice.number === number);
+      if (duplicate) return badRequest(`Ya existe la factura ${series}/${String(number).padStart(6, "0")}.`);
+
+      const invoice: LocalInvoice = {
+        ...invoices[invoiceIndex],
         documentName,
         series,
         number,
-        issueDate,
-        articleCode: body.articleCode?.trim() || null,
+        issueDate: issueDate.toISOString(),
+        clientName,
+        clientDetails: body.clientDetails?.trim() || "",
+        articleCode: body.articleCode?.trim() || "H",
         serviceDescription,
         subtotalAmount: decimalNumber(body.subtotalAmount),
         vatRate: decimalNumber(body.vatRate),
@@ -253,12 +320,42 @@ export async function POST(request: Request) {
         irpfRate: decimalNumber(body.irpfRate),
         irpfAmount: decimalNumber(body.irpfAmount),
         totalAmount: decimalNumber(body.totalAmount),
-        renderedHtml: body.renderedHtml?.trim() || null,
+        renderedHtml: body.renderedHtml?.trim() || "",
+      };
+
+      invoices[invoiceIndex] = invoice;
+      await writeLocalInvoices(invoices);
+      return ok({ invoice, updated: true });
+    } catch (error) {
+      return badRequest(`No se pudo actualizar la factura localmente: ${errorMessage(error)}`);
+    }
+  }
+
+  try {
+    const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
+    if (!invoice) return badRequest("No se encontro la factura emitida para editar.");
+
+    const duplicate = await prisma.invoice.findFirst({
+      where: {
+        series,
+        number,
+        NOT: { id: invoiceId },
+      },
+    });
+    if (duplicate) return badRequest(`Ya existe la factura ${series}/${String(number).padStart(6, "0")}.`);
+
+    const client = await resolveInvoiceClient(clientName, body.clientDetails);
+    const updatedInvoice = await prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        clientId: client.id,
+        status: "ISSUED",
+        ...buildInvoiceData(body, documentName, series, number, issueDate, serviceDescription),
       },
     });
 
-    return ok({ invoice, existed: false }, { status: 201 });
+    return ok({ invoice: updatedInvoice, updated: true });
   } catch (error) {
-    return badRequest(`No se pudo guardar la factura en MySQL: ${errorMessage(error)}`);
+    return badRequest(`No se pudo actualizar la factura en MySQL: ${errorMessage(error)}`);
   }
 }
