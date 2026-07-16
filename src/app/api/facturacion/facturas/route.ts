@@ -204,6 +204,12 @@ export async function POST(request: Request) {
   if (!auth.user) return auth.response;
 
   const body = await readJson<RegisterInvoiceBody>(request);
+  if (body.id?.trim()) return updateInvoice(body);
+
+  return createInvoice(body, auth.user.id);
+}
+
+async function createInvoice(body: Partial<RegisterInvoiceBody>, userId: string) {
   const series = body.series?.trim() || "A";
   const number = parseInvoiceNumber(body.number);
   const clientName = body.clientName?.trim();
@@ -264,7 +270,7 @@ export async function POST(request: Request) {
         issuerProfileId: issuerProfile.id,
         clientId: client.id,
         templateId: template.id,
-        createdById: auth.user.id === "forseti-session-fallback" ? null : auth.user.id,
+        createdById: userId === "forseti-session-fallback" ? null : userId,
         status: "ISSUED",
         ...buildInvoiceData(body, documentName, series, number, issueDate, serviceDescription),
       },
@@ -281,6 +287,10 @@ export async function PUT(request: Request) {
   if (!auth.user) return auth.response;
 
   const body = await readJson<RegisterInvoiceBody>(request);
+  return updateInvoice(body);
+}
+
+async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
   const invoiceId = body.id?.trim();
   const series = body.series?.trim() || "A";
   const number = parseInvoiceNumber(body.number);

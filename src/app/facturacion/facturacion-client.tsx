@@ -749,7 +749,7 @@ export function FacturacionClient() {
   async function registerCurrentInvoice() {
     const isEditing = Boolean(editingInvoiceId);
     const response = await fetch("/api/facturacion/facturas", {
-      method: isEditing ? "PUT" : "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         id: isEditing ? editingInvoiceId : undefined,
