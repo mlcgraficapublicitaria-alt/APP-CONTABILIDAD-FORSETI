@@ -15,6 +15,11 @@ type SavedBankAccount = {
   value: string;
 };
 
+type SavedService = {
+  id: string;
+  name: string;
+};
+
 type DriveFolderOption = {
   id: string;
   name: string;
@@ -677,6 +682,10 @@ export function FacturacionClient() {
   const [savedBankAccounts, setSavedBankAccounts] = useState<SavedBankAccount[]>([]);
   const [selectedBankAccountId, setSelectedBankAccountId] = useState("");
   const [bankAccountStatus, setBankAccountStatus] = useState("");
+  const [savedServices, setSavedServices] = useState<SavedService[]>([]);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [newServiceName, setNewServiceName] = useState("");
+  const [serviceStatus, setServiceStatus] = useState("");
   const [driveFolderQuery, setDriveFolderQuery] = useState("");
   const [driveFolders, setDriveFolders] = useState<DriveFolderOption[]>([]);
   const [selectedDriveFolderId, setSelectedDriveFolderId] = useState("");
@@ -880,6 +889,26 @@ export function FacturacionClient() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadServices() {
+      try {
+        const response = await fetch("/api/facturacion/servicios", { cache: "no-store" });
+        const data = (await response.json().catch(() => ({}))) as { services?: SavedService[]; error?: string };
+        if (!response.ok) throw new Error(data.error || "No se pudieron cargar los servicios.");
+        if (!cancelled) setSavedServices(data.services ?? []);
+      } catch (error) {
+        if (!cancelled) setServiceStatus(error instanceof Error ? error.message : "No se pudieron cargar los servicios.");
+      }
+    }
+
+    void loadServices();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     void refreshIssuedInvoices();
   }, [refreshIssuedInvoices]);
 
@@ -1062,6 +1091,48 @@ export function FacturacionClient() {
       setBankAccountStatus("Cuenta bancaria guardada.");
     } catch (error) {
       setBankAccountStatus(error instanceof Error ? error.message : "No se pudo guardar la cuenta bancaria.");
+    }
+  }
+
+  function handleToggleService(service: SavedService) {
+    const selected = selectedServiceIds.includes(service.id);
+    setSelectedServiceIds((current) => (selected ? current.filter((id) => id !== service.id) : [...current, service.id]));
+    setServiceStatus("");
+    setForm((current) => {
+      const lines = current.billedService.split("\n").map((line) => line.trim()).filter(Boolean);
+      const nextLines = selected
+        ? lines.filter((line) => line.toLocaleLowerCase("es") !== service.name.toLocaleLowerCase("es"))
+        : lines.some((line) => line.toLocaleLowerCase("es") === service.name.toLocaleLowerCase("es"))
+          ? lines
+          : [...lines, service.name];
+      return { ...current, billedService: nextLines.join("\n") };
+    });
+  }
+
+  async function handleSaveService() {
+    const name = newServiceName.trim();
+    if (!name) {
+      setServiceStatus("Escribe el nombre del servicio antes de guardarlo.");
+      return;
+    }
+
+    setServiceStatus("Guardando servicio...");
+    try {
+      const response = await fetch("/api/facturacion/servicios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = (await response.json().catch(() => ({}))) as { service?: SavedService; error?: string };
+      if (!response.ok || !data.service) throw new Error(data.error || "No se pudo guardar el servicio.");
+
+      const service = data.service;
+      setSavedServices((current) => [...current.filter((item) => item.id !== service.id), service].sort((a, b) => a.name.localeCompare(b.name, "es")));
+      setNewServiceName("");
+      setServiceStatus("Servicio guardado y seleccionado.");
+      if (!selectedServiceIds.includes(service.id)) handleToggleService(service);
+    } catch (error) {
+      setServiceStatus(error instanceof Error ? error.message : "No se pudo guardar el servicio.");
     }
   }
 
@@ -1448,8 +1519,61 @@ export function FacturacionClient() {
             </FormField>
           </div>
           <div className="mt-4">
+            <div className="rounded-2xl border border-white/10 bg-slate-900/55 p-4">
+              <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-[#b3d87d]">Tipos de servicio</p>
+              <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                <FormField label="Crear un servicio" htmlFor={`${baseId}-new-service`}>
+                  <input
+                    id={`${baseId}-new-service`}
+                    className={fieldClassName}
+                    value={newServiceName}
+                    onChange={(event) => {
+                      setNewServiceName(event.target.value);
+                      setServiceStatus("");
+                    }}
+                    placeholder="Ej. Gestión de redes sociales"
+                  />
+                </FormField>
+                <button type="button" onClick={handleSaveService} className="min-h-11 rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
+                  Guardar servicio
+                </button>
+              </div>
+              {savedServices.length > 0 ? (
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  {savedServices.map((service) => {
+                    const selected = selectedServiceIds.includes(service.id);
+                    return (
+                      <button
+                        key={service.id}
+                        type="button"
+                        aria-pressed={selected}
+                        onClick={() => handleToggleService(service)}
+                        className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${selected ? "border-[#87ba2f] bg-[#87ba2f] text-slate-950" : "border-white/15 bg-white/5 text-slate-200 hover:bg-white/10"}`}
+                      >
+                        {selected ? "✓ " : "+ "}{service.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-3 text-center text-xs text-slate-400">Crea el primer servicio para poder seleccionarlo.</p>
+              )}
+              {serviceStatus ? <p className="mt-3 text-center text-xs font-semibold text-[#d7f0a7]">{serviceStatus}</p> : null}
+            </div>
+          </div>
+          <div className="mt-4">
             <FormField label="Descripcion del servicio" htmlFor={`${baseId}-service`}>
-              <textarea id={`${baseId}-service`} className={`${fieldClassName} min-h-24 resize-y`} value={form.billedService} onChange={(event) => updateField("billedService", event.target.value)} placeholder="SERVICIO MARKETING ONLINE" />
+              <textarea
+                id={`${baseId}-service`}
+                className={`${fieldClassName} min-h-24 resize-y`}
+                value={form.billedService}
+                onChange={(event) => {
+                  updateField("billedService", event.target.value);
+                  const lines = event.target.value.split("\n").map((line) => line.trim().toLocaleLowerCase("es"));
+                  setSelectedServiceIds(savedServices.filter((service) => lines.includes(service.name.toLocaleLowerCase("es"))).map((service) => service.id));
+                }}
+                placeholder="Selecciona uno o varios servicios, o escribe una descripción libre"
+              />
             </FormField>
           </div>
         </div>
