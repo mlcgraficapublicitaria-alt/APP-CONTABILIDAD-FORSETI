@@ -13,14 +13,24 @@ type SaveServiceBody = {
 };
 
 const localServicesPath = path.join(process.cwd(), ".forseti", "invoice-services.json");
+const defaultServices: SavedService[] = [
+  { id: "default-hosting-domain", name: "HOSTING WEB Y DOMINIO" },
+  { id: "default-graphic-web-design", name: "SERVICIO DE DISEÑO GRÁFICO Y WEB" },
+];
+
+function withDefaultServices(services: SavedService[]) {
+  const normalizeName = (name: string) => name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
+  const names = new Set(services.map((service) => normalizeName(service.name)));
+  return [...defaultServices.filter((service) => !names.has(normalizeName(service.name))), ...services];
+}
 
 async function readServices(): Promise<SavedService[]> {
   try {
     const content = await readFile(localServicesPath, "utf8");
     const services = JSON.parse(content) as SavedService[];
-    return Array.isArray(services) ? services : [];
+    return withDefaultServices(Array.isArray(services) ? services : []);
   } catch {
-    return [];
+    return defaultServices;
   }
 }
 
