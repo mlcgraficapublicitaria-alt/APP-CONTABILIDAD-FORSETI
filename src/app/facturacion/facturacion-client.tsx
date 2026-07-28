@@ -517,8 +517,7 @@ function buildPrintableInvoiceDocument(
               <th>TOTAL</th>
               <th class="right">%IVA</th>
               <th class="right">CUOTA IVA</th>
-              <th class="right">% IRPF</th>
-              <th class="right">CUOTA IRPF</th>
+              ${summary.irpfRate > 0 ? '<th class="right">% IRPF</th><th class="right">CUOTA IRPF</th>' : ""}
               <th class="right">TOTAL FACTURA</th>
             </tr>
           </thead>
@@ -527,8 +526,7 @@ function buildPrintableInvoiceDocument(
               <td>${formatMoney(summary.baseAmount)}</td>
               <td class="right">${formatPercent(summary.vatRate)}</td>
               <td class="right">${formatMoney(summary.vatAmount)}</td>
-              <td class="right">${formatPercent(summary.irpfRate, true)}</td>
-              <td class="right">-${formatMoney(summary.irpfAmount)}</td>
+              ${summary.irpfRate > 0 ? `<td class="right">${formatPercent(summary.irpfRate, true)}</td><td class="right">-${formatMoney(summary.irpfAmount)}</td>` : ""}
               <td class="right">${formatMoney(summary.totalAmount)}</td>
             </tr>
           </tbody>
@@ -1343,8 +1341,12 @@ export function FacturacionClient() {
                     <th className="pb-3 text-left font-normal">TOTAL</th>
                     <th className="pb-3 text-right font-normal">%IVA</th>
                     <th className="pb-3 text-right font-normal">CUOTA IVA</th>
-                    <th className="pb-3 text-right font-normal">% IRPF</th>
-                    <th className="pb-3 text-right font-normal">CUOTA IRPF</th>
+                    {summary.irpfRate > 0 ? (
+                      <>
+                        <th className="pb-3 text-right font-normal">% IRPF</th>
+                        <th className="pb-3 text-right font-normal">CUOTA IRPF</th>
+                      </>
+                    ) : null}
                     <th className="pb-3 text-right font-normal">TOTAL FACTURA</th>
                   </tr>
                 </thead>
@@ -1353,8 +1355,12 @@ export function FacturacionClient() {
                     <td className="pt-4">{formatMoney(summary.baseAmount)}</td>
                     <td className="pt-4 text-right">{formatPercent(summary.vatRate)}</td>
                     <td className="pt-4 text-right">{formatMoney(summary.vatAmount)}</td>
-                    <td className="pt-4 text-right">{formatPercent(summary.irpfRate, true)}</td>
-                    <td className="pt-4 text-right">-{formatMoney(summary.irpfAmount)}</td>
+                    {summary.irpfRate > 0 ? (
+                      <>
+                        <td className="pt-4 text-right">{formatPercent(summary.irpfRate, true)}</td>
+                        <td className="pt-4 text-right">-{formatMoney(summary.irpfAmount)}</td>
+                      </>
+                    ) : null}
                     <td className="pt-4 text-right">{formatMoney(summary.totalAmount)}</td>
                   </tr>
                 </tbody>
