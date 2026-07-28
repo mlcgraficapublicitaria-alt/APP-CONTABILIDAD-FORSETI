@@ -689,6 +689,7 @@ export function FacturacionClient() {
   const baseId = useId();
   const printPreviewRef = useRef<HTMLDivElement>(null);
   const historicalPrintRef = useRef<HTMLDivElement>(null);
+  const lastIrpfRateRef = useRef(INITIAL_STATE.irpfRate);
   const fieldClassName = inputClassName();
 
   const summary = useMemo(() => {
@@ -975,6 +976,16 @@ export function FacturacionClient() {
 
   function updateField<Key extends keyof InvoiceFormState>(key: Key, value: InvoiceFormState[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleIrpfChoice(applyIrpf: boolean) {
+    if (applyIrpf) {
+      updateField("irpfRate", lastIrpfRateRef.current || INITIAL_STATE.irpfRate);
+      return;
+    }
+
+    if (parseDecimal(form.irpfRate) > 0) lastIrpfRateRef.current = form.irpfRate;
+    updateField("irpfRate", "0");
   }
 
   function handleSelectSavedClient(clientId: string) {
@@ -1444,19 +1455,41 @@ export function FacturacionClient() {
         </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-6">
+          <div className="lg:col-span-4">
             <FormField label="Base imponible" htmlFor={`${baseId}-base`}>
               <input id={`${baseId}-base`} inputMode="decimal" className={fieldClassName} value={form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} />
             </FormField>
           </div>
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
             <FormField label="IVA (%)" htmlFor={`${baseId}-vat`}>
               <input id={`${baseId}-vat`} inputMode="decimal" className={fieldClassName} value={form.vatRate} onChange={(event) => updateField("vatRate", event.target.value)} />
             </FormField>
           </div>
           <div className="lg:col-span-3">
+            <FormField label="Aplicar IRPF" htmlFor={`${baseId}-apply-irpf`}>
+              <select
+                id={`${baseId}-apply-irpf`}
+                className={fieldClassName}
+                value={parseDecimal(form.irpfRate) > 0 ? "yes" : "no"}
+                onChange={(event) => handleIrpfChoice(event.target.value === "yes")}
+              >
+                <option value="yes">Sí, aplicar IRPF</option>
+                <option value="no">No aplicar IRPF</option>
+              </select>
+            </FormField>
+          </div>
+          <div className="lg:col-span-3">
             <FormField label="IRPF (%)" htmlFor={`${baseId}-irpf`}>
-              <input id={`${baseId}-irpf`} inputMode="decimal" className={fieldClassName} value={form.irpfRate} onChange={(event) => updateField("irpfRate", event.target.value)} />
+              <input
+                id={`${baseId}-irpf`}
+                inputMode="decimal"
+                className={fieldClassName}
+                value={form.irpfRate}
+                onChange={(event) => {
+                  lastIrpfRateRef.current = event.target.value;
+                  updateField("irpfRate", event.target.value);
+                }}
+              />
             </FormField>
           </div>
           <div className="flex flex-col items-center justify-center rounded-2xl border border-[#87ba2f]/30 bg-[#87ba2f]/12 px-4 py-3 text-center text-sm text-[#d7f0a7] lg:col-span-12">
