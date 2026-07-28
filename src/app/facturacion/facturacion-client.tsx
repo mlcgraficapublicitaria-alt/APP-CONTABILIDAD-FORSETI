@@ -10,6 +10,11 @@ type SavedInvoiceClient = {
   details: string;
 };
 
+type SavedBankAccount = {
+  id: string;
+  value: string;
+};
+
 type DriveFolderOption = {
   id: string;
   name: string;
@@ -669,6 +674,9 @@ export function FacturacionClient() {
   const [savedClients, setSavedClients] = useState<SavedInvoiceClient[]>([]);
   const [selectedClientId, setSelectedClientId] = useState("");
   const [clientStatus, setClientStatus] = useState("");
+  const [savedBankAccounts, setSavedBankAccounts] = useState<SavedBankAccount[]>([]);
+  const [selectedBankAccountId, setSelectedBankAccountId] = useState("");
+  const [bankAccountStatus, setBankAccountStatus] = useState("");
   const [driveFolderQuery, setDriveFolderQuery] = useState("");
   const [driveFolders, setDriveFolders] = useState<DriveFolderOption[]>([]);
   const [selectedDriveFolderId, setSelectedDriveFolderId] = useState("");
@@ -846,6 +854,31 @@ export function FacturacionClient() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadBankAccounts() {
+      try {
+        const response = await fetch("/api/facturacion/cuentas-bancarias", { cache: "no-store" });
+        const data = (await response.json().catch(() => ({}))) as { accounts?: SavedBankAccount[]; error?: string };
+        if (!response.ok) throw new Error(data.error || "No se pudieron cargar las cuentas bancarias.");
+        if (cancelled) return;
+
+        const accounts = data.accounts ?? [];
+        setSavedBankAccounts(accounts);
+        const selected = accounts.find((account) => account.value === INITIAL_STATE.issuerBankAccount);
+        setSelectedBankAccountId(selected?.id ?? "");
+      } catch (error) {
+        if (!cancelled) setBankAccountStatus(error instanceof Error ? error.message : "No se pudieron cargar las cuentas bancarias.");
+      }
+    }
+
+    void loadBankAccounts();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     void refreshIssuedInvoices();
   }, [refreshIssuedInvoices]);
 
@@ -986,6 +1019,38 @@ export function FacturacionClient() {
       setClientStatus("Ficha guardada.");
     } catch (error) {
       setClientStatus(error instanceof Error ? error.message : "No se pudo guardar la ficha.");
+    }
+  }
+
+  function handleSelectBankAccount(accountId: string) {
+    setSelectedBankAccountId(accountId);
+    setBankAccountStatus("");
+    const account = savedBankAccounts.find((item) => item.id === accountId);
+    if (account) updateField("issuerBankAccount", account.value);
+  }
+
+  async function handleSaveBankAccount() {
+    const value = form.issuerBankAccount.trim();
+    if (!value) {
+      setBankAccountStatus("Escribe una cuenta bancaria antes de guardarla.");
+      return;
+    }
+
+    setBankAccountStatus("Guardando cuenta...");
+    try {
+      const response = await fetch("/api/facturacion/cuentas-bancarias", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value }),
+      });
+      const data = (await response.json().catch(() => ({}))) as { account?: SavedBankAccount; error?: string };
+      if (!response.ok || !data.account) throw new Error(data.error || "No se pudo guardar la cuenta bancaria.");
+
+      setSavedBankAccounts((current) => [...current.filter((item) => item.id !== data.account!.id), data.account!]);
+      setSelectedBankAccountId(data.account.id);
+      setBankAccountStatus("Cuenta bancaria guardada.");
+    } catch (error) {
+      setBankAccountStatus(error instanceof Error ? error.message : "No se pudo guardar la cuenta bancaria.");
     }
   }
 
@@ -1289,9 +1354,42 @@ export function FacturacionClient() {
               </FormField>
             </div>
             <div className="xl:col-span-12">
-              <FormField label="Cuenta bancaria" htmlFor={`${baseId}-issuer-bank`}>
-                <input id={`${baseId}-issuer-bank`} className={fieldClassName} value={form.issuerBankAccount} onChange={(event) => updateField("issuerBankAccount", event.target.value)} />
-              </FormField>
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                <FormField label="Elegir cuenta bancaria" htmlFor={`${baseId}-saved-bank`}>
+                  <select
+                    id={`${baseId}-saved-bank`}
+                    className={fieldClassName}
+                    value={selectedBankAccountId}
+                    onChange={(event) => handleSelectBankAccount(event.target.value)}
+                  >
+                    <option value="">Nueva cuenta bancaria</option>
+                    {savedBankAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.value}
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+                <button type="button" onClick={handleSaveBankAccount} className="min-h-11 rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
+                  Guardar cuenta
+                </button>
+              </div>
+              <div className="mt-3">
+                <FormField label="Nombre del banco e IBAN" htmlFor={`${baseId}-issuer-bank`}>
+                  <input
+                    id={`${baseId}-issuer-bank`}
+                    className={fieldClassName}
+                    value={form.issuerBankAccount}
+                    onChange={(event) => {
+                      updateField("issuerBankAccount", event.target.value);
+                      setSelectedBankAccountId("");
+                      setBankAccountStatus("");
+                    }}
+                    placeholder="BANCO: ES00 0000 0000 0000 0000 0000"
+                  />
+                </FormField>
+              </div>
+              {bankAccountStatus ? <p className="mt-3 text-center text-xs font-semibold text-[#d7f0a7]">{bankAccountStatus}</p> : null}
             </div>
           </div>
         </div>
