@@ -807,7 +807,6 @@ export function FacturacionClient() {
         irpfRate: summary.irpfRate,
         irpfAmount: summary.irpfAmount,
         totalAmount: summary.totalAmount,
-        renderedHtml: buildPrintableInvoiceDocument(form, summary),
       }),
     });
     const responseText = await response.text();
