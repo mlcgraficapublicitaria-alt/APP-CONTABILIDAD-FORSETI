@@ -28,14 +28,6 @@ type InvoiceClientRecord = {
 
 const localClientsPath = path.join(process.cwd(), ".forseti", "invoice-clients.json");
 
-function isProduction() {
-  return process.env.NODE_ENV === "production";
-}
-
-function productionDatabaseError() {
-  return "En producción las fichas de cliente necesitan una base de datos MySQL persistente. Configura DATABASE_URL y ejecuta las migraciones de Prisma.";
-}
-
 function serializeInvoiceClient(client: InvoiceClientRecord) {
   return {
     id: client.id,
@@ -73,8 +65,6 @@ export async function GET() {
   if (!auth.user) return auth.response;
 
   if (!hasMysqlDatabaseUrl()) {
-    if (isProduction()) return ok({ clients: [], error: productionDatabaseError() }, { status: 503 });
-
     const clients = await readLocalClients();
     clients.sort((a, b) => a.legalName.localeCompare(b.legalName, "es"));
     return ok({ clients: clients.map(serializeInvoiceClient) });
@@ -108,8 +98,6 @@ export async function POST(request: Request) {
   const details = body.details?.trim() || null;
 
   if (!hasMysqlDatabaseUrl()) {
-    if (isProduction()) return badRequest(productionDatabaseError());
-
     const clients = await readLocalClients();
     const existingIndex = body.id
       ? clients.findIndex((client) => client.id === body.id)
