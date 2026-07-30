@@ -8,6 +8,8 @@ type SavedInvoiceClient = {
   id: string;
   legalName: string;
   details: string;
+  nameFontSize: number;
+  detailsFontSize: number;
 };
 
 type SavedBankAccount = {
@@ -79,6 +81,8 @@ type InvoiceFormState = {
   issuerBankAccount: string;
   clientName: string;
   clientDetails: string;
+  clientNameFontSize: string;
+  clientDetailsFontSize: string;
   billedService: string;
   baseAmount: string;
   vatRate: string;
@@ -101,6 +105,8 @@ const INITIAL_STATE: InvoiceFormState = {
   issuerBankAccount: "GLOBAL CAJA: ES15 3190 0091 1504 0253 9910",
   clientName: "",
   clientDetails: "",
+  clientNameFontSize: "17",
+  clientDetailsFontSize: "14",
   billedService: "",
   baseAmount: "",
   vatRate: "21",
@@ -232,6 +238,11 @@ function buildClientCircleLines(form: InvoiceFormState) {
   return [form.clientName || "CLIENTE", ...form.clientDetails.split("\n").map((item) => item.trim()).filter(Boolean)];
 }
 
+function fontSize(value: string, minimum: number, maximum: number, fallback: number) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? Math.min(maximum, Math.max(minimum, parsed)) : fallback;
+}
+
 function invoiceToFormState(invoice: IssuedInvoice): InvoiceFormState {
   return {
     ...INITIAL_STATE,
@@ -264,7 +275,9 @@ function buildPrintableInvoiceDocument(
   const invoiceTitle = escapeHtml(buildInvoiceDocumentName(form));
   const invoiceCode = escapeHtml(buildInvoiceCode(form));
   const issuerCircleLines = buildIssuerCircleLines(form).map(escapeHtml).join("<br />");
-  const clientCircleLines = buildClientCircleLines(form).map(escapeHtml).join("<br />");
+  const clientDetailsLines = buildClientCircleLines(form).slice(1).map(escapeHtml).join("<br />");
+  const clientNameFontSize = fontSize(form.clientNameFontSize, 11, 20, 17);
+  const clientDetailsFontSize = fontSize(form.clientDetailsFontSize, 9, 18, 14);
   const billedService = multilineToHtml(form.billedService || "SERVICIO");
   const issuerBank = escapeHtml(form.issuerBankAccount || "");
   const issuerPhone = escapeHtml(form.issuerPhone || "");
@@ -387,6 +400,7 @@ function buildPrintableInvoiceDocument(
         background: #1f1f1f;
         color: white;
       }
+      .circle.client .client-details { line-height: 1.12; }
       .circle .title {
         font-weight: 700;
         font-size: 18px;
@@ -481,8 +495,8 @@ function buildPrintableInvoiceDocument(
         </div>
         <div class="circle client">
           <div>
-            <div class="title">${escapeHtml(form.clientName || "CLIENTE")}</div>
-            <div>${clientCircleLines}</div>
+            <div class="title" style="font-size:${clientNameFontSize}px">${escapeHtml(form.clientName || "CLIENTE")}</div>
+            <div class="client-details" style="font-size:${clientDetailsFontSize}px">${clientDetailsLines}</div>
           </div>
         </div>
       </section>
@@ -1056,6 +1070,8 @@ export function FacturacionClient() {
       ...current,
       clientName: client.legalName,
       clientDetails: client.details,
+      clientNameFontSize: String(client.nameFontSize ?? 17),
+      clientDetailsFontSize: String(client.detailsFontSize ?? 14),
     }));
   }
 
@@ -1076,6 +1092,8 @@ export function FacturacionClient() {
           id: selectedClientId || undefined,
           legalName,
           details: form.clientDetails,
+          nameFontSize: fontSize(form.clientNameFontSize, 11, 20, 17),
+          detailsFontSize: fontSize(form.clientDetailsFontSize, 9, 18, 14),
         }),
       });
 
@@ -1304,8 +1322,10 @@ export function FacturacionClient() {
               </div>
               <div className="flex h-[210px] w-[210px] items-center justify-center rounded-full bg-[#1f1f1f] px-6 text-center text-white">
                 <div className="space-y-0.5 text-[14px] leading-[1.12]">
-                  <p className="text-[17px] font-bold">{form.clientName || "CLIENTE"}</p>
-                  {circleLinesForPreview(localClientCircleLines.slice(1))}
+                  <p className="font-bold" style={{ fontSize: `${fontSize(form.clientNameFontSize, 11, 20, 17)}px` }}>{form.clientName || "CLIENTE"}</p>
+                  <div style={{ fontSize: `${fontSize(form.clientDetailsFontSize, 9, 18, 14)}px` }}>
+                    {circleLinesForPreview(localClientCircleLines.slice(1))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1570,6 +1590,14 @@ export function FacturacionClient() {
           <div className="mt-4">
             <FormField label="Datos del cliente" htmlFor={`${baseId}-details`}>
               <textarea id={`${baseId}-details`} className={`${fieldClassName} min-h-28 resize-y`} value={form.clientDetails} onChange={(event) => updateField("clientDetails", event.target.value)} placeholder={"PLAZA ...\n02001 - ALBACETE\nCIF: ...\nTlf: ..."} />
+            </FormField>
+          </div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <FormField label={`Tamaño del nombre (${fontSize(form.clientNameFontSize, 11, 20, 17)} px)`} htmlFor={`${baseId}-client-name-size`}>
+              <input id={`${baseId}-client-name-size`} type="range" min="11" max="20" step="1" className="w-full accent-[#87ba2f]" value={form.clientNameFontSize} onChange={(event) => updateField("clientNameFontSize", event.target.value)} />
+            </FormField>
+            <FormField label={`Tamaño de la dirección (${fontSize(form.clientDetailsFontSize, 9, 18, 14)} px)`} htmlFor={`${baseId}-client-details-size`}>
+              <input id={`${baseId}-client-details-size`} type="range" min="9" max="18" step="1" className="w-full accent-[#87ba2f]" value={form.clientDetailsFontSize} onChange={(event) => updateField("clientDetailsFontSize", event.target.value)} />
             </FormField>
           </div>
           <div className="mt-4">

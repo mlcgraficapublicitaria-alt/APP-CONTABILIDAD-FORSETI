@@ -9,6 +9,8 @@ type SaveInvoiceClientBody = {
   id?: string;
   legalName?: string;
   details?: string;
+  nameFontSize?: number;
+  detailsFontSize?: number;
 };
 
 type InvoiceClientRecord = {
@@ -24,6 +26,8 @@ type InvoiceClientRecord = {
   email: string | null;
   phone: string | null;
   notes: string | null;
+  nameFontSize?: number;
+  detailsFontSize?: number;
 };
 
 const localClientsPath = path.join(process.cwd(), ".forseti", "invoice-clients.json");
@@ -42,7 +46,13 @@ function serializeInvoiceClient(client: InvoiceClientRecord) {
     email: client.email ?? "",
     phone: client.phone ?? "",
     details: client.notes ?? "",
+    nameFontSize: client.nameFontSize ?? 17,
+    detailsFontSize: client.detailsFontSize ?? 14,
   };
+}
+
+function clampFontSize(value: number | undefined, minimum: number, maximum: number, fallback: number) {
+  return Number.isFinite(value) ? Math.min(maximum, Math.max(minimum, Math.round(value!))) : fallback;
 }
 
 async function readLocalClients() {
@@ -96,6 +106,8 @@ export async function POST(request: Request) {
   if (!legalName) return badRequest("El nombre del cliente es obligatorio.");
 
   const details = body.details?.trim() || null;
+  const nameFontSize = clampFontSize(body.nameFontSize, 11, 20, 17);
+  const detailsFontSize = clampFontSize(body.detailsFontSize, 9, 18, 14);
 
   if (!hasMysqlDatabaseUrl()) {
     const clients = await readLocalClients();
@@ -109,6 +121,8 @@ export async function POST(request: Request) {
             ...clients[existingIndex],
             legalName,
             notes: details,
+            nameFontSize,
+            detailsFontSize,
           }
         : {
             id: randomUUID(),
@@ -123,6 +137,8 @@ export async function POST(request: Request) {
             email: null,
             phone: null,
             notes: details,
+            nameFontSize,
+            detailsFontSize,
           };
 
     if (existingIndex >= 0) {
@@ -143,10 +159,10 @@ export async function POST(request: Request) {
     const client = existing
       ? await prisma.invoiceClient.update({
           where: { id: existing.id },
-          data: { legalName, notes: details },
+          data: { legalName, notes: details, nameFontSize, detailsFontSize },
         })
       : await prisma.invoiceClient.create({
-          data: { legalName, notes: details },
+          data: { legalName, notes: details, nameFontSize, detailsFontSize },
         });
 
     return ok({ client: serializeInvoiceClient(client) }, { status: existing ? 200 : 201 });

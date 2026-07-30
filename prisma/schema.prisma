@@ -220,6 +220,8 @@ model InvoiceClient {
   email          String?
   phone          String?
   notes          String?
+  nameFontSize   Int       @default(17)
+  detailsFontSize Int      @default(14)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   invoices       Invoice[]
@@ -235,6 +237,13 @@ model InvoiceTemplate {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   invoices       Invoice[]
+}
+
+model InvoiceService {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Invoice {

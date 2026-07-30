@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { hasMysqlDatabaseUrl } from "@/lib/database-url";
 import { badRequest, ok, readJson, requireUser } from "@/lib/renta-fiscal/api";
+import { prisma } from "@/lib/renta-fiscal/prisma";
 
 type SavedService = {
   id: string;
@@ -43,9 +45,21 @@ export async function GET() {
   const auth = await requireUser();
   if (!auth.user) return auth.response;
 
-  const services = await readServices();
-  services.sort((a, b) => a.name.localeCompare(b.name, "es"));
-  return ok({ services });
+  try {
+    const services = hasMysqlDatabaseUrl()
+      ? withDefaultServices(await prisma.invoiceService.findMany({ select: { id: true, name: true } }))
+      : await readServices();
+    services.sort((a, b) => a.name.localeCompare(b.name, "es"));
+    return ok({ services });
+  } catch (error) {
+    return ok(
+      {
+        services: [],
+        error: error instanceof Error ? `No se pudieron cargar los servicios desde MySQL: ${error.message}` : "No se pudieron cargar los servicios desde MySQL.",
+      },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -57,6 +71,12 @@ export async function POST(request: Request) {
   if (!name) return badRequest("Escribe el nombre del servicio que quieres guardar.");
 
   try {
+    if (hasMysqlDatabaseUrl()) {
+      const existing = await prisma.invoiceService.findFirst({ where: { name } });
+      const service = existing ?? (await prisma.invoiceService.create({ data: { name } }));
+      return ok({ service: { id: service.id, name: service.name } }, { status: existing ? 200 : 201 });
+    }
+
     const services = await readServices();
     const existing = services.find((service) => service.name.toLocaleLowerCase("es") === name.toLocaleLowerCase("es"));
     if (existing) return ok({ service: existing });
@@ -66,6 +86,10 @@ export async function POST(request: Request) {
     await writeServices(services);
     return ok({ service }, { status: 201 });
   } catch (error) {
-    return badRequest(error instanceof Error ? `No se pudo guardar el servicio: ${error.message}` : "No se pudo guardar el servicio.");
+    return badRequest(
+      error instanceof Error
+        ? `No se pudo guardar el servicio${hasMysqlDatabaseUrl() ? " en MySQL" : ""}: ${error.message}`
+        : "No se pudo guardar el servicio.",
+    );
   }
 }
