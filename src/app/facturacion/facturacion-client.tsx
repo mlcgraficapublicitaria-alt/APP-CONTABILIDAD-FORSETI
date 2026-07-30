@@ -1859,14 +1859,16 @@ export function FacturacionClient() {
               issuedInvoices.map((invoice) => (
                 <div
                   key={invoice.id}
-                  tabIndex={0}
-                  onMouseEnter={() => setHoveredInvoiceId(invoice.id)}
-                  onMouseLeave={() => setHoveredInvoiceId("")}
-                  onFocus={() => setHoveredInvoiceId(invoice.id)}
-                  onBlur={() => setHoveredInvoiceId("")}
-                  className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-center outline-none transition hover:border-[#87ba2f]/60 hover:bg-white/[0.08] focus:border-[#87ba2f]/60 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:text-left"
+                  className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-center transition hover:border-[#87ba2f]/60 hover:bg-white/[0.08] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:text-left"
                 >
-                  <div className="min-w-0">
+                  <div
+                    className="min-w-0 rounded-xl outline-none focus:ring-2 focus:ring-[#87ba2f]/60"
+                    tabIndex={0}
+                    onMouseEnter={() => setHoveredInvoiceId(invoice.id)}
+                    onMouseLeave={() => setHoveredInvoiceId("")}
+                    onFocus={() => setHoveredInvoiceId(invoice.id)}
+                    onBlur={() => setHoveredInvoiceId("")}
+                  >
                     <p className="truncate text-sm font-semibold text-white">{invoice.series}/{String(invoice.number).padStart(6, "0")} · {invoice.clientName}</p>
                     <p className="mt-1 truncate text-xs font-semibold text-[#d7f0a7]">{invoice.documentName}</p>
                     <p className="mt-1 text-xs text-slate-300">{formatDate(invoice.issueDate.slice(0, 10))} · {formatMoney(invoice.totalAmount ?? 0)}</p>
