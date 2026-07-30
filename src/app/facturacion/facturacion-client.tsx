@@ -733,6 +733,7 @@ export function FacturacionClient() {
   const [issuedInvoices, setIssuedInvoices] = useState<IssuedInvoice[]>([]);
   const [editingInvoiceId, setEditingInvoiceId] = useState("");
   const [invoiceHistoryStatus, setInvoiceHistoryStatus] = useState("");
+  const [hoveredInvoiceId, setHoveredInvoiceId] = useState("");
   const [historicalPrint, setHistoricalPrint] = useState<{ form: InvoiceFormState; summary: InvoiceSummary; title: string } | null>(null);
   const baseId = useId();
   const printPreviewRef = useRef<HTMLDivElement>(null);
@@ -763,6 +764,10 @@ export function FacturacionClient() {
   const editingInvoice = useMemo(
     () => issuedInvoices.find((invoice) => invoice.id === editingInvoiceId),
     [editingInvoiceId, issuedInvoices],
+  );
+  const hoveredInvoice = useMemo(
+    () => issuedInvoices.find((invoice) => invoice.id === hoveredInvoiceId),
+    [hoveredInvoiceId, issuedInvoices],
   );
   const printDisabled =
     !generated ||
@@ -1852,7 +1857,15 @@ export function FacturacionClient() {
           <div className="mt-4 grid max-h-80 gap-2 overflow-y-auto pr-1">
             {issuedInvoices.length ? (
               issuedInvoices.map((invoice) => (
-                <div key={invoice.id} className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-center sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:text-left">
+                <div
+                  key={invoice.id}
+                  tabIndex={0}
+                  onMouseEnter={() => setHoveredInvoiceId(invoice.id)}
+                  onMouseLeave={() => setHoveredInvoiceId("")}
+                  onFocus={() => setHoveredInvoiceId(invoice.id)}
+                  onBlur={() => setHoveredInvoiceId("")}
+                  className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-center outline-none transition hover:border-[#87ba2f]/60 hover:bg-white/[0.08] focus:border-[#87ba2f]/60 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:text-left"
+                >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-white">{invoice.series}/{String(invoice.number).padStart(6, "0")} · {invoice.clientName}</p>
                     <p className="mt-1 truncate text-xs font-semibold text-[#d7f0a7]">{invoice.documentName}</p>
@@ -1877,6 +1890,67 @@ export function FacturacionClient() {
           </div>
         </div>
       </div>
+
+      {hoveredInvoice ? (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-[2px]" role="dialog" aria-label={`Información de la factura ${hoveredInvoice.series}/${String(hoveredInvoice.number).padStart(6, "0")}`}>
+          <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-[28px] border border-white/15 bg-slate-950 p-6 text-left text-white shadow-[0_28px_90px_rgba(0,0,0,0.65)]">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Factura emitida</p>
+                <h3 className="mt-2 text-2xl font-semibold">{hoveredInvoice.series}/{String(hoveredInvoice.number).padStart(6, "0")}</h3>
+                <p className="mt-1 text-sm text-slate-300">{hoveredInvoice.documentName}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-slate-300">{formatDate(hoveredInvoice.issueDate.slice(0, 10))}</p>
+                <p className="mt-1 text-2xl font-semibold text-[#b3d87d]">{formatMoney(hoveredInvoice.totalAmount ?? 0)}</p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Cliente</p>
+                <p className="mt-2 text-base font-semibold">{hoveredInvoice.clientName}</p>
+                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-300">{hoveredInvoice.clientDetails || "Sin dirección o datos adicionales"}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Emisor</p>
+                <p className="mt-2 text-base font-semibold">{hoveredInvoice.issuer?.legalName || "Sin emisor"}</p>
+                <div className="mt-2 space-y-1 text-sm text-slate-300">
+                  {hoveredInvoice.issuer?.taxId ? <p>NIF: {hoveredInvoice.issuer.taxId}</p> : null}
+                  {hoveredInvoice.issuer?.addressLine1 ? <p>{hoveredInvoice.issuer.addressLine1}</p> : null}
+                  {(hoveredInvoice.issuer?.postalCode || hoveredInvoice.issuer?.city) ? <p>{[hoveredInvoice.issuer.postalCode, hoveredInvoice.issuer.city].filter(Boolean).join(" · ")}</p> : null}
+                  {hoveredInvoice.issuer?.email ? <p>{hoveredInvoice.issuer.email}</p> : null}
+                  {hoveredInvoice.issuer?.phone ? <p>{hoveredInvoice.issuer.phone}</p> : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Servicio</p>
+                <p className="rounded-lg bg-white/10 px-2 py-1 text-xs font-semibold text-[#d7f0a7]">Artículo {hoveredInvoice.articleCode || "H"}</p>
+              </div>
+              <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-200">{hoveredInvoice.serviceDescription || "Sin descripción"}</p>
+            </div>
+
+            <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {[
+                ["Base", formatMoney(hoveredInvoice.subtotalAmount ?? 0)],
+                [`IVA ${hoveredInvoice.vatRate ?? 0}%`, formatMoney(hoveredInvoice.vatAmount ?? 0)],
+                [`IRPF ${hoveredInvoice.irpfRate ?? 0}%`, `− ${formatMoney(hoveredInvoice.irpfAmount ?? 0)}`],
+                ["Total", formatMoney(hoveredInvoice.totalAmount ?? 0)],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl bg-white/5 p-3 last:col-span-2 sm:last:col-span-2">
+                  <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</dt>
+                  <dd className="mt-1 text-sm font-semibold text-white">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            {hoveredInvoice.issuer?.bankAccount ? <p className="mt-4 text-xs leading-5 text-slate-400">Cuenta: {hoveredInvoice.issuer.bankAccount}</p> : null}
+            <p className="mt-5 text-center text-xs text-slate-500">Retira el cursor de la factura para cerrar esta información.</p>
+          </div>
+        </div>
+      ) : null}
 
       <div className="order-2 flex flex-col items-center rounded-[28px] border border-white/10 bg-[#f7f7f5] p-4 text-center text-slate-900 shadow-[0_20px_60px_rgba(0,0,0,0.3)] sm:p-6 xl:order-2">
         <div ref={printPreviewRef} className="pointer-events-none fixed -left-[10000px] top-0 w-[760px]" aria-hidden="true">
