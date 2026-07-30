@@ -1626,9 +1626,13 @@ export function FacturacionClient() {
             </FormField>
           </div>
           <div className="mt-4">
-            <div className="rounded-2xl border border-white/10 bg-slate-900/55 p-4">
-              <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-[#b3d87d]">Tipos de servicio</p>
-              <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_8rem_auto] lg:items-end">
+            <div className="rounded-2xl border border-white/10 bg-slate-900/55 p-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#b3d87d]">Tipos de servicio</p>
+                <p className="mt-1 text-xs leading-5 text-slate-400">Crea servicios con su artículo o edita los que ya tienes guardados.</p>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/45 p-4">
                 <FormField label="Crear un servicio" htmlFor={`${baseId}-new-service`}>
                   <input
                     id={`${baseId}-new-service`}
@@ -1641,28 +1645,32 @@ export function FacturacionClient() {
                     placeholder="Ej. Gestión de redes sociales"
                   />
                 </FormField>
-                <FormField label="Artículo" htmlFor={`${baseId}-new-service-article`}>
-                  <input id={`${baseId}-new-service-article`} className={fieldClassName} value={newServiceArticleCode} onChange={(event) => setNewServiceArticleCode(event.target.value.toUpperCase())} placeholder="H" />
-                </FormField>
-                <button type="button" onClick={handleSaveService} className="min-h-11 rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
-                  {editingServiceId ? "Actualizar" : "Guardar servicio"}
-                </button>
+                <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,10rem)_minmax(10rem,auto)] sm:items-end sm:justify-start">
+                  <FormField label="Artículo" htmlFor={`${baseId}-new-service-article`}>
+                    <input id={`${baseId}-new-service-article`} className={fieldClassName} value={newServiceArticleCode} onChange={(event) => setNewServiceArticleCode(event.target.value.toUpperCase())} placeholder="H" />
+                  </FormField>
+                  <button type="button" onClick={handleSaveService} className="min-h-11 rounded-2xl bg-[#87ba2f] px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
+                    {editingServiceId ? "Actualizar servicio" : "Guardar servicio"}
+                  </button>
+                </div>
+                {editingServiceId ? (
+                  <button type="button" onClick={() => { setEditingServiceId(""); setNewServiceName(""); setNewServiceArticleCode("H"); setServiceStatus(""); }} className="mt-3 text-xs font-semibold text-slate-300 underline decoration-white/30 underline-offset-4">
+                    Cancelar edición
+                  </button>
+                ) : null}
               </div>
-              {editingServiceId ? (
-                <button type="button" onClick={() => { setEditingServiceId(""); setNewServiceName(""); setNewServiceArticleCode("H"); setServiceStatus(""); }} className="mx-auto mt-2 block text-xs font-semibold text-slate-300 underline decoration-white/30 underline-offset-4">
-                  Cancelar edición
-                </button>
-              ) : null}
+
               {savedServices.length > 0 ? (
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                <div className="mt-5 grid gap-2 sm:grid-cols-2">
                   {savedServices.map((service) => {
                     const selected = selectedServiceIds.includes(service.id);
                     return (
-                      <div key={service.id} className="flex overflow-hidden rounded-xl border border-white/15">
-                        <button type="button" aria-pressed={selected} onClick={() => handleToggleService(service)} className={`px-3 py-2 text-xs font-semibold transition ${selected ? "bg-[#87ba2f] text-slate-950" : "bg-white/5 text-slate-200 hover:bg-white/10"}`}>
-                          {selected ? "✓ " : "+ "}{service.name} · {service.articleCode || "H"}
+                      <div key={service.id} className={`flex min-w-0 items-stretch overflow-hidden rounded-xl border transition ${selected ? "border-[#87ba2f]" : "border-white/15"}`}>
+                        <button type="button" aria-pressed={selected} onClick={() => handleToggleService(service)} className={`min-w-0 flex-1 px-3 py-2.5 text-left transition ${selected ? "bg-[#87ba2f] text-slate-950" : "bg-white/5 text-slate-200 hover:bg-white/10"}`}>
+                          <span className="block truncate text-xs font-semibold">{selected ? "✓ " : "+ "}{service.name}</span>
+                          <span className={`mt-0.5 block text-[10px] font-semibold uppercase tracking-wider ${selected ? "text-slate-800/70" : "text-slate-400"}`}>Artículo {service.articleCode || "H"}</span>
                         </button>
-                        <button type="button" onClick={() => handleEditService(service)} className="border-l border-white/15 bg-white/10 px-2 py-2 text-xs font-semibold text-[#d7f0a7] hover:bg-white/15" aria-label={`Editar ${service.name}`}>
+                        <button type="button" onClick={() => handleEditService(service)} className="shrink-0 border-l border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-[#d7f0a7] hover:bg-white/15" aria-label={`Editar ${service.name}`}>
                           Editar
                         </button>
                       </div>
