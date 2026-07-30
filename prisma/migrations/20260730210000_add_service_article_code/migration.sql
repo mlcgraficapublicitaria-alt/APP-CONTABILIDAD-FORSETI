@@ -1,0 +1,2 @@
+ALTER TABLE `InvoiceService`
+  ADD COLUMN `articleCode` VARCHAR(191) NOT NULL DEFAULT 'H';

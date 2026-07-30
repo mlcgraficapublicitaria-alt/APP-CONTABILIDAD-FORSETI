@@ -8,16 +8,19 @@ import { prisma } from "@/lib/renta-fiscal/prisma";
 type SavedService = {
   id: string;
   name: string;
+  articleCode: string;
 };
 
 type SaveServiceBody = {
+  id?: string;
   name?: string;
+  articleCode?: string;
 };
 
 const localServicesPath = path.join(process.cwd(), ".forseti", "invoice-services.json");
 const defaultServices: SavedService[] = [
-  { id: "default-hosting-domain", name: "HOSTING WEB Y DOMINIO" },
-  { id: "default-graphic-web-design", name: "SERVICIO DE DISEÑO GRÁFICO Y WEB" },
+  { id: "default-hosting-domain", name: "HOSTING WEB Y DOMINIO", articleCode: "H" },
+  { id: "default-graphic-web-design", name: "SERVICIO DE DISEÑO GRÁFICO Y WEB", articleCode: "H" },
 ];
 
 function withDefaultServices(services: SavedService[]) {
@@ -30,7 +33,7 @@ async function readServices(): Promise<SavedService[]> {
   try {
     const content = await readFile(localServicesPath, "utf8");
     const services = JSON.parse(content) as SavedService[];
-    return withDefaultServices(Array.isArray(services) ? services : []);
+    return withDefaultServices(Array.isArray(services) ? services.map((service) => ({ ...service, articleCode: service.articleCode || "H" })) : []);
   } catch {
     return defaultServices;
   }
@@ -47,7 +50,7 @@ export async function GET() {
 
   try {
     const services = hasMysqlDatabaseUrl()
-      ? withDefaultServices(await prisma.invoiceService.findMany({ select: { id: true, name: true } }))
+      ? withDefaultServices(await prisma.invoiceService.findMany({ select: { id: true, name: true, articleCode: true } }))
       : await readServices();
     services.sort((a, b) => a.name.localeCompare(b.name, "es"));
     return ok({ services });
@@ -68,20 +71,32 @@ export async function POST(request: Request) {
 
   const body = await readJson<SaveServiceBody>(request);
   const name = body.name?.trim();
+  const articleCode = body.articleCode?.trim().toUpperCase() || "H";
   if (!name) return badRequest("Escribe el nombre del servicio que quieres guardar.");
 
   try {
     if (hasMysqlDatabaseUrl()) {
-      const existing = await prisma.invoiceService.findFirst({ where: { name } });
-      const service = existing ?? (await prisma.invoiceService.create({ data: { name } }));
-      return ok({ service: { id: service.id, name: service.name } }, { status: existing ? 200 : 201 });
+      const existing = body.id
+        ? await prisma.invoiceService.findUnique({ where: { id: body.id } })
+        : await prisma.invoiceService.findFirst({ where: { name } });
+      const service = existing
+        ? await prisma.invoiceService.update({ where: { id: existing.id }, data: { name, articleCode } })
+        : await prisma.invoiceService.create({ data: { name, articleCode } });
+      return ok({ service: { id: service.id, name: service.name, articleCode: service.articleCode } }, { status: existing ? 200 : 201 });
     }
 
     const services = await readServices();
-    const existing = services.find((service) => service.name.toLocaleLowerCase("es") === name.toLocaleLowerCase("es"));
-    if (existing) return ok({ service: existing });
+    const existingIndex = body.id
+      ? services.findIndex((service) => service.id === body.id)
+      : services.findIndex((service) => service.name.toLocaleLowerCase("es") === name.toLocaleLowerCase("es"));
+    if (existingIndex >= 0) {
+      const service = { ...services[existingIndex], name, articleCode };
+      services[existingIndex] = service;
+      await writeServices(services);
+      return ok({ service });
+    }
 
-    const service = { id: randomUUID(), name };
+    const service = { id: randomUUID(), name, articleCode };
     services.push(service);
     await writeServices(services);
     return ok({ service }, { status: 201 });

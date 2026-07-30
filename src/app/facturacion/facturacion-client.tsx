@@ -20,6 +20,7 @@ type SavedBankAccount = {
 type SavedService = {
   id: string;
   name: string;
+  articleCode: string;
 };
 
 type DriveFolderOption = {
@@ -721,6 +722,8 @@ export function FacturacionClient() {
   const [savedServices, setSavedServices] = useState<SavedService[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [newServiceName, setNewServiceName] = useState("");
+  const [newServiceArticleCode, setNewServiceArticleCode] = useState("H");
+  const [editingServiceId, setEditingServiceId] = useState("");
   const [serviceStatus, setServiceStatus] = useState("");
   const [driveFolderQuery, setDriveFolderQuery] = useState("");
   const [driveFolders, setDriveFolders] = useState<DriveFolderOption[]>([]);
@@ -1169,8 +1172,15 @@ export function FacturacionClient() {
         : lines.some((line) => line.toLocaleLowerCase("es") === service.name.toLocaleLowerCase("es"))
           ? lines
           : [...lines, service.name];
-      return { ...current, billedService: nextLines.join("\n") };
+      return { ...current, billedService: nextLines.join("\n"), articleCode: selected ? current.articleCode : service.articleCode || current.articleCode };
     });
+  }
+
+  function handleEditService(service: SavedService) {
+    setEditingServiceId(service.id);
+    setNewServiceName(service.name);
+    setNewServiceArticleCode(service.articleCode || "H");
+    setServiceStatus("Editando servicio guardado.");
   }
 
   async function handleSaveService() {
@@ -1182,10 +1192,11 @@ export function FacturacionClient() {
 
     setServiceStatus("Guardando servicio...");
     try {
+      const previousService = savedServices.find((service) => service.id === editingServiceId);
       const response = await fetch("/api/facturacion/servicios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ id: editingServiceId || undefined, name, articleCode: newServiceArticleCode }),
       });
       const data = (await response.json().catch(() => ({}))) as { service?: SavedService; error?: string };
       if (!response.ok || !data.service) throw new Error(data.error || "No se pudo guardar el servicio.");
@@ -1193,8 +1204,22 @@ export function FacturacionClient() {
       const service = data.service;
       setSavedServices((current) => [...current.filter((item) => item.id !== service.id), service].sort((a, b) => a.name.localeCompare(b.name, "es")));
       setNewServiceName("");
-      setServiceStatus("Servicio guardado y seleccionado.");
-      if (!selectedServiceIds.includes(service.id)) handleToggleService(service);
+      setNewServiceArticleCode("H");
+      setEditingServiceId("");
+      setServiceStatus(editingServiceId ? "Servicio actualizado." : "Servicio guardado y seleccionado.");
+      if (previousService && selectedServiceIds.includes(previousService.id)) {
+        setSelectedServiceIds((current) => current.map((id) => (id === previousService.id ? service.id : id)));
+        setForm((current) => ({
+          ...current,
+          articleCode: service.articleCode || current.articleCode,
+          billedService: current.billedService
+            .split("\n")
+            .map((line) => (line.trim().toLocaleLowerCase("es") === previousService.name.toLocaleLowerCase("es") ? service.name : line))
+            .join("\n"),
+        }));
+      } else if (!selectedServiceIds.includes(service.id)) {
+        handleToggleService(service);
+      }
     } catch (error) {
       setServiceStatus(error instanceof Error ? error.message : "No se pudo guardar el servicio.");
     }
@@ -1603,7 +1628,7 @@ export function FacturacionClient() {
           <div className="mt-4">
             <div className="rounded-2xl border border-white/10 bg-slate-900/55 p-4">
               <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-[#b3d87d]">Tipos de servicio</p>
-              <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+              <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_8rem_auto] lg:items-end">
                 <FormField label="Crear un servicio" htmlFor={`${baseId}-new-service`}>
                   <input
                     id={`${baseId}-new-service`}
@@ -1616,24 +1641,31 @@ export function FacturacionClient() {
                     placeholder="Ej. Gestión de redes sociales"
                   />
                 </FormField>
+                <FormField label="Artículo" htmlFor={`${baseId}-new-service-article`}>
+                  <input id={`${baseId}-new-service-article`} className={fieldClassName} value={newServiceArticleCode} onChange={(event) => setNewServiceArticleCode(event.target.value.toUpperCase())} placeholder="H" />
+                </FormField>
                 <button type="button" onClick={handleSaveService} className="min-h-11 rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
-                  Guardar servicio
+                  {editingServiceId ? "Actualizar" : "Guardar servicio"}
                 </button>
               </div>
+              {editingServiceId ? (
+                <button type="button" onClick={() => { setEditingServiceId(""); setNewServiceName(""); setNewServiceArticleCode("H"); setServiceStatus(""); }} className="mx-auto mt-2 block text-xs font-semibold text-slate-300 underline decoration-white/30 underline-offset-4">
+                  Cancelar edición
+                </button>
+              ) : null}
               {savedServices.length > 0 ? (
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   {savedServices.map((service) => {
                     const selected = selectedServiceIds.includes(service.id);
                     return (
-                      <button
-                        key={service.id}
-                        type="button"
-                        aria-pressed={selected}
-                        onClick={() => handleToggleService(service)}
-                        className={`rounded-xl border px-3 py-2 text-xs font-semibold transition ${selected ? "border-[#87ba2f] bg-[#87ba2f] text-slate-950" : "border-white/15 bg-white/5 text-slate-200 hover:bg-white/10"}`}
-                      >
-                        {selected ? "✓ " : "+ "}{service.name}
-                      </button>
+                      <div key={service.id} className="flex overflow-hidden rounded-xl border border-white/15">
+                        <button type="button" aria-pressed={selected} onClick={() => handleToggleService(service)} className={`px-3 py-2 text-xs font-semibold transition ${selected ? "bg-[#87ba2f] text-slate-950" : "bg-white/5 text-slate-200 hover:bg-white/10"}`}>
+                          {selected ? "✓ " : "+ "}{service.name} · {service.articleCode || "H"}
+                        </button>
+                        <button type="button" onClick={() => handleEditService(service)} className="border-l border-white/15 bg-white/10 px-2 py-2 text-xs font-semibold text-[#d7f0a7] hover:bg-white/15" aria-label={`Editar ${service.name}`}>
+                          Editar
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
