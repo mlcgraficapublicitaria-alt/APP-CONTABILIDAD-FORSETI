@@ -1661,7 +1661,7 @@ export function FacturacionClient() {
               </div>
 
               {savedServices.length > 0 ? (
-                <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                <div className="mt-5 grid gap-2">
                   {savedServices.map((service) => {
                     const selected = selectedServiceIds.includes(service.id);
                     return (
