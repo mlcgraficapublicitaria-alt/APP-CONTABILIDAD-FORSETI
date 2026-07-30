@@ -1600,17 +1600,10 @@ export function FacturacionClient() {
           </div>
           {clientStatus ? <p className="mt-3 text-center text-xs font-semibold text-[#d7f0a7]">{clientStatus}</p> : null}
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-12">
-            <div className="lg:col-span-8">
-              <FormField label="Nombre del cliente" htmlFor={`${baseId}-client`}>
-                <input id={`${baseId}-client`} className={fieldClassName} value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} />
-              </FormField>
-            </div>
-            <div className="lg:col-span-4">
-              <FormField label="Articulo" htmlFor={`${baseId}-article`}>
-                <input id={`${baseId}-article`} className={fieldClassName} value={form.articleCode} onChange={(event) => updateField("articleCode", event.target.value)} />
-              </FormField>
-            </div>
+          <div className="mt-4">
+            <FormField label="Nombre del cliente" htmlFor={`${baseId}-client`}>
+              <input id={`${baseId}-client`} className={fieldClassName} value={form.clientName} onChange={(event) => updateField("clientName", event.target.value)} />
+            </FormField>
           </div>
           <div className="mt-4">
             <FormField label="Datos del cliente" htmlFor={`${baseId}-details`}>
