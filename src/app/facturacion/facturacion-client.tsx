@@ -1548,9 +1548,12 @@ export function FacturacionClient() {
           </div>
         </div>
 
-        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Emisor</p>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2 xl:grid-cols-12">
+        <details open className="group mt-6 overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/55">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left marker:content-none">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Emisor</span>
+            <span className="text-lg text-slate-400 transition group-open:rotate-180">⌄</span>
+          </summary>
+          <div className="grid gap-4 px-4 pb-4 lg:grid-cols-2 xl:grid-cols-12">
             <div className="xl:col-span-8">
               <FormField label="Nombre del emisor" htmlFor={`${baseId}-issuer-name`}>
                 <input id={`${baseId}-issuer-name`} className={fieldClassName} value={form.issuerName} onChange={(event) => updateField("issuerName", event.target.value)} />
@@ -1625,12 +1628,15 @@ export function FacturacionClient() {
               {bankAccountStatus ? <p className="mt-3 text-center text-xs font-semibold text-[#d7f0a7]">{bankAccountStatus}</p> : null}
             </div>
           </div>
-        </div>
+        </details>
 
-        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Cliente y linea</p>
-
-          <div className="mx-auto mt-4 grid w-full max-w-xl gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <details className="group mt-6 overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/55">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left marker:content-none">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Cliente y precio</span>
+            <span className="text-lg text-slate-400 transition group-open:rotate-180">⌄</span>
+          </summary>
+          <div className="px-4 pb-4">
+          <div className="mx-auto grid w-full max-w-xl gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <FormField label="Seleccionar ficha guardada" htmlFor={`${baseId}-saved-client`}>
               <select
                 id={`${baseId}-saved-client`}
@@ -1748,7 +1754,6 @@ export function FacturacionClient() {
               />
             </FormField>
           </div>
-        </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-12">
           <div className="lg:col-span-4">
@@ -1807,10 +1812,16 @@ export function FacturacionClient() {
             </button>
           ) : null}
         </div>
+        </div>
+        </details>
 
-        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Guardar en Drive</p>
-          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <details className="group mt-6 overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/55">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left marker:content-none">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Guardar en Drive</span>
+            <span className="text-lg text-slate-400 transition group-open:rotate-180">⌄</span>
+          </summary>
+          <div className="px-4 pb-4">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <FormField label="Buscar carpeta" htmlFor={`${baseId}-drive-folder-query`}>
               <input
                 id={`${baseId}-drive-folder-query`}
@@ -1844,11 +1855,16 @@ export function FacturacionClient() {
             </button>
           </div>
           {driveStatus ? <p className="mt-3 break-words text-center text-xs font-semibold text-[#d7f0a7]">{driveStatus}</p> : null}
-        </div>
+          </div>
+        </details>
 
-        <div className="mt-6 rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Facturas emitidas</p>
+        <details className="group mt-6 overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/55">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left marker:content-none">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Facturas emitidas</span>
+            <span className="text-lg text-slate-400 transition group-open:rotate-180">⌄</span>
+          </summary>
+          <div className="px-4 pb-4">
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <button type="button" onClick={() => void refreshIssuedInvoices()} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10">
               Actualizar
             </button>
@@ -1890,7 +1906,8 @@ export function FacturacionClient() {
               <p className="py-3 text-center text-sm text-slate-400">Todavía no hay facturas emitidas guardadas.</p>
             )}
           </div>
-        </div>
+          </div>
+        </details>
       </div>
 
       {hoveredInvoice ? (
