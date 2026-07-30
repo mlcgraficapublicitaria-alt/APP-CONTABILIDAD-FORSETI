@@ -290,6 +290,33 @@ export async function PUT(request: Request) {
   return updateInvoice(body);
 }
 
+export async function DELETE(request: Request) {
+  const auth = await requireUser();
+  if (!auth.user) return auth.response;
+
+  const invoiceId = new URL(request.url).searchParams.get("id")?.trim();
+  if (!invoiceId) return badRequest("La factura que quieres eliminar no está identificada.");
+
+  if (!hasMysqlDatabaseUrl()) {
+    try {
+      const invoices = await readLocalInvoices();
+      const filteredInvoices = invoices.filter((invoice) => invoice.id !== invoiceId);
+      if (filteredInvoices.length === invoices.length) return badRequest("No se encontró la factura emitida.");
+      await writeLocalInvoices(filteredInvoices);
+      return ok({ deleted: true });
+    } catch (error) {
+      return badRequest(`No se pudo eliminar la factura local: ${errorMessage(error)}`);
+    }
+  }
+
+  try {
+    await prisma.invoice.delete({ where: { id: invoiceId } });
+    return ok({ deleted: true });
+  } catch (error) {
+    return badRequest(`No se pudo eliminar la factura de MySQL: ${errorMessage(error)}`);
+  }
+}
+
 async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
   const invoiceId = body.id?.trim();
   const series = body.series?.trim() || "A";

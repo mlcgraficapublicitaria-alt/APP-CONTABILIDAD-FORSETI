@@ -1183,6 +1183,53 @@ export function FacturacionClient() {
     setServiceStatus("Editando servicio guardado.");
   }
 
+  async function handleDeleteService(service: SavedService) {
+    if (!window.confirm(`¿Eliminar el servicio "${service.name}"?`)) return;
+
+    setServiceStatus("Eliminando servicio...");
+    try {
+      const response = await fetch(`/api/facturacion/servicios?id=${encodeURIComponent(service.id)}`, { method: "DELETE" });
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) throw new Error(data.error || "No se pudo eliminar el servicio.");
+
+      setSavedServices((current) => current.filter((item) => item.id !== service.id));
+      setSelectedServiceIds((current) => current.filter((id) => id !== service.id));
+      setForm((current) => ({
+        ...current,
+        billedService: current.billedService
+          .split("\n")
+          .filter((line) => line.trim().toLocaleLowerCase("es") !== service.name.toLocaleLowerCase("es"))
+          .join("\n"),
+      }));
+      if (editingServiceId === service.id) {
+        setEditingServiceId("");
+        setNewServiceName("");
+        setNewServiceArticleCode("H");
+      }
+      setServiceStatus("Servicio eliminado.");
+    } catch (error) {
+      setServiceStatus(error instanceof Error ? error.message : "No se pudo eliminar el servicio.");
+    }
+  }
+
+  async function handleDeleteIssuedInvoice(invoice: IssuedInvoice) {
+    const invoiceLabel = `${invoice.series}/${String(invoice.number).padStart(6, "0")}`;
+    if (!window.confirm(`¿Eliminar definitivamente la factura ${invoiceLabel} de ${invoice.clientName}?`)) return;
+
+    setInvoiceHistoryStatus(`Eliminando factura ${invoiceLabel}...`);
+    try {
+      const response = await fetch(`/api/facturacion/facturas?id=${encodeURIComponent(invoice.id)}`, { method: "DELETE" });
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) throw new Error(data.error || "No se pudo eliminar la factura.");
+
+      setIssuedInvoices((current) => current.filter((item) => item.id !== invoice.id));
+      if (editingInvoiceId === invoice.id) void handleCancelInvoiceEdit();
+      setInvoiceHistoryStatus(`Factura ${invoiceLabel} eliminada.`);
+    } catch (error) {
+      setInvoiceHistoryStatus(error instanceof Error ? error.message : "No se pudo eliminar la factura.");
+    }
+  }
+
   async function handleSaveService() {
     const name = newServiceName.trim();
     if (!name) {
@@ -1666,6 +1713,11 @@ export function FacturacionClient() {
                         <button type="button" onClick={() => handleEditService(service)} className="shrink-0 border-l border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-[#d7f0a7] hover:bg-white/15" aria-label={`Editar ${service.name}`}>
                           Editar
                         </button>
+                        {!service.id.startsWith("default-") ? (
+                          <button type="button" onClick={() => void handleDeleteService(service)} className="shrink-0 border-l border-white/15 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/20" aria-label={`Eliminar ${service.name}`}>
+                            Eliminar
+                          </button>
+                        ) : null}
                       </div>
                     );
                   })}
@@ -1812,6 +1864,9 @@ export function FacturacionClient() {
                     </button>
                     <button type="button" onClick={() => handlePrintIssuedInvoice(invoice)} className="rounded-xl bg-[#87ba2f] px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-[#98cb44]">
                       PDF
+                    </button>
+                    <button type="button" onClick={() => void handleDeleteIssuedInvoice(invoice)} className="rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-200 transition hover:bg-red-500/20">
+                      Eliminar
                     </button>
                   </div>
                 </div>

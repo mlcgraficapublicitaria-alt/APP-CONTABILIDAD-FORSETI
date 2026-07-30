@@ -108,3 +108,27 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  const auth = await requireUser();
+  if (!auth.user) return auth.response;
+
+  const id = new URL(request.url).searchParams.get("id")?.trim();
+  if (!id) return badRequest("El servicio que quieres eliminar no está identificado.");
+  if (id.startsWith("default-")) return badRequest("Los servicios predeterminados no se pueden eliminar.");
+
+  try {
+    if (hasMysqlDatabaseUrl()) {
+      await prisma.invoiceService.delete({ where: { id } });
+    } else {
+      const services = await readServices();
+      const filteredServices = services.filter((service) => service.id !== id);
+      if (filteredServices.length === services.length) return badRequest("No se encontró el servicio.");
+      await writeServices(filteredServices);
+    }
+
+    return ok({ deleted: true });
+  } catch (error) {
+    return badRequest(error instanceof Error ? `No se pudo eliminar el servicio: ${error.message}` : "No se pudo eliminar el servicio.");
+  }
+}
