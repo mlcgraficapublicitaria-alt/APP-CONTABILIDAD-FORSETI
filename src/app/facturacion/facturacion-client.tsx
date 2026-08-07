@@ -206,6 +206,33 @@ function multilineToHtml(value: string) {
   return escapeHtml(value).replaceAll("\n", "<br />");
 }
 
+function richTextHasContent(value: string) {
+  return value.replace(/<[^>]*>/g, "").replaceAll("&nbsp;", " ").trim().length > 0;
+}
+
+function safeRichNoteHtml(value: string) {
+  if (!value.includes("<")) return multilineToHtml(value);
+
+  const allowedInlineTags = new Set(["b", "strong", "u"]);
+  return value
+    .split(/(<[^>]*>)/g)
+    .map((part) => {
+      if (!part.startsWith("<")) return escapeHtml(part);
+      const tag = part.match(/^<\s*(\/?)\s*([a-z0-9]+)/i);
+      if (!tag) return "";
+      const closing = Boolean(tag[1]);
+      const name = tag[2].toLowerCase();
+      if (allowedInlineTags.has(name)) return `<${closing ? "/" : ""}${name}>`;
+      if (name === "br" && !closing) return "<br />";
+      if ((name === "div" || name === "p") && closing) return `</${name}>`;
+      if (name === "div" || name === "p") {
+        return /text-align\s*:\s*justify/i.test(part) ? `<${name} style="text-align: justify">` : `<${name}>`;
+      }
+      return "";
+    })
+    .join("");
+}
+
 function buildInvoiceCode(form: InvoiceFormState) {
   const series = form.invoiceSeries.trim();
   const number = form.invoiceNumber.trim();
@@ -284,7 +311,7 @@ function buildPrintableInvoiceDocument(
   const clientNameFontSize = fontSize(form.clientNameFontSize, 11, 20, 17);
   const clientDetailsFontSize = fontSize(form.clientDetailsFontSize, 9, 18, 14);
   const billedService = multilineToHtml(form.billedService || "SERVICIO");
-  const serviceNotes = form.serviceNotes.trim() ? multilineToHtml(form.serviceNotes) : "";
+  const serviceNotes = richTextHasContent(form.serviceNotes) ? safeRichNoteHtml(form.serviceNotes) : "";
   const issuerBank = escapeHtml(form.issuerBankAccount || "");
   const issuerPhone = escapeHtml(form.issuerPhone || "");
   const issuerEmail = escapeHtml(form.issuerEmail || "");
@@ -435,10 +462,13 @@ function buildPrintableInvoiceDocument(
       }
       .right { text-align: right; }
       .service-note {
-        margin-top: 8px;
         color: #666666;
         font-size: 13px;
         line-height: 1.35;
+      }
+      .service-note td {
+        padding-top: 10px;
+        border-top: 0;
       }
       .summary {
         margin-top: 200px;
@@ -527,11 +557,12 @@ function buildPrintableInvoiceDocument(
           <tbody>
             <tr>
               <td>${articleCode}</td>
-              <td>${billedService}${serviceNotes ? `<div class="service-note">${serviceNotes}</div>` : ""}</td>
+              <td>${billedService}</td>
               <td class="right">${formatMoney(summary.baseAmount)}</td>
               <td class="right"></td>
               <td class="right">${formatMoney(summary.baseAmount)}</td>
             </tr>
+            ${serviceNotes ? `<tr class="service-note"><td colspan="5">${serviceNotes}</td></tr>` : ""}
           </tbody>
         </table>
       </section>
@@ -751,6 +782,7 @@ export function FacturacionClient() {
   const baseId = useId();
   const printPreviewRef = useRef<HTMLDivElement>(null);
   const historicalPrintRef = useRef<HTMLDivElement>(null);
+  const serviceNoteEditorRef = useRef<HTMLDivElement>(null);
   const lastIrpfRateRef = useRef(INITIAL_STATE.irpfRate);
   const fieldClassName = inputClassName();
 
@@ -1199,6 +1231,12 @@ export function FacturacionClient() {
     });
   }
 
+  function applyServiceNoteFormat(command: "bold" | "underline" | "justifyFull") {
+    serviceNoteEditorRef.current?.focus();
+    document.execCommand(command, false);
+    setServiceNoteDraft(serviceNoteEditorRef.current?.innerHTML || "");
+  }
+
   function handleEditService(service: SavedService) {
     setEditingServiceId(service.id);
     setNewServiceName(service.name);
@@ -1441,12 +1479,16 @@ export function FacturacionClient() {
                     <td className="pt-5">{form.articleCode || "H"}</td>
                     <td className="pt-5 whitespace-pre-line">
                       {form.billedService || "SERVICIO"}
-                      {form.serviceNotes.trim() ? <span className="mt-2 block text-[13px] leading-5 text-slate-500">{form.serviceNotes}</span> : null}
                     </td>
                     <td className="pt-5 text-right">{formatMoney(summary.baseAmount)}</td>
                     <td className="pt-5 text-right"></td>
                     <td className="pt-5 text-right">{formatMoney(summary.baseAmount)}</td>
                   </tr>
+                  {richTextHasContent(form.serviceNotes) ? (
+                    <tr>
+                      <td colSpan={5} className="pt-3 text-[13px] leading-5 text-slate-500" dangerouslySetInnerHTML={{ __html: safeRichNoteHtml(form.serviceNotes) }} />
+                    </tr>
+                  ) : null}
                 </tbody>
               </table>
             </div>
@@ -1792,15 +1834,29 @@ export function FacturacionClient() {
                   <label htmlFor={`${baseId}-service-note`} className="text-xs font-semibold uppercase tracking-[0.14em] text-[#b3d87d]">
                     Anotación puntual para esta factura
                   </label>
-                  <textarea
+                  <div className="mt-2 flex flex-wrap gap-1 rounded-t-xl border border-b-0 border-white/15 bg-white/5 p-2" aria-label="Formato de la anotación">
+                    <button type="button" onClick={() => applyServiceNoteFormat("bold")} className="min-h-9 min-w-9 rounded-lg px-3 text-sm font-bold text-white hover:bg-white/10" title="Negrita" aria-label="Negrita">
+                      N
+                    </button>
+                    <button type="button" onClick={() => applyServiceNoteFormat("underline")} className="min-h-9 min-w-9 rounded-lg px-3 text-sm font-semibold text-white underline hover:bg-white/10" title="Subrayado" aria-label="Subrayado">
+                      S
+                    </button>
+                    <button type="button" onClick={() => applyServiceNoteFormat("justifyFull")} className="min-h-9 rounded-lg px-3 text-xs font-semibold text-white hover:bg-white/10" title="Justificar texto" aria-label="Justificar texto">
+                      Justificar
+                    </button>
+                  </div>
+                  <div
+                    ref={serviceNoteEditorRef}
                     id={`${baseId}-service-note`}
-                    className={`${fieldClassName} mt-2 min-h-24 resize-y`}
-                    value={serviceNoteDraft}
-                    onChange={(event) => setServiceNoteDraft(event.target.value)}
-                    placeholder="Escribe aquí los detalles específicos de este servicio en esta factura"
+                    className="min-h-28 rounded-b-xl border border-white/15 bg-slate-950/70 px-4 py-3 text-left text-sm leading-6 text-white outline-none before:pointer-events-none before:text-slate-500 empty:before:content-[attr(data-placeholder)] focus:border-[#87ba2f]"
+                    contentEditable
+                    suppressContentEditableWarning
+                    onInput={(event) => setServiceNoteDraft(event.currentTarget.innerHTML)}
+                    dangerouslySetInnerHTML={{ __html: safeRichNoteHtml(serviceNoteDraft) }}
+                    data-placeholder="Escribe aquí los detalles específicos de este servicio en esta factura"
                   />
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <button type="button" onClick={() => { updateField("serviceNotes", serviceNoteDraft.trim()); setIsServiceNoteOpen(false); }} className="min-h-10 rounded-xl bg-[#87ba2f] px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
+                    <button type="button" onClick={() => { updateField("serviceNotes", richTextHasContent(serviceNoteDraft) ? safeRichNoteHtml(serviceNoteDraft) : ""); setIsServiceNoteOpen(false); }} className="min-h-10 rounded-xl bg-[#87ba2f] px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
                       Añadir
                     </button>
                     <button type="button" onClick={() => { setServiceNoteDraft(form.serviceNotes); setIsServiceNoteOpen(false); }} className="min-h-10 rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/5">
@@ -1814,9 +1870,9 @@ export function FacturacionClient() {
                   </div>
                 </div>
               )}
-              {form.serviceNotes && !isServiceNoteOpen ? (
+              {richTextHasContent(form.serviceNotes) && !isServiceNoteOpen ? (
                 <div className="mt-3 flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-                  <p className="whitespace-pre-line text-sm leading-5 text-slate-300">{form.serviceNotes}</p>
+                  <div className="min-w-0 flex-1 text-left text-sm leading-5 text-slate-300" dangerouslySetInnerHTML={{ __html: safeRichNoteHtml(form.serviceNotes) }} />
                   <button type="button" onClick={() => { setServiceNoteDraft(form.serviceNotes); setIsServiceNoteOpen(true); }} className="shrink-0 text-xs font-semibold text-[#d7f0a7] underline underline-offset-4">
                     Editar
                   </button>
@@ -2020,7 +2076,7 @@ export function FacturacionClient() {
                 <p className="rounded-lg bg-white/10 px-2 py-1 text-xs font-semibold text-[#d7f0a7]">Artículo {hoveredInvoice.articleCode || "H"}</p>
               </div>
               <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-200">{hoveredInvoice.serviceDescription || "Sin descripción"}</p>
-              {hoveredInvoice.notes ? <p className="mt-3 whitespace-pre-line rounded-xl bg-black/20 p-3 text-sm leading-6 text-slate-300">{hoveredInvoice.notes}</p> : null}
+              {hoveredInvoice.notes && richTextHasContent(hoveredInvoice.notes) ? <div className="mt-3 rounded-xl bg-black/20 p-3 text-sm leading-6 text-slate-300" dangerouslySetInnerHTML={{ __html: safeRichNoteHtml(hoveredInvoice.notes) }} /> : null}
             </div>
 
             <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
