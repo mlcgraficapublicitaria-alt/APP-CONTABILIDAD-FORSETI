@@ -6,6 +6,7 @@ export type StoredExpense = {
   expenseDate: string;
   month: string;
   supplier: string;
+  invoiceNumber: string;
   concept: string;
   category: string;
   amount: number;

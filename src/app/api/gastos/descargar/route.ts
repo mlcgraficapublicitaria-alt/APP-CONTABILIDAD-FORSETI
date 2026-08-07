@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     const name = `${String(index + 1).padStart(2, "0")}-${expense.expenseDate}-${expense.supplier}-${safeDownloadName(expense.fileName)}`;
     zip.file(safeDownloadName(name), await readExpenseFile(expense.storedName));
   }
-  zip.file("resumen.csv", ["Fecha;Proveedor;Concepto;Categoria;Importe", ...expenses.map((item) => `${item.expenseDate};${item.supplier};${item.concept};${item.category};${item.amount.toFixed(2)}`)].join("\n"));
+  zip.file("resumen.csv", ["Fecha;Proveedor;Numero factura o ticket;Concepto;Categoria;Importe", ...expenses.map((item) => `${item.expenseDate};${item.supplier};${item.invoiceNumber || ""};${item.concept};${item.category};${item.amount.toFixed(2)}`)].join("\n"));
   const content = await zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
   const archive = content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength) as ArrayBuffer;
   return new Response(archive, {

@@ -23,6 +23,7 @@ export async function POST(request: Request) {
   const file = formData.get("file");
   const expenseDate = String(formData.get("expenseDate") || "").trim();
   const supplier = String(formData.get("supplier") || "").trim();
+  const invoiceNumber = String(formData.get("invoiceNumber") || "").trim();
   const concept = String(formData.get("concept") || "").trim();
   const category = String(formData.get("category") || "Otros").trim();
   const notes = String(formData.get("notes") || "").trim();
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
     expenseDate,
     month: expenseDate.slice(0, 7),
     supplier,
+    invoiceNumber,
     concept,
     category,
     amount,
