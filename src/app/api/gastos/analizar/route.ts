@@ -12,7 +12,7 @@ async function textFromPdf(buffer: Buffer) {
   ensurePdfJsNodeGlobals();
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs")).href;
-  const document = await pdfjs.getDocument({ data: Uint8Array.from(buffer), disableWorker: true }).promise;
+  const document = await pdfjs.getDocument({ data: Uint8Array.from(buffer) }).promise;
   const lines: string[] = [];
 
   try {
