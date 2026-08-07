@@ -7,6 +7,7 @@ type Expense = {
   expenseDate: string;
   month: string;
   supplier: string;
+  invoiceNumber?: string;
   concept: string;
   category: string;
   amount: number;
@@ -38,6 +39,7 @@ export function GastosClient() {
   const [month, setMonth] = useState(today.slice(0, 7));
   const [expenseDate, setExpenseDate] = useState(today);
   const [supplier, setSupplier] = useState("");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
   const [concept, setConcept] = useState("");
   const [category, setCategory] = useState(categories[0]);
   const [amount, setAmount] = useState("");
@@ -49,6 +51,7 @@ export function GastosClient() {
   const [driveFolderId, setDriveFolderId] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
 
   async function refresh() { setExpenses(await loadExpenses()); }
 
@@ -66,16 +69,34 @@ export function GastosClient() {
     setStatus("Guardando gasto...");
     try {
       const body = new FormData();
-      body.set("expenseDate", expenseDate); body.set("supplier", supplier); body.set("concept", concept);
+      body.set("expenseDate", expenseDate); body.set("supplier", supplier); body.set("invoiceNumber", invoiceNumber); body.set("concept", concept);
       body.set("category", category); body.set("amount", amount); body.set("notes", notes); body.set("file", file);
       const response = await fetch("/api/gastos", { method: "POST", body });
       const data = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(data.error || "No se pudo guardar el gasto.");
-      setMonth(expenseDate.slice(0, 7)); setSupplier(""); setConcept(""); setAmount(""); setNotes(""); setFile(null);
+      setMonth(expenseDate.slice(0, 7)); setSupplier(""); setInvoiceNumber(""); setConcept(""); setAmount(""); setNotes(""); setFile(null);
       const input = document.getElementById("expense-file") as HTMLInputElement | null; if (input) input.value = "";
       await refresh(); setStatus("Gasto guardado correctamente.");
     } catch (error) { setStatus(error instanceof Error ? error.message : "No se pudo guardar el gasto."); }
     finally { setBusy(false); }
+  }
+
+  async function analyzeFile(nextFile: File) {
+    setAnalyzing(true); setStatus("Leyendo datos de la factura o ticket...");
+    try {
+      const body = new FormData(); body.set("file", nextFile);
+      const response = await fetch("/api/gastos/analizar", { method: "POST", body });
+      const data = await response.json().catch(() => ({})) as { error?: string; fields?: { supplier?: string; invoiceNumber?: string; expenseDate?: string; amount?: number; category?: string; concept?: string } };
+      if (!response.ok || !data.fields) throw new Error(data.error || "No se pudieron detectar los datos.");
+      if (data.fields.supplier) setSupplier(data.fields.supplier);
+      if (data.fields.invoiceNumber) setInvoiceNumber(data.fields.invoiceNumber);
+      if (data.fields.expenseDate) setExpenseDate(data.fields.expenseDate);
+      if (data.fields.amount) setAmount(String(data.fields.amount).replace(".", ","));
+      if (data.fields.category) setCategory(data.fields.category);
+      if (data.fields.concept) setConcept(data.fields.concept);
+      setStatus("Datos detectados. Revísalos antes de guardar.");
+    } catch (error) { setStatus(error instanceof Error ? error.message : "No se pudo analizar el archivo. Puedes rellenar los campos manualmente."); }
+    finally { setAnalyzing(false); }
   }
 
   async function deleteExpense(expense: Expense) {
@@ -127,11 +148,13 @@ export function GastosClient() {
           <label className="text-sm font-semibold">Importe total<input inputMode="decimal" className={`${fieldClass} mt-2`} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" required /></label>
         </div>
         <label className="mt-4 block text-sm font-semibold">Proveedor<input className={`${fieldClass} mt-2`} value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="OpenAI, Iberdrola, Aquaservice..." required /></label>
+        <label className="mt-4 block text-sm font-semibold">Número de factura o ticket<input className={`${fieldClass} mt-2`} value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="Ej. F-2026-00425" /></label>
         <label className="mt-4 block text-sm font-semibold">Concepto<input className={`${fieldClass} mt-2`} value={concept} onChange={(e) => setConcept(e.target.value)} placeholder="Suscripción, suministro..." required /></label>
         <label className="mt-4 block text-sm font-semibold">Categoría<select className={`${fieldClass} mt-2`} value={category} onChange={(e) => setCategory(e.target.value)}>{categories.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="mt-4 block text-sm font-semibold">Notas<textarea className={`${fieldClass} mt-2 min-h-20 resize-y`} value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
-        <label className="mt-4 block text-sm font-semibold">Factura o justificante<input id="expense-file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className={`${fieldClass} mt-2 file:mr-3 file:rounded-lg file:border-0 file:bg-[#87ba2f] file:px-3 file:py-2 file:font-semibold file:text-slate-950`} onChange={(e) => setFile(e.target.files?.[0] ?? null)} required /></label>
-        <button disabled={busy} className="mt-5 w-full rounded-2xl bg-[#87ba2f] px-5 py-3 font-semibold text-slate-950 disabled:opacity-50">Guardar gasto</button>
+        <label className="mt-4 block text-sm font-semibold">Factura o justificante<input id="expense-file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className={`${fieldClass} mt-2 file:mr-3 file:rounded-lg file:border-0 file:bg-[#87ba2f] file:px-3 file:py-2 file:font-semibold file:text-slate-950`} onChange={(e) => { const nextFile = e.target.files?.[0] ?? null; setFile(nextFile); if (nextFile) void analyzeFile(nextFile); }} required /></label>
+        {analyzing ? <p className="mt-3 text-center text-sm font-semibold text-sky-300">Analizando documento...</p> : null}
+        <button disabled={busy || analyzing} className="mt-5 w-full rounded-2xl bg-[#87ba2f] px-5 py-3 font-semibold text-slate-950 disabled:opacity-50">Guardar gasto</button>
       </form>
 
       <div className="rounded-[28px] border border-white/10 bg-[#0f1728] p-6 shadow-xl">
@@ -162,7 +185,7 @@ export function GastosClient() {
         <div className="mt-4 grid max-h-[560px] gap-3 overflow-y-auto pr-1">
           {filtered.length ? filtered.map((expense) => (
             <article key={expense.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{expense.supplier}</p><p className="mt-1 text-sm text-slate-300">{expense.concept} · {expense.category}</p><p className="mt-1 text-xs text-slate-400">{new Date(`${expense.expenseDate}T00:00:00`).toLocaleDateString("es-ES")} · {expense.fileName}</p></div><p className="font-semibold text-[#b3d87d]">{money(expense.amount)}</p></div>
+              <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{expense.supplier}</p><p className="mt-1 text-sm text-slate-300">{expense.concept} · {expense.category}</p>{expense.invoiceNumber ? <p className="mt-1 text-xs font-semibold text-[#d7f0a7]">Nº {expense.invoiceNumber}</p> : null}<p className="mt-1 text-xs text-slate-400">{new Date(`${expense.expenseDate}T00:00:00`).toLocaleDateString("es-ES")} · {expense.fileName}</p></div><p className="font-semibold text-[#b3d87d]">{money(expense.amount)}</p></div>
               {expense.notes ? <p className="mt-3 text-sm text-slate-300">{expense.notes}</p> : null}
               <div className="mt-3 flex gap-2"><a href={`/api/gastos/archivo?id=${encodeURIComponent(expense.id)}`} className="rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/15">Descargar</a><button type="button" onClick={() => void deleteExpense(expense)} className="rounded-xl bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/20">Eliminar</button></div>
             </article>
