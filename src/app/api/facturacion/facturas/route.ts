@@ -15,6 +15,7 @@ type RegisterInvoiceBody = {
   clientDetails?: string;
   articleCode?: string;
   serviceDescription?: string;
+  issuerBankAccount?: string;
   notes?: string;
   subtotalAmount?: number;
   vatRate?: number;
@@ -35,6 +36,7 @@ type LocalInvoice = {
   clientDetails?: string;
   articleCode?: string;
   serviceDescription?: string;
+  issuerBankAccount?: string;
   notes?: string;
   subtotalAmount?: number;
   vatRate?: number;
@@ -140,6 +142,7 @@ function buildInvoiceData(body: RegisterInvoiceBody, documentName: string, serie
     issueDate,
     articleCode: body.articleCode?.trim() || null,
     serviceDescription,
+    issuerBankAccount: body.issuerBankAccount?.trim() || null,
     notes: body.notes?.trim() || null,
     subtotalAmount: decimalNumber(body.subtotalAmount),
     vatRate: decimalNumber(body.vatRate),
@@ -157,7 +160,14 @@ export async function GET() {
 
   if (!hasMysqlDatabaseUrl()) {
     const invoices = await readLocalInvoices();
-    return ok({ invoices: invoices.sort((a, b) => b.issueDate.localeCompare(a.issueDate)) });
+    return ok({
+      invoices: invoices
+        .sort((a, b) => b.issueDate.localeCompare(a.issueDate))
+        .map((invoice) => ({
+          ...invoice,
+          issuer: { bankAccount: invoice.issuerBankAccount ?? "" },
+        })),
+    });
   }
 
   try {
@@ -194,7 +204,7 @@ export async function GET() {
           city: invoice.issuerProfile.city ?? "",
           email: invoice.issuerProfile.email ?? "",
           phone: invoice.issuerProfile.phone ?? "",
-          bankAccount: invoice.issuerProfile.bankAccount ?? "",
+          bankAccount: invoice.issuerBankAccount ?? invoice.issuerProfile.bankAccount ?? "",
         },
       })),
     });
@@ -242,6 +252,7 @@ async function createInvoice(body: Partial<RegisterInvoiceBody>, userId: string)
         clientDetails: body.clientDetails?.trim() || "",
         articleCode: body.articleCode?.trim() || "H",
         serviceDescription,
+        issuerBankAccount: body.issuerBankAccount?.trim() || "",
         notes: body.notes?.trim() || "",
         subtotalAmount: decimalNumber(body.subtotalAmount),
         vatRate: decimalNumber(body.vatRate),
@@ -356,6 +367,7 @@ async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
         clientDetails: body.clientDetails?.trim() || "",
         articleCode: body.articleCode?.trim() || "H",
         serviceDescription,
+        issuerBankAccount: body.issuerBankAccount?.trim() || "",
         notes: body.notes?.trim() || "",
         subtotalAmount: decimalNumber(body.subtotalAmount),
         vatRate: decimalNumber(body.vatRate),

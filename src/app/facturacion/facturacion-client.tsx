@@ -888,6 +888,7 @@ export function FacturacionClient() {
         clientDetails: form.clientDetails,
         articleCode: form.articleCode,
         serviceDescription: form.billedService,
+        issuerBankAccount: form.issuerBankAccount,
         notes: form.serviceNotes,
         subtotalAmount: summary.baseAmount,
         vatRate: summary.vatRate,
