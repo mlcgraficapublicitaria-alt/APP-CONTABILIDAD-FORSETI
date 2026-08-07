@@ -66,4 +66,11 @@ export const TOOLS = [
     description: "Crear presupuestos desde formulario, calcular base, IVA e IRPF y preparar el documento para imprimir o guardar.",
     href: "/presupuestos",
   },
+  {
+    id: "gastos",
+    label: "Recopilación de gastos",
+    title: "Archivo mensual de gastos",
+    description: "Guardar facturas y justificantes por mes, descargarlos juntos o enviarlos por correo.",
+    href: "/gastos",
+  },
 ];
