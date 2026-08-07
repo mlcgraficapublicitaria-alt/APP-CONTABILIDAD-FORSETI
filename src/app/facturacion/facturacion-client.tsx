@@ -301,6 +301,17 @@ function invoiceToFormState(invoice: IssuedInvoice): InvoiceFormState {
   };
 }
 
+function invoiceToSummary(invoice: IssuedInvoice): InvoiceSummary {
+  return {
+    baseAmount: invoice.subtotalAmount ?? 0,
+    vatRate: invoice.vatRate ?? 0,
+    vatAmount: invoice.vatAmount ?? 0,
+    irpfRate: invoice.irpfRate ?? 0,
+    irpfAmount: invoice.irpfAmount ?? 0,
+    totalAmount: invoice.totalAmount ?? 0,
+  };
+}
+
 function buildPrintableInvoiceDocument(
   form: InvoiceFormState,
   summary: InvoiceSummary,
@@ -618,7 +629,7 @@ function buildPrintableInvoiceDocument(
 </html>`;
 }
 
-function openPrintablePreview(element: HTMLElement | null, title: string) {
+function openPrintablePreview(element: HTMLElement | null, title: string, batch = false) {
   if (!element) return;
 
   const printWindow = window.open("", "forseti-print-document", "popup,width=1080,height=1440");
@@ -651,6 +662,14 @@ function openPrintablePreview(element: HTMLElement | null, title: string) {
         width: 760px;
         background: #f7f7f5;
       }
+      .forseti-print-root.is-batch > .invoice-batch-page {
+        break-after: page;
+        page-break-after: always;
+      }
+      .forseti-print-root.is-batch > .invoice-batch-page:last-child {
+        break-after: auto;
+        page-break-after: auto;
+      }
       @media print {
         html, body {
           width: 210mm;
@@ -674,12 +693,18 @@ function openPrintablePreview(element: HTMLElement | null, title: string) {
     </style>
   </head>
   <body>
-    <main class="forseti-print-root">${element.innerHTML}</main>
+    <main class="forseti-print-root${batch ? " is-batch" : ""}">${element.innerHTML}</main>
     <script>
       window.addEventListener("load", () => {
         setTimeout(() => {
           const root = document.querySelector(".forseti-print-root");
-          if (root) {
+          if (root && root.classList.contains("is-batch")) {
+            root.querySelectorAll(":scope > .invoice-batch-page > article").forEach((invoice) => {
+              const a4HeightPx = 1122;
+              const scale = Math.min(0.98, a4HeightPx / invoice.scrollHeight);
+              invoice.style.zoom = String(scale);
+            });
+          } else if (root) {
             const a4HeightPx = 1122;
             const scale = Math.min(0.98, a4HeightPx / root.scrollHeight);
             root.style.zoom = String(scale);
@@ -797,11 +822,13 @@ export function FacturacionClient() {
   const [issuedInvoices, setIssuedInvoices] = useState<IssuedInvoice[]>([]);
   const [editingInvoiceId, setEditingInvoiceId] = useState("");
   const [invoiceHistoryStatus, setInvoiceHistoryStatus] = useState("");
+  const [invoiceMonthFilter, setInvoiceMonthFilter] = useState("");
   const [hoveredInvoiceId, setHoveredInvoiceId] = useState("");
   const [historicalPrint, setHistoricalPrint] = useState<{ form: InvoiceFormState; summary: InvoiceSummary; title: string } | null>(null);
   const baseId = useId();
   const printPreviewRef = useRef<HTMLDivElement>(null);
   const historicalPrintRef = useRef<HTMLDivElement>(null);
+  const monthlyPrintRef = useRef<HTMLDivElement>(null);
   const serviceNoteEditorRef = useRef<HTMLDivElement>(null);
   const lastIrpfRateRef = useRef(INITIAL_STATE.irpfRate);
   const fieldClassName = inputClassName();
@@ -833,6 +860,12 @@ export function FacturacionClient() {
   const hoveredInvoice = useMemo(
     () => issuedInvoices.find((invoice) => invoice.id === hoveredInvoiceId),
     [hoveredInvoiceId, issuedInvoices],
+  );
+  const filteredIssuedInvoices = useMemo(
+    () => invoiceMonthFilter
+      ? issuedInvoices.filter((invoice) => invoice.issueDate.slice(0, 7) === invoiceMonthFilter)
+      : issuedInvoices,
+    [invoiceMonthFilter, issuedInvoices],
   );
   const printDisabled =
     !generated ||
@@ -914,15 +947,22 @@ export function FacturacionClient() {
 
   function handlePrintIssuedInvoice(invoice: IssuedInvoice) {
     const historicalForm = invoiceToFormState(invoice);
-    const historicalSummary: InvoiceSummary = {
-      baseAmount: invoice.subtotalAmount ?? 0,
-      vatRate: invoice.vatRate ?? 0,
-      vatAmount: invoice.vatAmount ?? 0,
-      irpfRate: invoice.irpfRate ?? 0,
-      irpfAmount: invoice.irpfAmount ?? 0,
-      totalAmount: invoice.totalAmount ?? 0,
-    };
+    const historicalSummary = invoiceToSummary(invoice);
     setHistoricalPrint({ form: historicalForm, summary: historicalSummary, title: invoice.documentName });
+  }
+
+  function handleDownloadInvoiceMonth() {
+    if (!invoiceMonthFilter) {
+      setInvoiceHistoryStatus("Selecciona un mes antes de descargar sus facturas.");
+      return;
+    }
+    if (!filteredIssuedInvoices.length) {
+      setInvoiceHistoryStatus("No hay facturas guardadas en el mes seleccionado.");
+      return;
+    }
+
+    setInvoiceHistoryStatus(`Preparando ${filteredIssuedInvoices.length} factura${filteredIssuedInvoices.length === 1 ? "" : "s"} del mes...`);
+    openPrintablePreview(monthlyPrintRef.current, `Facturas-${invoiceMonthFilter}`, true);
   }
 
   function handleEditIssuedInvoice(invoice: IssuedInvoice) {
@@ -2016,15 +2056,30 @@ export function FacturacionClient() {
             <span className="text-lg text-slate-400 transition group-open:rotate-180">⌄</span>
           </summary>
           <div className="px-4 pb-4">
-          <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
+            <FormField label="Filtrar por mes" htmlFor={`${baseId}-invoice-month-filter`}>
+              <input
+                id={`${baseId}-invoice-month-filter`}
+                type="month"
+                className={fieldClassName}
+                value={invoiceMonthFilter}
+                onChange={(event) => {
+                  setInvoiceMonthFilter(event.target.value);
+                  setInvoiceHistoryStatus("");
+                }}
+              />
+            </FormField>
+            <button type="button" onClick={handleDownloadInvoiceMonth} disabled={!invoiceMonthFilter || !filteredIssuedInvoices.length} className="min-h-11 rounded-xl bg-[#87ba2f] px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-[#98cb44] disabled:cursor-not-allowed disabled:opacity-40">
+              Descargar mes en PDF
+            </button>
             <button type="button" onClick={() => void refreshIssuedInvoices()} className="rounded-xl border border-white/12 bg-white/6 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/10">
               Actualizar
             </button>
           </div>
           {invoiceHistoryStatus ? <p className="mt-3 text-center text-xs font-semibold text-amber-300">{invoiceHistoryStatus}</p> : null}
           <div className="mt-4 grid max-h-80 gap-2 overflow-y-auto pr-1">
-            {issuedInvoices.length ? (
-              issuedInvoices.map((invoice) => (
+            {filteredIssuedInvoices.length ? (
+              filteredIssuedInvoices.map((invoice) => (
                 <div
                   key={invoice.id}
                   className="grid gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 text-center transition hover:border-[#87ba2f]/60 hover:bg-white/[0.08] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:text-left"
@@ -2055,7 +2110,7 @@ export function FacturacionClient() {
                 </div>
               ))
             ) : (
-              <p className="py-3 text-center text-sm text-slate-400">Todavía no hay facturas emitidas guardadas.</p>
+              <p className="py-3 text-center text-sm text-slate-400">{invoiceMonthFilter ? "No hay facturas emitidas en el mes seleccionado." : "Todavía no hay facturas emitidas guardadas."}</p>
             )}
           </div>
           </div>
@@ -2130,6 +2185,13 @@ export function FacturacionClient() {
         </div>
         <div ref={historicalPrintRef} className="pointer-events-none fixed -left-[10000px] top-0 w-[760px]" aria-hidden="true">
           {historicalPrint ? renderInvoicePreview("w-[760px]", historicalPrint.form, historicalPrint.summary) : null}
+        </div>
+        <div ref={monthlyPrintRef} className="pointer-events-none fixed -left-[10000px] top-0 w-[760px]" aria-hidden="true">
+          {invoiceMonthFilter ? filteredIssuedInvoices.map((invoice) => (
+            <div key={invoice.id} className="invoice-batch-page">
+              {renderInvoicePreview("w-[760px]", invoiceToFormState(invoice), invoiceToSummary(invoice))}
+            </div>
+          )) : null}
         </div>
 
         <div className="mb-4 flex w-full max-w-[760px] flex-col items-center gap-3 text-center">
