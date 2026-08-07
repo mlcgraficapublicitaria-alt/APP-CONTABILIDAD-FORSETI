@@ -26,10 +26,12 @@ function decimal(value: string) {
 }
 
 function extractInvoiceNumber(text: string) {
+  const numberMarker = String.raw`(?:n\s*(?:[º°o]|\.\s*[º°o]?|ro|um(?:ero)?|úm(?:ero)?)\.?|no\.?|num\.?|nro\.?|number|#)`;
   const patterns = [
-    /(?:invoice|factura|ticket|documento)\s*(?:number|n[uú]mero|n[º°o.]|num\.?|#)\s*[:#-]?\s*([A-Z0-9][A-Z0-9_\-/.]{1,})/i,
-    /(?:number|n[uú]mero|n[º°o.]|num\.?)\s*(?:de\s+)?(?:invoice|factura|ticket|documento)\s*[:#-]?\s*([A-Z0-9][A-Z0-9_\-/.]{1,})/i,
+    new RegExp(`(?:invoice|factura|ticket|documento|folio)\\s*${numberMarker}[\\s:#.\\-]*([A-Z0-9][A-Z0-9_\\-/.]{1,})`, "i"),
+    new RegExp(`${numberMarker}\\s*(?:de\\s+)?(?:invoice|factura|ticket|documento)\\s*[\\s:#.\\-]*([A-Z0-9][A-Z0-9_\\-/.]{1,})`, "i"),
     /(?:invoice|factura|ticket)\s*#\s*([A-Z0-9][A-Z0-9_\-/.]{1,})/i,
+    /(?:folio|referencia)\s*[:#.-]+\s*([A-Z0-9][A-Z0-9_\-/.]{2,})/i,
   ];
   return patterns.map((pattern) => text.match(pattern)?.[1] ?? "").find(Boolean) ?? "";
 }
@@ -44,9 +46,14 @@ function extractTotal(text: string) {
   return values.at(-1) ?? 0;
 }
 
-function extractSupplier(lines: string[], text: string) {
+function extractSupplier(lines: string[], text: string, headerText = "") {
   const labelled = text.match(/(?:proveedor|emisor|supplier|merchant|vendido\s+por|issued\s+by)\s*[:.-]\s*([^\n]{3,80})/i)?.[1]?.trim();
   if (labelled) return labelled;
+
+  const headerLines = headerText.split("\n").map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const headerIgnored = /factura|invoice|ticket|recibo|fecha|date|cif|nif|vat|iva|total|importe|amount|p[aá]gina|page|n[uú]mero|number/i;
+  const logoSupplier = headerLines.find((line) => line.length >= 2 && line.length <= 80 && /[A-Za-zÁÉÍÓÚÑáéíóúñ]{2}/.test(line) && !headerIgnored.test(line));
+  if (logoSupplier) return logoSupplier;
 
   const knownProvider = [
     /OpenAI(?:,?\s+L\.?L\.?C\.?)?/i, /Anthropic(?:,?\s+PBC)?/i, /Adobe(?:\s+Systems)?/i, /Canva/i,
@@ -61,7 +68,7 @@ function extractSupplier(lines: string[], text: string) {
   return lines.slice(0, 18).find((line) => line.length >= 3 && line.length <= 60 && /[A-Za-zÁÉÍÓÚÑáéíóúñ]{3}/.test(line) && !ignored.test(line) && !/^\W+$/.test(line)) ?? "";
 }
 
-export function extractExpenseFields(text: string) {
+export function extractExpenseFields(text: string, headerText = "") {
   const cleanText = text.replace(/\r/g, "");
   const lines = cleanText.split("\n").map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean);
   const invoiceNumber = extractInvoiceNumber(cleanText);
@@ -69,7 +76,7 @@ export function extractExpenseFields(text: string) {
     ?? cleanText.match(/\d{1,2}[\/.\-]\d{1,2}[\/.\-]20\d{2}/)?.[0]
     ?? "";
   const amount = extractTotal(cleanText);
-  const supplier = extractSupplier(lines, cleanText);
+  const supplier = extractSupplier(lines, cleanText, headerText);
   const category = categoryRules.find((rule) => rule.pattern.test(cleanText))?.category ?? "Otros";
   const concept = category === "Inteligencia artificial" ? "Servicio de inteligencia artificial" : category === "Luz" ? "Suministro eléctrico" : category === "Agua" ? "Servicio de agua" : "";
   return { supplier, invoiceNumber, expenseDate: isoDate(dateSource), amount, category, concept };
