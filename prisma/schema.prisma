@@ -260,6 +260,7 @@ model Invoice {
   issueDate           DateTime
   articleCode         String?
   serviceDescription  String
+  issuerBankAccount   String?
   subtotalAmount      Decimal             @db.Decimal(10, 2)
   vatRate             Decimal             @db.Decimal(5, 2)
   vatAmount           Decimal             @db.Decimal(10, 2)
