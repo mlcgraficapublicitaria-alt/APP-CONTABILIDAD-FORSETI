@@ -16,6 +16,8 @@ type Expense = {
   sizeBytes: number;
 };
 
+type DriveFolder = { id: string; name: string };
+
 const categories = ["Inteligencia artificial", "Luz", "Agua", "Telefonía e internet", "Software", "Gestoría", "Material", "Transporte", "Otros"];
 const fieldClass = "w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-[#87ba2f] focus:ring-2 focus:ring-[#87ba2f]/30";
 
@@ -42,6 +44,9 @@ export function GastosClient() {
   const [notes, setNotes] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [email, setEmail] = useState("");
+  const [driveQuery, setDriveQuery] = useState("");
+  const [driveFolders, setDriveFolders] = useState<DriveFolder[]>([]);
+  const [driveFolderId, setDriveFolderId] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -91,6 +96,28 @@ export function GastosClient() {
     finally { setBusy(false); }
   }
 
+  async function searchDriveFolders() {
+    setBusy(true); setStatus("Buscando carpetas de Drive...");
+    try {
+      const response = await fetch(`/api/drive/folders?q=${encodeURIComponent(driveQuery)}`, { cache: "no-store" });
+      const data = await response.json().catch(() => ({})) as { folders?: DriveFolder[]; error?: string };
+      if (!response.ok) throw new Error(data.error || "No se pudieron buscar carpetas.");
+      setDriveFolders(data.folders ?? []); setStatus(data.folders?.length ? "Selecciona una carpeta de Drive." : "No se encontraron carpetas.");
+    } catch (error) { setStatus(error instanceof Error ? error.message : "No se pudieron buscar carpetas."); }
+    finally { setBusy(false); }
+  }
+
+  async function uploadMonthToDrive() {
+    setBusy(true); setStatus("Enviando justificantes a Google Drive...");
+    try {
+      const response = await fetch("/api/gastos/drive", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ month, folderId: driveFolderId }) });
+      const data = await response.json().catch(() => ({})) as { error?: string; uploaded?: number };
+      if (!response.ok) throw new Error(data.error || "No se pudieron enviar los archivos a Drive.");
+      setStatus(`${data.uploaded} justificantes guardados en Google Drive.`);
+    } catch (error) { setStatus(error instanceof Error ? error.message : "No se pudieron enviar los archivos a Drive."); }
+    finally { setBusy(false); }
+  }
+
   return (
     <section className="grid gap-6 lg:grid-cols-[0.85fr_1.3fr]">
       <form onSubmit={saveExpense} className="rounded-[28px] border border-white/10 bg-[#0f1728] p-6 shadow-xl">
@@ -115,6 +142,20 @@ export function GastosClient() {
         <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
           <input type="email" className={fieldClass} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Correo de destino" />
           <button type="button" disabled={busy || !email || !filtered.length} onClick={sendMonth} className="rounded-2xl border border-[#87ba2f]/50 px-5 py-3 text-sm font-semibold text-[#d7f0a7] disabled:opacity-40">Enviar mes por correo</button>
+        </div>
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <p className="text-sm font-semibold text-[#d7f0a7]">Google Drive</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
+            <input className={fieldClass} value={driveQuery} onChange={(e) => setDriveQuery(e.target.value)} placeholder="Buscar carpeta de Drive" />
+            <button type="button" disabled={busy} onClick={searchDriveFolders} className="rounded-2xl border border-white/15 px-5 py-3 text-sm font-semibold disabled:opacity-40">Buscar</button>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto]">
+            <select className={fieldClass} value={driveFolderId} onChange={(e) => setDriveFolderId(e.target.value)}>
+              <option value="">Seleccionar carpeta</option>
+              {driveFolders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}
+            </select>
+            <button type="button" disabled={busy || !driveFolderId || !filtered.length} onClick={uploadMonthToDrive} className="rounded-2xl bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 disabled:opacity-40">Enviar mes a Drive</button>
+          </div>
         </div>
         <div className="mt-5 flex items-center justify-between border-b border-white/10 pb-4"><p className="text-sm text-slate-300">{filtered.length} gastos</p><p className="text-xl font-semibold text-[#b3d87d]">{money(total)}</p></div>
         {status ? <p className="mt-4 rounded-xl bg-white/5 p-3 text-center text-sm text-amber-200">{status}</p> : null}
