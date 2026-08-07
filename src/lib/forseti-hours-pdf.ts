@@ -78,7 +78,7 @@ function multiplyMatrix(left: PdfJsDOMMatrixFallback, right: PdfJsDOMMatrixFallb
   ];
 }
 
-function ensurePdfJsNodeGlobals() {
+export function ensurePdfJsNodeGlobals() {
   const scope = globalThis as PdfJsGlobalScope;
 
   if (!scope.DOMMatrix) {
