@@ -10,13 +10,41 @@ const localRequire = createRequire(import.meta.url);
 
 async function textFromPdf(buffer: Buffer) {
   ensurePdfJsNodeGlobals();
-  const { PDFParse } = await import("pdf-parse");
-  PDFParse.setWorker(pathToFileURL(join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs")).href);
-  const parser = new PDFParse({ data: buffer });
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs")).href;
+  const document = await pdfjs.getDocument({ data: Uint8Array.from(buffer), disableWorker: true }).promise;
+  const lines: string[] = [];
+
   try {
-    const text = (await parser.getText()).text;
-    return { text, headerText: text.split("\n").slice(0, 10).join("\n") };
-  } finally { await parser.destroy(); }
+    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+      const page = await document.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const rows: Array<{ y: number; items: Array<{ x: number; text: string }> }> = [];
+
+      for (const item of content.items as Array<{ str: string; transform: number[] }>) {
+        const text = item.str.trim();
+        if (!text) continue;
+        const x = item.transform[4] ?? 0;
+        const y = item.transform[5] ?? 0;
+        let row = rows.find((candidate) => Math.abs(candidate.y - y) <= 3);
+        if (!row) {
+          row = { y, items: [] };
+          rows.push(row);
+        }
+        row.items.push({ x, text });
+      }
+
+      lines.push(...rows
+        .sort((a, b) => b.y - a.y)
+        .map((row) => row.items.sort((a, b) => a.x - b.x).map((item) => item.text).join(" "))
+        .filter(Boolean));
+      page.cleanup();
+    }
+  } finally {
+    await document.destroy();
+  }
+
+  return { text: lines.join("\n"), headerText: lines.slice(0, 14).join("\n") };
 }
 
 async function textFromImage(buffer: Buffer) {

@@ -26,41 +26,53 @@ function decimal(value: string) {
 }
 
 function extractInvoiceNumber(text: string) {
-  const numberMarker = String.raw`(?:n\s*(?:[º°o]|\.\s*[º°o]?|ro|um(?:ero)?|úm(?:ero)?)\.?|no\.?|num\.?|nro\.?|number|#)`;
+  const numberMarker = String.raw`(?:n\s*(?:[º°o]|\.\s*[º°o]?|ro|[uú]m(?:ero)?)\.?|no\.?|num\.?|nro\.?|number|#)`;
   const patterns = [
     new RegExp(`(?:invoice|factura|ticket|documento|folio)\\s*${numberMarker}[\\s:#.\\-]*([A-Z0-9][A-Z0-9_\\-/.]{1,})`, "i"),
     new RegExp(`${numberMarker}\\s*(?:de\\s+)?(?:invoice|factura|ticket|documento)\\s*[\\s:#.\\-]*([A-Z0-9][A-Z0-9_\\-/.]{1,})`, "i"),
     /(?:invoice|factura|ticket)\s*#\s*([A-Z0-9][A-Z0-9_\-/.]{1,})/i,
     /(?:folio|referencia)\s*[:#.-]+\s*([A-Z0-9][A-Z0-9_\-/.]{2,})/i,
   ];
-  return patterns.map((pattern) => text.match(pattern)?.[1] ?? "").find(Boolean) ?? "";
+  const invalidValues = /^(?:fecha|date|forma|pago|página|page)$/i;
+  return patterns
+    .map((pattern) => text.match(pattern)?.[1] ?? "")
+    .find((value) => value && !invalidValues.test(value)) ?? "";
 }
 
 function extractTotal(text: string) {
-  const labels = "total(?:\\s+(?:a\\s+pagar|factura|due|amount))?|importe(?:\\s+total|\\s+a\\s+pagar)?|amount\\s+due|grand\\s+total|balance\\s+due";
   const patterns = [
-    new RegExp(`(?:${labels})[^0-9]{0,35}(?:EUR|USD|€|\\$)?\\s*([0-9][0-9., ]{0,18}[.,][0-9]{2})`, "gi"),
-    new RegExp(`([0-9][0-9., ]{0,18}[.,][0-9]{2})\\s*(?:EUR|USD|€|\\$)[^A-Za-z0-9]{0,20}(?:${labels})`, "gi"),
+    /(?:importe\s+total\s+factura|total\s+(?:a\s+pagar|factura)|amount\s+due|grand\s+total|balance\s+due)[^0-9]{0,35}(?:EUR|USD|€|\$)?\s*([0-9][0-9., ]{0,18}[.,][0-9]{2})/gi,
+    /(?:importe\s+total|total)[^0-9]{0,35}(?:EUR|USD|€|\$)?\s*([0-9][0-9., ]{0,18}[.,][0-9]{2})/gi,
+    /([0-9][0-9., ]{0,18}[.,][0-9]{2})\s*(?:EUR|USD|€|\$)[^A-Za-z0-9]{0,20}(?:total\s+(?:a\s+pagar|factura)|importe\s+total|amount\s+due|grand\s+total|balance\s+due)/gi,
   ];
-  const values = patterns.flatMap((pattern) => [...text.matchAll(pattern)].map((match) => decimal(match[1]))).filter((value) => value > 0);
-  return values.at(-1) ?? 0;
+  for (const pattern of patterns) {
+    const values = [...text.matchAll(pattern)].map((match) => decimal(match[1])).filter((value) => value > 0);
+    if (values.length) return values.at(-1) ?? 0;
+  }
+  return 0;
 }
 
 function extractSupplier(lines: string[], text: string, headerText = "") {
   const labelled = text.match(/(?:proveedor|emisor|supplier|merchant|vendido\s+por|issued\s+by)\s*[:.-]\s*([^\n]{3,80})/i)?.[1]?.trim();
   if (labelled) return labelled;
 
-  const headerLines = headerText.split("\n").map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean);
-  const headerIgnored = /factura|invoice|ticket|recibo|fecha|date|cif|nif|vat|iva|total|importe|amount|p[aá]gina|page|n[uú]mero|number/i;
-  const logoSupplier = headerLines.find((line) => line.length >= 2 && line.length <= 80 && /[A-Za-zÁÉÍÓÚÑáéíóúñ]{2}/.test(line) && !headerIgnored.test(line));
-  if (logoSupplier) return logoSupplier;
+  const normalizedProvider = [
+    { pattern: /VIVA\s+AQUA\s+SERVICE\s+SPAIN(?:,?\s*S\.?A\.?)?|aquaservice/i, name: "VIVA AQUA SERVICE SPAIN, S.A." },
+    { pattern: /OpenAI(?:,?\s+L\.?L\.?C\.?)?/i, name: "OpenAI" },
+    { pattern: /Anthropic(?:,?\s+PBC)?/i, name: "Anthropic" },
+  ].find((provider) => provider.pattern.test(text));
+  if (normalizedProvider) return normalizedProvider.name;
 
   const knownProvider = [
-    /OpenAI(?:,?\s+L\.?L\.?C\.?)?/i, /Anthropic(?:,?\s+PBC)?/i, /Adobe(?:\s+Systems)?/i, /Canva/i,
-    /Iberdrola[^\n]*/i, /Endesa[^\n]*/i, /Naturgy[^\n]*/i, /Aquaservice[^\n]*/i,
+    /Adobe(?:\s+Systems)?/i, /Canva/i, /Iberdrola[^\n]*/i, /Endesa[^\n]*/i, /Naturgy[^\n]*/i,
     /Movistar[^\n]*/i, /Vodafone[^\n]*/i, /Orange[^\n]*/i,
   ].map((pattern) => text.match(pattern)?.[0]?.trim()).find(Boolean);
   if (knownProvider) return knownProvider.slice(0, 80);
+
+  const headerLines = headerText.split("\n").map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const headerIgnored = /factura|invoice|ticket|recibo|fecha|date|cif|nif|vat|iva|total|importe|amount|p[aá]gina|page|n[uú]mero|number|detalle|datos\s+de|desglose|entrega|descripci[oó]n|cuenta/i;
+  const logoSupplier = headerLines.find((line) => line.length >= 2 && line.length <= 80 && /[A-Za-zÁÉÍÓÚÑáéíóúñ]{2}/.test(line) && !headerIgnored.test(line));
+  if (logoSupplier) return logoSupplier;
 
   const ignored = /factura|invoice|ticket|recibo|fecha|date|cif|nif|vat|iva|total|importe|amount|p[aá]gina|page|cliente|customer|direcci[oó]n|address|n[uú]mero|number|www\.|@/i;
   const company = lines.slice(0, 25).find((line) => line.length <= 80 && /\b(?:S\.?L\.?U?|S\.?A\.?U?|L\.?L\.?C\.?|LTD\.?|LIMITED|INC\.?|PBC)\b/i.test(line) && !ignored.test(line));
