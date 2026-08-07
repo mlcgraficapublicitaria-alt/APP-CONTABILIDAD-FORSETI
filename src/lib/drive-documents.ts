@@ -121,3 +121,44 @@ export async function uploadHtmlDocumentToDrive({
 
   return data as DriveFileResponse;
 }
+
+export async function uploadFileToDrive({
+  folderId,
+  fileName,
+  mimeType,
+  content,
+}: {
+  folderId: string;
+  fileName: string;
+  mimeType: string;
+  content: Buffer;
+}) {
+  const token = await getGoogleAccessToken([DRIVE_SCOPE]);
+  const boundary = `forseti-${randomUUID()}`;
+  const metadata = Buffer.from([
+    `--${boundary}`,
+    "Content-Type: application/json; charset=UTF-8",
+    "",
+    JSON.stringify({ name: sanitizeDriveFileName(fileName), parents: [folderId] }),
+    `--${boundary}`,
+    `Content-Type: ${mimeType || "application/octet-stream"}`,
+    "",
+    "",
+  ].join("\r\n"));
+  const closing = Buffer.from(`\r\n--${boundary}--\r\n`);
+  const body = Buffer.concat([metadata, content, closing]);
+  const url = new URL(DRIVE_UPLOAD_URL);
+  url.searchParams.set("uploadType", "multipart");
+  url.searchParams.set("fields", "id,name,webViewLink");
+  url.searchParams.set("supportsAllDrives", "true");
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": `multipart/related; boundary=${boundary}` },
+    body: new Blob([new Uint8Array(body)]),
+    cache: "no-store",
+  });
+  const data = (await response.json().catch(() => ({}))) as Partial<DriveFileResponse> & { error?: { message?: string } };
+  if (!response.ok || !data.id || !data.name) throw new Error(data.error?.message ?? "No se pudo guardar el archivo en Drive.");
+  return data as DriveFileResponse;
+}
