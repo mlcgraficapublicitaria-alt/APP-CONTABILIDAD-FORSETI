@@ -15,6 +15,7 @@ type RegisterInvoiceBody = {
   clientDetails?: string;
   articleCode?: string;
   serviceDescription?: string;
+  notes?: string;
   subtotalAmount?: number;
   vatRate?: number;
   vatAmount?: number;
@@ -34,6 +35,7 @@ type LocalInvoice = {
   clientDetails?: string;
   articleCode?: string;
   serviceDescription?: string;
+  notes?: string;
   subtotalAmount?: number;
   vatRate?: number;
   vatAmount?: number;
@@ -138,6 +140,7 @@ function buildInvoiceData(body: RegisterInvoiceBody, documentName: string, serie
     issueDate,
     articleCode: body.articleCode?.trim() || null,
     serviceDescription,
+    notes: body.notes?.trim() || null,
     subtotalAmount: decimalNumber(body.subtotalAmount),
     vatRate: decimalNumber(body.vatRate),
     vatAmount: decimalNumber(body.vatAmount),
@@ -176,6 +179,7 @@ export async function GET() {
         clientDetails: invoice.client.notes ?? "",
         articleCode: invoice.articleCode ?? "H",
         serviceDescription: invoice.serviceDescription,
+        notes: invoice.notes ?? "",
         subtotalAmount: Number(invoice.subtotalAmount),
         vatRate: Number(invoice.vatRate),
         vatAmount: Number(invoice.vatAmount),
@@ -238,6 +242,7 @@ async function createInvoice(body: Partial<RegisterInvoiceBody>, userId: string)
         clientDetails: body.clientDetails?.trim() || "",
         articleCode: body.articleCode?.trim() || "H",
         serviceDescription,
+        notes: body.notes?.trim() || "",
         subtotalAmount: decimalNumber(body.subtotalAmount),
         vatRate: decimalNumber(body.vatRate),
         vatAmount: decimalNumber(body.vatAmount),
@@ -351,6 +356,7 @@ async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
         clientDetails: body.clientDetails?.trim() || "",
         articleCode: body.articleCode?.trim() || "H",
         serviceDescription,
+        notes: body.notes?.trim() || "",
         subtotalAmount: decimalNumber(body.subtotalAmount),
         vatRate: decimalNumber(body.vatRate),
         vatAmount: decimalNumber(body.vatAmount),

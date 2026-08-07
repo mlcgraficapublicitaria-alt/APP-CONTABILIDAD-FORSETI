@@ -39,6 +39,7 @@ type IssuedInvoice = {
   clientDetails?: string;
   articleCode?: string;
   serviceDescription?: string;
+  notes?: string;
   subtotalAmount?: number;
   vatRate?: number;
   vatAmount?: number;
@@ -85,6 +86,7 @@ type InvoiceFormState = {
   clientNameFontSize: string;
   clientDetailsFontSize: string;
   billedService: string;
+  serviceNotes: string;
   baseAmount: string;
   vatRate: string;
   irpfRate: string;
@@ -109,6 +111,7 @@ const INITIAL_STATE: InvoiceFormState = {
   clientNameFontSize: "17",
   clientDetailsFontSize: "14",
   billedService: "",
+  serviceNotes: "",
   baseAmount: "",
   vatRate: "21",
   irpfRate: "15",
@@ -263,6 +266,7 @@ function invoiceToFormState(invoice: IssuedInvoice): InvoiceFormState {
     clientName: invoice.clientName,
     clientDetails: invoice.clientDetails || "",
     billedService: invoice.serviceDescription || "Servicio",
+    serviceNotes: invoice.notes || "",
     baseAmount: String(invoice.subtotalAmount ?? 0),
     vatRate: String(invoice.vatRate ?? 0),
     irpfRate: String(invoice.irpfRate ?? 0),
@@ -280,6 +284,7 @@ function buildPrintableInvoiceDocument(
   const clientNameFontSize = fontSize(form.clientNameFontSize, 11, 20, 17);
   const clientDetailsFontSize = fontSize(form.clientDetailsFontSize, 9, 18, 14);
   const billedService = multilineToHtml(form.billedService || "SERVICIO");
+  const serviceNotes = form.serviceNotes.trim() ? multilineToHtml(form.serviceNotes) : "";
   const issuerBank = escapeHtml(form.issuerBankAccount || "");
   const issuerPhone = escapeHtml(form.issuerPhone || "");
   const issuerEmail = escapeHtml(form.issuerEmail || "");
@@ -429,6 +434,12 @@ function buildPrintableInvoiceDocument(
         border-bottom: 1px solid var(--line);
       }
       .right { text-align: right; }
+      .service-note {
+        margin-top: 8px;
+        color: #666666;
+        font-size: 13px;
+        line-height: 1.35;
+      }
       .summary {
         margin-top: 200px;
       }
@@ -516,7 +527,7 @@ function buildPrintableInvoiceDocument(
           <tbody>
             <tr>
               <td>${articleCode}</td>
-              <td>${billedService}</td>
+              <td>${billedService}${serviceNotes ? `<div class="service-note">${serviceNotes}</div>` : ""}</td>
               <td class="right">${formatMoney(summary.baseAmount)}</td>
               <td class="right"></td>
               <td class="right">${formatMoney(summary.baseAmount)}</td>
@@ -725,6 +736,8 @@ export function FacturacionClient() {
   const [newServiceArticleCode, setNewServiceArticleCode] = useState("H");
   const [editingServiceId, setEditingServiceId] = useState("");
   const [serviceStatus, setServiceStatus] = useState("");
+  const [isServiceNoteOpen, setIsServiceNoteOpen] = useState(false);
+  const [serviceNoteDraft, setServiceNoteDraft] = useState("");
   const [driveFolderQuery, setDriveFolderQuery] = useState("");
   const [driveFolders, setDriveFolders] = useState<DriveFolderOption[]>([]);
   const [selectedDriveFolderId, setSelectedDriveFolderId] = useState("");
@@ -823,6 +836,7 @@ export function FacturacionClient() {
         clientDetails: form.clientDetails,
         articleCode: form.articleCode,
         serviceDescription: form.billedService,
+        notes: form.serviceNotes,
         subtotalAmount: summary.baseAmount,
         vatRate: summary.vatRate,
         vatAmount: summary.vatAmount,
@@ -865,6 +879,8 @@ export function FacturacionClient() {
     setSelectedClientId("");
     setGenerated(true);
     setIsPreviewOpen(false);
+    setServiceNoteDraft(nextForm.serviceNotes);
+    setIsServiceNoteOpen(Boolean(nextForm.serviceNotes));
     setDriveStatus(`Editando factura ${nextForm.invoiceSeries}/${nextForm.invoiceNumber}.`);
   }
 
@@ -872,6 +888,8 @@ export function FacturacionClient() {
     const series = form.invoiceSeries || INITIAL_STATE.invoiceSeries;
     setEditingInvoiceId("");
     setGenerated(false);
+    setServiceNoteDraft("");
+    setIsServiceNoteOpen(false);
     setForm((current) => ({
       ...INITIAL_STATE,
       invoiceSeries: current.invoiceSeries || INITIAL_STATE.invoiceSeries,
@@ -1421,7 +1439,10 @@ export function FacturacionClient() {
                 <tbody>
                   <tr className="text-[16px] text-slate-800">
                     <td className="pt-5">{form.articleCode || "H"}</td>
-                    <td className="pt-5 whitespace-pre-line">{form.billedService || "SERVICIO"}</td>
+                    <td className="pt-5 whitespace-pre-line">
+                      {form.billedService || "SERVICIO"}
+                      {form.serviceNotes.trim() ? <span className="mt-2 block text-[13px] leading-5 text-slate-500">{form.serviceNotes}</span> : null}
+                    </td>
                     <td className="pt-5 text-right">{formatMoney(summary.baseAmount)}</td>
                     <td className="pt-5 text-right"></td>
                     <td className="pt-5 text-right">{formatMoney(summary.baseAmount)}</td>
@@ -1753,6 +1774,55 @@ export function FacturacionClient() {
                 placeholder="Selecciona uno o varios servicios, o escribe una descripción libre"
               />
             </FormField>
+            <div className="mt-3">
+              {!isServiceNoteOpen ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setServiceNoteDraft(form.serviceNotes);
+                    setIsServiceNoteOpen(true);
+                  }}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#87ba2f]/50 bg-[#87ba2f]/10 px-4 py-2 text-sm font-semibold text-[#d7f0a7] transition hover:bg-[#87ba2f]/20"
+                >
+                  <span aria-hidden="true" className="text-lg leading-none">+</span>
+                  Añadir anotación
+                </button>
+              ) : (
+                <div className="rounded-2xl border border-[#87ba2f]/35 bg-slate-950/45 p-4">
+                  <label htmlFor={`${baseId}-service-note`} className="text-xs font-semibold uppercase tracking-[0.14em] text-[#b3d87d]">
+                    Anotación puntual para esta factura
+                  </label>
+                  <textarea
+                    id={`${baseId}-service-note`}
+                    className={`${fieldClassName} mt-2 min-h-24 resize-y`}
+                    value={serviceNoteDraft}
+                    onChange={(event) => setServiceNoteDraft(event.target.value)}
+                    placeholder="Escribe aquí los detalles específicos de este servicio en esta factura"
+                  />
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" onClick={() => { updateField("serviceNotes", serviceNoteDraft.trim()); setIsServiceNoteOpen(false); }} className="min-h-10 rounded-xl bg-[#87ba2f] px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44]">
+                      Añadir
+                    </button>
+                    <button type="button" onClick={() => { setServiceNoteDraft(form.serviceNotes); setIsServiceNoteOpen(false); }} className="min-h-10 rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/5">
+                      Cancelar
+                    </button>
+                    {form.serviceNotes ? (
+                      <button type="button" onClick={() => { updateField("serviceNotes", ""); setServiceNoteDraft(""); setIsServiceNoteOpen(false); }} className="min-h-10 rounded-xl px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/10">
+                        Eliminar anotación
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              )}
+              {form.serviceNotes && !isServiceNoteOpen ? (
+                <div className="mt-3 flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                  <p className="whitespace-pre-line text-sm leading-5 text-slate-300">{form.serviceNotes}</p>
+                  <button type="button" onClick={() => { setServiceNoteDraft(form.serviceNotes); setIsServiceNoteOpen(true); }} className="shrink-0 text-xs font-semibold text-[#d7f0a7] underline underline-offset-4">
+                    Editar
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-12">
@@ -1950,6 +2020,7 @@ export function FacturacionClient() {
                 <p className="rounded-lg bg-white/10 px-2 py-1 text-xs font-semibold text-[#d7f0a7]">Artículo {hoveredInvoice.articleCode || "H"}</p>
               </div>
               <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-200">{hoveredInvoice.serviceDescription || "Sin descripción"}</p>
+              {hoveredInvoice.notes ? <p className="mt-3 whitespace-pre-line rounded-xl bg-black/20 p-3 text-sm leading-6 text-slate-300">{hoveredInvoice.notes}</p> : null}
             </div>
 
             <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
