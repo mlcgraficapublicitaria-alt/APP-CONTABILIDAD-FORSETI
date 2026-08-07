@@ -471,6 +471,10 @@ function buildPrintableInvoiceDocument(
         padding-top: 10px;
         border-top: 0;
       }
+      .sheet.has-note .items { margin-top: 42px; }
+      .sheet.has-note .summary { margin-top: 92px; }
+      .sheet.has-note .bank { margin-top: 38px; }
+      .sheet.has-note .footer { margin-top: 34px; }
       .summary {
         margin-top: 200px;
       }
@@ -515,7 +519,7 @@ function buildPrintableInvoiceDocument(
     </style>
   </head>
   <body>
-    <main class="sheet">
+    <main class="sheet${serviceNotes ? " has-note" : ""}">
       <section class="header">
         <div class="brand">
           <div class="brand-mark"></div>
@@ -601,6 +605,15 @@ function buildPrintableInvoiceDocument(
         <div class="mark">MLC<span>DESIGN</span></div>
       </footer>
     </main>
+    <script>
+      window.addEventListener("load", () => {
+        const sheet = document.querySelector(".sheet");
+        if (!sheet) return;
+        const a4HeightPx = 1122;
+        const scale = Math.min(1, a4HeightPx / sheet.scrollHeight);
+        if (scale < 1) sheet.style.zoom = String(scale);
+      });
+    </script>
   </body>
 </html>`;
 }
@@ -665,6 +678,12 @@ function openPrintablePreview(element: HTMLElement | null, title: string) {
     <script>
       window.addEventListener("load", () => {
         setTimeout(() => {
+          const root = document.querySelector(".forseti-print-root");
+          if (root) {
+            const a4HeightPx = 1122;
+            const scale = Math.min(0.98, a4HeightPx / root.scrollHeight);
+            root.style.zoom = String(scale);
+          }
           window.focus();
           window.print();
         }, 250);
@@ -1426,6 +1445,7 @@ export function FacturacionClient() {
     const invoiceCode = buildInvoiceCode(form);
     const localIssuerCircleLines = buildIssuerCircleLines(form);
     const localClientCircleLines = buildClientCircleLines(form);
+    const hasServiceNotes = richTextHasContent(form.serviceNotes);
 
     return (
     <article className={`overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.12)] ${className}`}> 
@@ -1447,7 +1467,7 @@ export function FacturacionClient() {
 
             <div className="mt-5 h-[2px] bg-[linear-gradient(90deg,#1f1f1f_0_38%,#78c8ee_38%_100%)]" />
 
-            <div className="mt-10 flex items-start justify-between gap-6">
+            <div className={`${hasServiceNotes ? "mt-7" : "mt-10"} flex items-start justify-between gap-6`}>
               <div className="flex h-[210px] w-[210px] items-center justify-center rounded-full bg-sky-300 px-6 text-center text-white">
                 <div className="space-y-0.5 text-[14px] leading-[1.12]">
                   <p className="text-[17px] font-bold">{form.issuerName || "EMISOR"}</p>
@@ -1464,7 +1484,7 @@ export function FacturacionClient() {
               </div>
             </div>
 
-            <div className="mt-20">
+            <div className={hasServiceNotes ? "mt-12" : "mt-20"}>
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-slate-300 text-[16px] font-normal text-slate-800">
@@ -1485,7 +1505,7 @@ export function FacturacionClient() {
                     <td className="pt-5 text-right"></td>
                     <td className="pt-5 text-right">{formatMoney(summary.baseAmount)}</td>
                   </tr>
-                  {richTextHasContent(form.serviceNotes) ? (
+                  {hasServiceNotes ? (
                     <tr>
                       <td />
                       <td colSpan={4} className="pt-3 text-[13px] leading-5 text-slate-500" dangerouslySetInnerHTML={{ __html: safeRichNoteHtml(form.serviceNotes) }} />
@@ -1495,7 +1515,7 @@ export function FacturacionClient() {
               </table>
             </div>
 
-            <div className="mt-44">
+            <div className={hasServiceNotes ? "mt-20" : "mt-44"}>
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-slate-300 text-[16px] font-normal text-slate-800">
@@ -1528,10 +1548,10 @@ export function FacturacionClient() {
               </table>
             </div>
 
-            <div className="mt-14 text-[16px] text-slate-800">{form.issuerBankAccount || "Cuenta bancaria pendiente"}</div>
+            <div className={`${hasServiceNotes ? "mt-9" : "mt-14"} text-[16px] text-slate-800`}>{form.issuerBankAccount || "Cuenta bancaria pendiente"}</div>
           </div>
 
-          <div className="mt-14 flex items-end justify-between bg-[#1f1f1f] px-8 py-8 text-white">
+          <div className={`${hasServiceNotes ? "mt-9" : "mt-14"} flex items-end justify-between bg-[#1f1f1f] px-8 py-8 text-white`}>
             <div>
               <p className="text-[34px] font-bold leading-none">{form.issuerPhone || "Telefono"}</p>
               <p className="mt-3 text-[16px] leading-[1.35]">{form.issuerEmail || "email@dominio.com"}</p>
