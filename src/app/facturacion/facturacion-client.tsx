@@ -226,7 +226,8 @@ function safeRichNoteHtml(value: string) {
       if (name === "br" && !closing) return "<br />";
       if ((name === "div" || name === "p") && closing) return `</${name}>`;
       if (name === "div" || name === "p") {
-        return /text-align\s*:\s*justify/i.test(part) ? `<${name} style="text-align: justify">` : `<${name}>`;
+        const alignment = part.match(/text-align\s*:\s*(left|right|center|justify)/i)?.[1]?.toLowerCase();
+        return alignment ? `<${name} style="text-align: ${alignment}">` : `<${name}>`;
       }
       return "";
     })
@@ -562,7 +563,7 @@ function buildPrintableInvoiceDocument(
               <td class="right"></td>
               <td class="right">${formatMoney(summary.baseAmount)}</td>
             </tr>
-            ${serviceNotes ? `<tr class="service-note"><td colspan="5">${serviceNotes}</td></tr>` : ""}
+            ${serviceNotes ? `<tr class="service-note"><td></td><td colspan="4">${serviceNotes}</td></tr>` : ""}
           </tbody>
         </table>
       </section>
@@ -1231,7 +1232,7 @@ export function FacturacionClient() {
     });
   }
 
-  function applyServiceNoteFormat(command: "bold" | "underline" | "justifyFull") {
+  function applyServiceNoteFormat(command: "bold" | "underline" | "justifyLeft" | "justifyFull") {
     serviceNoteEditorRef.current?.focus();
     document.execCommand(command, false);
     setServiceNoteDraft(serviceNoteEditorRef.current?.innerHTML || "");
@@ -1486,7 +1487,8 @@ export function FacturacionClient() {
                   </tr>
                   {richTextHasContent(form.serviceNotes) ? (
                     <tr>
-                      <td colSpan={5} className="pt-3 text-[13px] leading-5 text-slate-500" dangerouslySetInnerHTML={{ __html: safeRichNoteHtml(form.serviceNotes) }} />
+                      <td />
+                      <td colSpan={4} className="pt-3 text-[13px] leading-5 text-slate-500" dangerouslySetInnerHTML={{ __html: safeRichNoteHtml(form.serviceNotes) }} />
                     </tr>
                   ) : null}
                 </tbody>
@@ -1840,6 +1842,9 @@ export function FacturacionClient() {
                     </button>
                     <button type="button" onClick={() => applyServiceNoteFormat("underline")} className="min-h-9 min-w-9 rounded-lg px-3 text-sm font-semibold text-white underline hover:bg-white/10" title="Subrayado" aria-label="Subrayado">
                       S
+                    </button>
+                    <button type="button" onClick={() => applyServiceNoteFormat("justifyLeft")} className="min-h-9 rounded-lg px-3 text-xs font-semibold text-white hover:bg-white/10" title="Alinear a la izquierda" aria-label="Alinear a la izquierda">
+                      Izquierda
                     </button>
                     <button type="button" onClick={() => applyServiceNoteFormat("justifyFull")} className="min-h-9 rounded-lg px-3 text-xs font-semibold text-white hover:bg-white/10" title="Justificar texto" aria-label="Justificar texto">
                       Justificar
