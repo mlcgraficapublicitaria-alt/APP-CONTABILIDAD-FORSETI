@@ -64,6 +64,23 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Error desconocido.";
 }
 
+function invoiceBankAccountFromMetadata(value?: string | null) {
+  if (!value?.trim().startsWith("{")) return "";
+  try {
+    const metadata = JSON.parse(value) as { issuerBankAccount?: unknown };
+    return typeof metadata.issuerBankAccount === "string" ? metadata.issuerBankAccount : "";
+  } catch {
+    return "";
+  }
+}
+
+function buildInvoiceMetadata(body: RegisterInvoiceBody) {
+  return JSON.stringify({
+    issuerBankAccount: body.issuerBankAccount?.trim() || "",
+    renderedHtml: body.renderedHtml?.trim() || "",
+  });
+}
+
 async function readLocalInvoices() {
   try {
     const content = await readFile(localInvoicesPath, "utf8");
@@ -142,7 +159,6 @@ function buildInvoiceData(body: RegisterInvoiceBody, documentName: string, serie
     issueDate,
     articleCode: body.articleCode?.trim() || null,
     serviceDescription,
-    issuerBankAccount: body.issuerBankAccount?.trim() || null,
     notes: body.notes?.trim() || null,
     subtotalAmount: decimalNumber(body.subtotalAmount),
     vatRate: decimalNumber(body.vatRate),
@@ -150,7 +166,7 @@ function buildInvoiceData(body: RegisterInvoiceBody, documentName: string, serie
     irpfRate: decimalNumber(body.irpfRate),
     irpfAmount: decimalNumber(body.irpfAmount),
     totalAmount: decimalNumber(body.totalAmount),
-    renderedHtml: body.renderedHtml?.trim() || null,
+    renderedHtml: buildInvoiceMetadata(body),
   };
 }
 
@@ -204,7 +220,7 @@ export async function GET() {
           city: invoice.issuerProfile.city ?? "",
           email: invoice.issuerProfile.email ?? "",
           phone: invoice.issuerProfile.phone ?? "",
-          bankAccount: invoice.issuerBankAccount ?? invoice.issuerProfile.bankAccount ?? "",
+          bankAccount: invoiceBankAccountFromMetadata(invoice.renderedHtml) || invoice.issuerProfile.bankAccount || "",
         },
       })),
     });
