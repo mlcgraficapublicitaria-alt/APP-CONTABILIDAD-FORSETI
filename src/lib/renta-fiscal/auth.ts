@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { hasValidSession } from "@/lib/auth";
 import { prisma } from "./prisma";
-import { hashPassword, signToken, verifyPassword, verifyToken } from "./security";
+import { signToken, verifyPassword, verifyToken } from "./security";
 
 export const ACCESS_COOKIE = "forseti_rf_access";
 export const REFRESH_COOKIE = "forseti_rf_refresh";
@@ -51,17 +51,20 @@ export async function getCurrentUser() {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(ACCESS_COOKIE)?.value;
   const payload = accessToken ? verifyToken(accessToken) : null;
-  if (!payload?.sub) {
-    if (await hasValidSession()) return getFallbackForsetiSessionUser();
-    return null;
-  }
+  if (!payload?.sub) return getMainForsetiSessionUser();
 
   try {
     const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-    return user ? toPublicUser(user) : null;
+    if (user) return toPublicUser(user);
   } catch {
-    return null;
+    // Una cookie secundaria no debe invalidar la sesión principal de FORSETI.
   }
+
+  return getMainForsetiSessionUser();
+}
+
+async function getMainForsetiSessionUser() {
+  return (await hasValidSession()) ? getFallbackForsetiSessionUser() : null;
 }
 
 export async function refreshCurrentUser() {
@@ -81,25 +84,6 @@ function toPublicUser(user: { id: string; email: string; name: string; role: str
     name: user.name,
     role: user.role,
   };
-}
-
-async function getForsetiSessionUser() {
-  const email = process.env.FORSETI_RENTA_SESSION_USER_EMAIL ?? "forseti-session@forseti.local";
-  const user = await prisma.user.upsert({
-    where: { email },
-    update: {},
-    create: {
-      email,
-      name: "Sesion principal FORSETI",
-      role: "ADMIN",
-      passwordHash: hashPassword(cryptoSafeFallbackPassword()),
-    },
-  });
-  return toPublicUser(user);
-}
-
-function cryptoSafeFallbackPassword() {
-  return `${Date.now()}-${Math.random()}-${process.pid}`;
 }
 
 function getFallbackForsetiSessionUser() {
