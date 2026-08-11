@@ -66,7 +66,22 @@ async function recoverBankAccountsFromInvoices(): Promise<BankAccount[]> {
   });
 }
 
+async function ensureDatabaseBankAccountsTable() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS \`InvoiceBankAccount\` (
+      \`id\` VARCHAR(191) NOT NULL,
+      \`value\` VARCHAR(191) NOT NULL,
+      \`createdAt\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+      \`updatedAt\` DATETIME(3) NOT NULL,
+      UNIQUE INDEX \`InvoiceBankAccount_value_key\` (\`value\`),
+      PRIMARY KEY (\`id\`)
+    ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+  `);
+}
+
 async function readDatabaseBankAccounts(): Promise<BankAccount[]> {
+  await ensureDatabaseBankAccountsTable();
+
   const recovered = mergeBankAccounts(
     [{ id: "default", value: defaultBankAccount }],
     await recoverBankAccountsFromInvoices(),
@@ -124,6 +139,7 @@ export async function POST(request: Request) {
 
   try {
     if (hasMysqlDatabaseUrl()) {
+      await ensureDatabaseBankAccountsTable();
       const existing = await prisma.invoiceBankAccount.findFirst({
         where: { value: { equals: value } },
         select: { id: true, value: true },
