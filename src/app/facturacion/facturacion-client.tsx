@@ -1499,10 +1499,9 @@ export function FacturacionClient() {
               </div>
               <div className="pt-2 text-right">
                 <p className="text-[18px] font-medium text-sky-400">FECHA: {formatDate(form.invoiceDate) || "Sin fecha"}</p>
-                <div className="mt-6 text-right font-light tracking-[0.02em] text-slate-200">
-                  <p className="text-[28px] leading-tight">FACTURA Nº</p>
-                  <p className="mt-1 text-[26px] leading-tight">{invoiceCode}</p>
-                </div>
+                <p className="mt-6 whitespace-nowrap text-right text-[28px] font-light leading-tight tracking-[0.02em] text-slate-400">
+                  FACTURA Nº {invoiceCode}
+                </p>
               </div>
             </div>
 
