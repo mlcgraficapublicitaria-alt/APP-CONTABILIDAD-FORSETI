@@ -7,9 +7,9 @@
   },
   "scripts": {
     "dev": "next dev --webpack",
-    "prebuild": "prisma generate && prisma migrate deploy",
+    "prebuild": "prisma generate",
     "build": "next build",
-    "start": "prisma migrate deploy && node server.js",
+    "start": "node server.js",
     "lint": "eslint",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
