@@ -1,7 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { hasMysqlDatabaseUrl } from "@/lib/database-url";
 import { badRequest, ok, readJson, requireUser } from "@/lib/renta-fiscal/api";
+import { prisma } from "@/lib/renta-fiscal/prisma";
 
 type BankAccount = {
   id: string;
@@ -14,6 +16,55 @@ type SaveBankAccountBody = {
 
 const defaultBankAccount = "GLOBAL CAJA: ES15 3190 0091 1504 0253 9910";
 const localBankAccountsPath = path.join(process.cwd(), ".forseti", "invoice-bank-accounts.json");
+const localInvoicesPath = path.join(process.cwd(), ".forseti", "invoices.json");
+
+function bankAccountFromInvoiceMetadata(value?: string | null) {
+  if (!value?.trim().startsWith("{")) return "";
+  try {
+    const metadata = JSON.parse(value) as { issuerBankAccount?: unknown };
+    return typeof metadata.issuerBankAccount === "string" ? metadata.issuerBankAccount.trim() : "";
+  } catch {
+    return "";
+  }
+}
+
+function mergeBankAccounts(...groups: BankAccount[][]) {
+  const accounts = new Map<string, BankAccount>();
+  for (const account of groups.flat()) {
+    const value = account.value.trim();
+    const key = value.toLocaleLowerCase("es");
+    if (key && !accounts.has(key)) accounts.set(key, { ...account, value });
+  }
+  return [...accounts.values()];
+}
+
+async function recoverBankAccountsFromInvoices(): Promise<BankAccount[]> {
+  if (!hasMysqlDatabaseUrl()) {
+    try {
+      const content = await readFile(localInvoicesPath, "utf8");
+      const invoices = JSON.parse(content) as Array<{ id?: string; issuerBankAccount?: string }>;
+      if (!Array.isArray(invoices)) return [];
+      return invoices
+        .filter((invoice) => invoice.issuerBankAccount?.trim())
+        .map((invoice, index) => ({
+          id: `recovered-${invoice.id || index}`,
+          value: invoice.issuerBankAccount!.trim(),
+        }));
+    } catch {
+      return [];
+    }
+  }
+
+  const invoices = await prisma.invoice.findMany({
+    select: { id: true, renderedHtml: true, issuerProfile: { select: { bankAccount: true } } },
+    orderBy: { issueDate: "desc" },
+  });
+
+  return invoices.flatMap((invoice) => {
+    const value = bankAccountFromInvoiceMetadata(invoice.renderedHtml) || invoice.issuerProfile.bankAccount?.trim() || "";
+    return value ? [{ id: `recovered-${invoice.id}`, value }] : [];
+  });
+}
 
 async function readBankAccounts(): Promise<BankAccount[]> {
   try {
@@ -36,7 +87,12 @@ export async function GET() {
   const auth = await requireUser();
   if (!auth.user) return auth.response;
 
-  return ok({ accounts: await readBankAccounts() });
+  try {
+    const accounts = mergeBankAccounts(await readBankAccounts(), await recoverBankAccountsFromInvoices());
+    return ok({ accounts });
+  } catch (error) {
+    return badRequest(error instanceof Error ? `No se pudieron recuperar las cuentas: ${error.message}` : "No se pudieron recuperar las cuentas.");
+  }
 }
 
 export async function POST(request: Request) {
