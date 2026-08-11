@@ -86,18 +86,18 @@ model TaxCase {
 }
 
 model TaxProfile {
-  id                 String         @id @default(cuid())
-  taxCaseId          String         @unique
-  residencyStatus    String         @default("pending")
-  employmentIncome   Boolean        @default(false)
-  rentalIncome       Boolean        @default(false)
-  investmentIncome   Boolean        @default(false)
-  selfEmployment     Boolean        @default(false)
-  notes              String?
-  confidence         DataConfidence @default(PENDING)
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  taxCase            TaxCase        @relation(fields: [taxCaseId], references: [id], onDelete: Cascade)
+  id               String         @id @default(cuid())
+  taxCaseId        String         @unique
+  residencyStatus  String         @default("pending")
+  employmentIncome Boolean        @default(false)
+  rentalIncome     Boolean        @default(false)
+  investmentIncome Boolean        @default(false)
+  selfEmployment   Boolean        @default(false)
+  notes            String?
+  confidence       DataConfidence @default(PENDING)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  taxCase          TaxCase        @relation(fields: [taxCaseId], references: [id], onDelete: Cascade)
 }
 
 model DocumentRequirement {
@@ -112,34 +112,34 @@ model DocumentRequirement {
 }
 
 model Document {
-  id            String              @id @default(cuid())
+  id            String               @id @default(cuid())
   taxCaseId     String
   requirementId String?
   fileName      String
   mimeType      String
   sizeBytes     Int
   storageKey    String
-  status        DocumentStatus      @default(RECEIVED)
+  status        DocumentStatus       @default(RECEIVED)
   notes         String?
   uploadedById  String
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  taxCase       TaxCase             @relation(fields: [taxCaseId], references: [id], onDelete: Cascade)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  taxCase       TaxCase              @relation(fields: [taxCaseId], references: [id], onDelete: Cascade)
   requirement   DocumentRequirement? @relation(fields: [requirementId], references: [id])
-  uploadedBy    User                @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  uploadedBy    User                 @relation("DocumentUploader", fields: [uploadedById], references: [id])
 }
 
 model DataPoint {
-  id          String         @id @default(cuid())
-  taxCaseId   String
-  key         String
-  label       String
-  value       String?
-  source      String?
-  confidence  DataConfidence @default(PENDING)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  taxCase     TaxCase        @relation(fields: [taxCaseId], references: [id], onDelete: Cascade)
+  id         String         @id @default(cuid())
+  taxCaseId  String
+  key        String
+  label      String
+  value      String?
+  source     String?
+  confidence DataConfidence @default(PENDING)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  taxCase    TaxCase        @relation(fields: [taxCaseId], references: [id], onDelete: Cascade)
 
   @@unique([taxCaseId, key])
 }
@@ -171,110 +171,117 @@ model CaseSummary {
 }
 
 model AuditEvent {
-  id         String   @id @default(cuid())
-  taxCaseId  String?
-  userId     String?
-  action     String
-  entity     String
-  entityId   String?
-  metadata   String?
-  ipAddress  String?
-  createdAt  DateTime @default(now())
-  taxCase    TaxCase? @relation(fields: [taxCaseId], references: [id], onDelete: Cascade)
-  user       User?    @relation(fields: [userId], references: [id])
+  id        String   @id @default(cuid())
+  taxCaseId String?
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  taxCase   TaxCase? @relation(fields: [taxCaseId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
 }
 
 model InvoiceIssuerProfile {
-  id             String    @id @default(cuid())
-  code           String    @unique
-  legalName      String
-  taxId          String?
-  addressLine1   String?
-  addressLine2   String?
-  postalCode     String?
-  city           String?
-  province       String?
-  country        String?
-  email          String?
-  phone          String?
-  website        String?
-  bankAccount    String?
-  invoicePrefix  String?
-  isDefault      Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  invoices       Invoice[]
+  id            String    @id @default(cuid())
+  code          String    @unique
+  legalName     String
+  taxId         String?
+  addressLine1  String?
+  addressLine2  String?
+  postalCode    String?
+  city          String?
+  province      String?
+  country       String?
+  email         String?
+  phone         String?
+  website       String?
+  bankAccount   String?
+  invoicePrefix String?
+  isDefault     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  invoices      Invoice[]
 }
 
 model InvoiceClient {
-  id             String    @id @default(cuid())
-  code           String?   @unique
-  legalName      String
-  taxId          String?
-  addressLine1   String?
-  addressLine2   String?
-  postalCode     String?
-  city           String?
-  province       String?
-  country        String?
-  email          String?
-  phone          String?
-  notes          String?
-  nameFontSize   Int       @default(17)
-  detailsFontSize Int      @default(14)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  invoices       Invoice[]
+  id              String    @id @default(cuid())
+  code            String?   @unique
+  legalName       String
+  taxId           String?
+  addressLine1    String?
+  addressLine2    String?
+  postalCode      String?
+  city            String?
+  province        String?
+  country         String?
+  email           String?
+  phone           String?
+  notes           String?
+  nameFontSize    Int       @default(17)
+  detailsFontSize Int       @default(14)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  invoices        Invoice[]
 }
 
 model InvoiceTemplate {
-  id             String    @id @default(cuid())
-  code           String    @unique
-  name           String
-  description    String?
-  layoutKey      String
-  isDefault      Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  invoices       Invoice[]
+  id          String    @id @default(cuid())
+  code        String    @unique
+  name        String
+  description String?
+  layoutKey   String
+  isDefault   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  invoices    Invoice[]
 }
 
 model InvoiceService {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  articleCode String   @default("H")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model InvoiceBankAccount {
   id        String   @id @default(cuid())
-  name      String   @unique
-  articleCode String @default("H")
+  value     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Invoice {
-  id                  String              @id @default(cuid())
-  issuerProfileId     String
-  clientId            String
-  templateId          String?
-  createdById         String?
-  status              InvoiceStatus       @default(DRAFT)
-  documentName        String
-  series              String?
-  number              Int
-  issueDate           DateTime
-  articleCode         String?
-  serviceDescription  String
-  subtotalAmount      Decimal             @db.Decimal(10, 2)
-  vatRate             Decimal             @db.Decimal(5, 2)
-  vatAmount           Decimal             @db.Decimal(10, 2)
-  irpfRate            Decimal             @db.Decimal(5, 2)
-  irpfAmount          Decimal             @db.Decimal(10, 2)
-  totalAmount         Decimal             @db.Decimal(10, 2)
-  notes               String?             @db.Text
-  renderedHtml        String?             @db.LongText
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  issuerProfile       InvoiceIssuerProfile @relation(fields: [issuerProfileId], references: [id], onDelete: Restrict)
-  client              InvoiceClient       @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  template            InvoiceTemplate?    @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  createdBy           User?               @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  lines               InvoiceLine[]
+  id                 String               @id @default(cuid())
+  issuerProfileId    String
+  clientId           String
+  templateId         String?
+  createdById        String?
+  status             InvoiceStatus        @default(DRAFT)
+  documentName       String
+  series             String?
+  number             Int
+  issueDate          DateTime
+  articleCode        String?
+  serviceDescription String
+  subtotalAmount     Decimal              @db.Decimal(10, 2)
+  vatRate            Decimal              @db.Decimal(5, 2)
+  vatAmount          Decimal              @db.Decimal(10, 2)
+  irpfRate           Decimal              @db.Decimal(5, 2)
+  irpfAmount         Decimal              @db.Decimal(10, 2)
+  totalAmount        Decimal              @db.Decimal(10, 2)
+  notes              String?              @db.Text
+  renderedHtml       String?              @db.LongText
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  issuerProfile      InvoiceIssuerProfile @relation(fields: [issuerProfileId], references: [id], onDelete: Restrict)
+  client             InvoiceClient        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  template           InvoiceTemplate?     @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdBy          User?                @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  lines              InvoiceLine[]
 
   @@unique([series, number])
   @@index([clientId, issueDate])
@@ -282,18 +289,18 @@ model Invoice {
 }
 
 model InvoiceLine {
-  id               String   @id @default(cuid())
-  invoiceId        String
-  sortOrder        Int      @default(0)
-  articleCode      String?
-  description      String   @db.Text
-  quantity         Decimal  @default(1) @db.Decimal(10, 2)
-  unitPrice        Decimal  @db.Decimal(10, 2)
-  discountAmount   Decimal  @default(0) @db.Decimal(10, 2)
-  lineTotalAmount  Decimal  @db.Decimal(10, 2)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  invoice          Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  invoiceId       String
+  sortOrder       Int      @default(0)
+  articleCode     String?
+  description     String   @db.Text
+  quantity        Decimal  @default(1) @db.Decimal(10, 2)
+  unitPrice       Decimal  @db.Decimal(10, 2)
+  discountAmount  Decimal  @default(0) @db.Decimal(10, 2)
+  lineTotalAmount Decimal  @db.Decimal(10, 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId, sortOrder])
 }

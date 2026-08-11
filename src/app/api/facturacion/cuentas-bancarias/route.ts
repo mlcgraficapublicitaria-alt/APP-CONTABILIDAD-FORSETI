@@ -66,6 +66,23 @@ async function recoverBankAccountsFromInvoices(): Promise<BankAccount[]> {
   });
 }
 
+async function readDatabaseBankAccounts(): Promise<BankAccount[]> {
+  const recovered = mergeBankAccounts(
+    [{ id: "default", value: defaultBankAccount }],
+    await recoverBankAccountsFromInvoices(),
+  );
+
+  await prisma.invoiceBankAccount.createMany({
+    data: recovered.map((account) => ({ value: account.value })),
+    skipDuplicates: true,
+  });
+
+  return prisma.invoiceBankAccount.findMany({
+    select: { id: true, value: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
 async function readBankAccounts(): Promise<BankAccount[]> {
   try {
     const content = await readFile(localBankAccountsPath, "utf8");
@@ -88,6 +105,8 @@ export async function GET() {
   if (!auth.user) return auth.response;
 
   try {
+    if (hasMysqlDatabaseUrl()) return ok({ accounts: await readDatabaseBankAccounts() });
+
     const accounts = mergeBankAccounts(await readBankAccounts(), await recoverBankAccountsFromInvoices());
     return ok({ accounts });
   } catch (error) {
@@ -104,6 +123,20 @@ export async function POST(request: Request) {
   if (!value) return badRequest("Escribe la cuenta bancaria que quieres guardar.");
 
   try {
+    if (hasMysqlDatabaseUrl()) {
+      const existing = await prisma.invoiceBankAccount.findFirst({
+        where: { value: { equals: value } },
+        select: { id: true, value: true },
+      });
+      if (existing) return ok({ account: existing });
+
+      const account = await prisma.invoiceBankAccount.create({
+        data: { value },
+        select: { id: true, value: true },
+      });
+      return ok({ account }, { status: 201 });
+    }
+
     const accounts = await readBankAccounts();
     const existing = accounts.find((account) => account.value.toLocaleLowerCase("es") === value.toLocaleLowerCase("es"));
     if (existing) return ok({ account: existing });

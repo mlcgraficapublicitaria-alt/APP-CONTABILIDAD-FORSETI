@@ -117,17 +117,6 @@ const INITIAL_STATE: InvoiceFormState = {
   irpfRate: "15",
 };
 
-const BANK_ACCOUNTS_STORAGE_KEY = "forseti.invoice-bank-accounts";
-
-function readBrowserBankAccounts(): SavedBankAccount[] {
-  try {
-    const accounts = JSON.parse(window.localStorage.getItem(BANK_ACCOUNTS_STORAGE_KEY) || "[]") as SavedBankAccount[];
-    return Array.isArray(accounts) ? accounts.filter((account) => account?.id && account?.value) : [];
-  } catch {
-    return [];
-  }
-}
-
 function mergeBankAccounts(...groups: SavedBankAccount[][]) {
   const accounts = new Map<string, SavedBankAccount>();
   for (const account of groups.flat()) {
@@ -135,10 +124,6 @@ function mergeBankAccounts(...groups: SavedBankAccount[][]) {
     if (key && !accounts.has(key)) accounts.set(key, account);
   }
   return [...accounts.values()];
-}
-
-function writeBrowserBankAccounts(accounts: SavedBankAccount[]) {
-  window.localStorage.setItem(BANK_ACCOUNTS_STORAGE_KEY, JSON.stringify(accounts));
 }
 
 function parseDecimal(value: string) {
@@ -1027,18 +1012,15 @@ export function FacturacionClient() {
         if (!response.ok) throw new Error(data.error || "No se pudieron cargar las cuentas bancarias.");
         if (cancelled) return;
 
-        const accounts = mergeBankAccounts(data.accounts ?? [], readBrowserBankAccounts());
-        writeBrowserBankAccounts(accounts);
+        const accounts = mergeBankAccounts(data.accounts ?? []);
         setSavedBankAccounts(accounts);
         const selected = accounts.find((account) => account.value === INITIAL_STATE.issuerBankAccount);
         setSelectedBankAccountId(selected?.id ?? "");
       } catch (error) {
         if (!cancelled) {
-          const accounts = readBrowserBankAccounts();
-          setSavedBankAccounts(accounts);
-          const selected = accounts.find((account) => account.value === INITIAL_STATE.issuerBankAccount);
-          setSelectedBankAccountId(selected?.id ?? "");
-          setBankAccountStatus(accounts.length ? "Cuentas cargadas desde este navegador." : error instanceof Error ? error.message : "No se pudieron cargar las cuentas bancarias.");
+          setSavedBankAccounts([]);
+          setSelectedBankAccountId("");
+          setBankAccountStatus(error instanceof Error ? error.message : "No se pudieron cargar las cuentas bancarias.");
         }
       }
     }
@@ -1242,10 +1224,6 @@ export function FacturacionClient() {
     }
 
     setBankAccountStatus("Guardando cuenta...");
-    const browserAccount: SavedBankAccount = {
-      id: globalThis.crypto?.randomUUID?.() ?? `bank-${Date.now()}`,
-      value,
-    };
 
     try {
       const response = await fetch("/api/facturacion/cuentas-bancarias", {
@@ -1255,25 +1233,16 @@ export function FacturacionClient() {
       });
       const data = (await response.json().catch(() => ({}))) as { account?: SavedBankAccount; error?: string };
       if (!response.ok || !data.account) {
-        const accounts = mergeBankAccounts(savedBankAccounts, [browserAccount]);
-        writeBrowserBankAccounts(accounts);
-        setSavedBankAccounts(accounts);
-        setSelectedBankAccountId(accounts.find((account) => account.value.toLocaleLowerCase("es") === value.toLocaleLowerCase("es"))?.id ?? browserAccount.id);
-        setBankAccountStatus("Cuenta bancaria guardada en este navegador.");
+        setBankAccountStatus(data.error || "No se pudo guardar la cuenta bancaria en la base de datos.");
         return;
       }
 
       const accounts = mergeBankAccounts(savedBankAccounts, [data.account]);
-      writeBrowserBankAccounts(accounts);
       setSavedBankAccounts(accounts);
       setSelectedBankAccountId(accounts.find((account) => account.value.toLocaleLowerCase("es") === value.toLocaleLowerCase("es"))?.id ?? data.account.id);
       setBankAccountStatus("Cuenta bancaria guardada.");
     } catch (error) {
-      const accounts = mergeBankAccounts(savedBankAccounts, [browserAccount]);
-      writeBrowserBankAccounts(accounts);
-      setSavedBankAccounts(accounts);
-      setSelectedBankAccountId(accounts.find((account) => account.value.toLocaleLowerCase("es") === value.toLocaleLowerCase("es"))?.id ?? browserAccount.id);
-      setBankAccountStatus(error instanceof Error ? "Cuenta guardada en este navegador; el servidor no permite persistirla." : "Cuenta bancaria guardada en este navegador.");
+      setBankAccountStatus(error instanceof Error ? error.message : "No se pudo guardar la cuenta bancaria en la base de datos.");
     }
   }
 

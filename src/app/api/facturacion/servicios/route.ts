@@ -29,6 +29,14 @@ function withDefaultServices(services: SavedService[]) {
   return [...defaultServices.filter((service) => !names.has(normalizeName(service.name))), ...services];
 }
 
+async function readDatabaseServices() {
+  await prisma.invoiceService.createMany({
+    data: defaultServices.map(({ name, articleCode }) => ({ name, articleCode })),
+    skipDuplicates: true,
+  });
+  return prisma.invoiceService.findMany({ select: { id: true, name: true, articleCode: true } });
+}
+
 async function readServices(): Promise<SavedService[]> {
   try {
     const content = await readFile(localServicesPath, "utf8");
@@ -49,9 +57,7 @@ export async function GET() {
   if (!auth.user) return auth.response;
 
   try {
-    const services = hasMysqlDatabaseUrl()
-      ? withDefaultServices(await prisma.invoiceService.findMany({ select: { id: true, name: true, articleCode: true } }))
-      : await readServices();
+    const services = hasMysqlDatabaseUrl() ? await readDatabaseServices() : await readServices();
     services.sort((a, b) => a.name.localeCompare(b.name, "es"));
     return ok({ services });
   } catch (error) {
