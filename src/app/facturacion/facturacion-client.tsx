@@ -195,7 +195,7 @@ function buildInvoiceDocumentName(form: InvoiceFormState) {
   const clientName = displayClientName(form.clientName.trim() || "CLIENTE");
   const invoiceDate = formatDate(form.invoiceDate) || form.invoiceDate || "Sin fecha";
 
-  return `FACTURA Nº${invoiceCode} - ${clientName} - ${invoiceDate}`;
+  return `FACTURA N.º ${invoiceCode} - ${clientName} - ${invoiceDate}`;
 }
 
 function escapeHtml(value: string) {
@@ -246,7 +246,7 @@ function buildInvoiceCode(form: InvoiceFormState) {
   if (series && number) return `${series}/${number}`;
   if (series) return series;
   if (number) return number;
-  return "Sin numeracion";
+  return "Sin numeración";
 }
 
 function stepFormattedNumber(value: string, step: number) {
@@ -269,7 +269,7 @@ function buildIssuerCircleLines(form: InvoiceFormState) {
 
 function buildClientCircleLines(form: InvoiceFormState) {
   if (!form.clientDetails.trim()) {
-    return [form.clientName || "CLIENTE", "Direccion pendiente", "CIF pendiente"];
+    return [form.clientName || "CLIENTE", "Dirección pendiente", "CIF pendiente"];
   }
 
   return [form.clientName || "CLIENTE", ...form.clientDetails.split("\n").map((item) => item.trim()).filter(Boolean)];
@@ -584,7 +584,7 @@ function buildPrintableInvoiceDocument(
         </div>
         <div class="doc-meta">
           <div class="date">FECHA: ${invoiceDate}</div>
-          <div class="code">FACTURA Nº ${invoiceCode}</div>
+          <div class="code">FACTURA N.º ${invoiceCode}</div>
         </div>
       </section>
 
@@ -609,8 +609,8 @@ function buildPrintableInvoiceDocument(
         <table>
           <thead>
             <tr class="divider">
-              <th>ARTICULO</th>
-              <th>DESCRIPCION</th>
+              <th>ARTÍCULO</th>
+              <th>DESCRIPCIÓN</th>
               <th class="right">PRECIO</th>
               <th class="right">DTO.</th>
               <th class="right">TOTAL</th>
@@ -1053,13 +1053,13 @@ export function FacturacionClient() {
       ...INITIAL_STATE,
       invoiceSeries: current.invoiceSeries || INITIAL_STATE.invoiceSeries,
     }));
-    setDriveStatus("Edicion cancelada. Preparando una factura nueva...");
+    setDriveStatus("Edición cancelada. Preparando una factura nueva...");
 
     try {
       const nextNumber = await loadNextInvoiceNumber(series, true);
-      setDriveStatus(`Edicion cancelada. Siguiente numero preparado: ${series}/${nextNumber}.`);
+      setDriveStatus(`Edición cancelada. Siguiente número preparado: ${series}/${nextNumber}.`);
     } catch (error) {
-      setDriveStatus(error instanceof Error ? error.message : "Edicion cancelada, pero no se pudo preparar el siguiente numero.");
+      setDriveStatus(error instanceof Error ? error.message : "Edición cancelada, pero no se pudo preparar el siguiente número.");
     }
   }
 
@@ -1227,7 +1227,7 @@ export function FacturacionClient() {
             invoiceNumber: formattedNumber,
           }));
         } catch {
-          // La factura sigue siendo editable si no se puede leer la numeracion.
+          // La factura sigue siendo editable si no se puede leer la numeración.
         }
       }
 
@@ -1576,7 +1576,7 @@ export function FacturacionClient() {
               <div className="pt-2 text-right">
                 <p className="text-[18px] font-medium text-sky-400">FECHA: {formatDate(form.invoiceDate) || "Sin fecha"}</p>
                 <p className="mt-6 whitespace-nowrap text-right text-[28px] font-light leading-tight tracking-[0.02em] text-slate-400">
-                  FACTURA Nº {invoiceCode}
+                  FACTURA N.º {invoiceCode}
                 </p>
               </div>
             </div>
@@ -1604,8 +1604,8 @@ export function FacturacionClient() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-slate-300 text-[16px] font-normal text-slate-800">
-                    <th className="pb-3 text-left font-normal">ARTICULO</th>
-                    <th className="pb-3 text-left font-normal">DESCRIPCION</th>
+                    <th className="pb-3 text-left font-normal">ARTÍCULO</th>
+                    <th className="pb-3 text-left font-normal">DESCRIPCIÓN</th>
                     <th className="pb-3 text-right font-normal">PRECIO</th>
                     <th className="pb-3 text-right font-normal">DTO.</th>
                     <th className="pb-3 text-right font-normal">TOTAL</th>
@@ -1676,7 +1676,7 @@ export function FacturacionClient() {
 
           <div className={`${hasServiceNotes ? "mt-9" : "mt-14"} flex items-end justify-between bg-[#1f1f1f] px-8 py-8 text-white`}>
             <div>
-              <p className="text-[34px] font-bold leading-none">{form.issuerPhone || "Telefono"}</p>
+              <p className="text-[34px] font-bold leading-none">{form.issuerPhone || "Teléfono"}</p>
               <p className="mt-3 text-[16px] leading-[1.35]">{form.issuerEmail || "email@dominio.com"}</p>
               <p className="text-[16px] leading-[1.35]">www.mlcdesign.es</p>
             </div>
@@ -1732,12 +1732,12 @@ export function FacturacionClient() {
             </FormField>
           </div>
           <div className="w-full sm:col-span-2">
-            <FormField label="Numero" htmlFor={`${baseId}-number`}>
+            <FormField label="Número" htmlFor={`${baseId}-number`}>
               <div className="grid grid-cols-[48px_minmax(0,1fr)_48px] gap-3">
                 <button
                   type="button"
                   className="min-h-11 rounded-xl border border-white/12 bg-white/6 text-lg font-semibold text-white transition hover:bg-white/10"
-                  title="Retroceder numero"
+                  title="Retroceder número"
                   onClick={() => updateField("invoiceNumber", stepFormattedNumber(form.invoiceNumber, -1))}
                 >
                   -
@@ -1746,7 +1746,7 @@ export function FacturacionClient() {
                 <button
                   type="button"
                   className="min-h-11 rounded-xl border border-white/12 bg-white/6 text-lg font-semibold text-white transition hover:bg-white/10"
-                  title="Avanzar numero"
+                  title="Avanzar número"
                   onClick={() => updateField("invoiceNumber", stepFormattedNumber(form.invoiceNumber, 1))}
                 >
                   +
@@ -1773,12 +1773,12 @@ export function FacturacionClient() {
               </FormField>
             </div>
             <div className="xl:col-span-12">
-              <FormField label="Direccion" htmlFor={`${baseId}-issuer-address`}>
+              <FormField label="Dirección" htmlFor={`${baseId}-issuer-address`}>
                 <input id={`${baseId}-issuer-address`} className={fieldClassName} value={form.issuerAddress} onChange={(event) => updateField("issuerAddress", event.target.value)} />
               </FormField>
             </div>
             <div className="xl:col-span-4">
-              <FormField label="Codigo postal" htmlFor={`${baseId}-issuer-postal`}>
+              <FormField label="Código postal" htmlFor={`${baseId}-issuer-postal`}>
                 <input id={`${baseId}-issuer-postal`} className={fieldClassName} value={form.issuerPostalCode} onChange={(event) => updateField("issuerPostalCode", event.target.value)} />
               </FormField>
             </div>
@@ -1788,7 +1788,7 @@ export function FacturacionClient() {
               </FormField>
             </div>
             <div className="xl:col-span-5">
-              <FormField label="Telefono" htmlFor={`${baseId}-issuer-phone`}>
+              <FormField label="Teléfono" htmlFor={`${baseId}-issuer-phone`}>
                 <input id={`${baseId}-issuer-phone`} className={fieldClassName} value={form.issuerPhone} onChange={(event) => updateField("issuerPhone", event.target.value)} />
               </FormField>
             </div>
@@ -2154,7 +2154,7 @@ export function FacturacionClient() {
           </button>
           {editingInvoiceId ? (
             <button type="button" onClick={() => void handleCancelInvoiceEdit()} className="rounded-2xl border border-amber-300/40 bg-amber-300/10 px-5 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/15">
-              Cancelar edicion
+              Cancelar edición
             </button>
           ) : null}
         </div>
@@ -2355,7 +2355,7 @@ export function FacturacionClient() {
           </div>
           <div className="flex flex-col items-center gap-3 text-center">
             <div>
-              <p className="text-sm text-slate-500">Factura Nº {previewInvoiceCode}</p>
+              <p className="text-sm text-slate-500">Factura n.º {previewInvoiceCode}</p>
               <p className="mt-1 text-xl font-semibold text-slate-950">{formatMoney(summary.totalAmount)}</p>
             </div>
             <button type="button" onClick={() => setIsPreviewOpen(true)} className="w-full max-w-xs rounded-2xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:w-auto">

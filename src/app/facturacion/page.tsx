@@ -33,7 +33,7 @@ export default async function FacturacionPage() {
                 Generador de facturas con plantilla visual
               </h1>
               <p className="mx-auto mt-3 w-full max-w-2xl text-center text-sm leading-6 text-slate-200">
-                Crea facturas desde formulario, calcula base, IVA e IRPF y deja el documento preparado para impresión o guardado en PDF directamente desde Forseti.
+                Crea facturas desde el formulario, calcula la base, el IVA y el IRPF, y deja el documento preparado para imprimirlo o guardarlo en PDF directamente desde Forseti.
               </p>
             </div>
           </div>

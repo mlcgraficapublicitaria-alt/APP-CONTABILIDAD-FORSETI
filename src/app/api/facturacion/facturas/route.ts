@@ -185,14 +185,14 @@ async function getDefaultTemplate() {
   return prisma.invoiceTemplate.upsert({
     where: { code: "MLC-CLASSIC" },
     update: {
-      name: "MLC Clasica",
+      name: "MLC Clásica",
       description: "Plantilla basada en la factura de ejemplo de Grupo Dim.",
       layoutKey: "mlc-classic",
       isDefault: true,
     },
     create: {
       code: "MLC-CLASSIC",
-      name: "MLC Clasica",
+      name: "MLC Clásica",
       description: "Plantilla basada en la factura de ejemplo de Grupo Dim.",
       layoutKey: "mlc-classic",
       isDefault: true,
@@ -435,17 +435,17 @@ async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
   const serviceDescription = body.serviceDescription?.trim() || "Servicio";
   const issueDate = body.issueDate ? new Date(body.issueDate) : new Date();
 
-  if (!invoiceId) return badRequest("La factura que quieres editar no esta identificada.");
-  if (!number) return badRequest("El numero de factura es obligatorio.");
+  if (!invoiceId) return badRequest("La factura que quieres editar no está identificada.");
+  if (!number) return badRequest("El número de factura es obligatorio.");
   if (!clientName) return badRequest("El cliente de la factura es obligatorio.");
   if (!documentName) return badRequest("El nombre del documento es obligatorio.");
-  if (Number.isNaN(issueDate.getTime())) return badRequest("La fecha de factura no es valida.");
+  if (Number.isNaN(issueDate.getTime())) return badRequest("La fecha de factura no es válida.");
 
   if (!hasMysqlDatabaseUrl()) {
     try {
       const invoices = await readLocalInvoices();
       const invoiceIndex = invoices.findIndex((invoice) => invoice.id === invoiceId);
-      if (invoiceIndex < 0) return badRequest("No se encontro la factura emitida para editar.");
+      if (invoiceIndex < 0) return badRequest("No se encontró la factura emitida para editar.");
 
       const duplicate = invoices.find((invoice) => invoice.id !== invoiceId && invoice.series === series && invoice.number === number);
       if (duplicate) return badRequest(`Ya existe la factura ${series}/${String(number).padStart(6, "0")}.`);
@@ -482,7 +482,7 @@ async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
 
   try {
     const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId } });
-    if (!invoice) return badRequest("No se encontro la factura emitida para editar.");
+    if (!invoice) return badRequest("No se encontró la factura emitida para editar.");
 
     const duplicate = await prisma.invoice.findFirst({
       where: {

@@ -104,7 +104,7 @@ async function readBankAccounts(): Promise<BankAccount[]> {
     const accounts = JSON.parse(content) as BankAccount[];
     if (Array.isArray(accounts) && accounts.length > 0) return accounts;
   } catch {
-    // La cuenta predeterminada permite empezar aunque el archivo aun no exista.
+    // La cuenta predeterminada permite empezar aunque el archivo aún no exista.
   }
 
   return [{ id: "default", value: defaultBankAccount }];
