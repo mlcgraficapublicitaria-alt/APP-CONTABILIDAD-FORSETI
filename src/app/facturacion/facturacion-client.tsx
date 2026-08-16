@@ -979,9 +979,9 @@ export function FacturacionClient() {
       }),
     });
     const responseText = await response.text();
-    let data: { error?: string } = {};
+    let data: { error?: string; existed?: boolean } = {};
     try {
-      data = responseText ? (JSON.parse(responseText) as { error?: string }) : {};
+      data = responseText ? (JSON.parse(responseText) as { error?: string; existed?: boolean }) : {};
     } catch {
       // Conservamos el texto devuelto por el servidor para no ocultar errores de despliegue.
     }
@@ -989,7 +989,11 @@ export function FacturacionClient() {
       const serverMessage = responseText && !responseText.trimStart().startsWith("<") ? responseText.slice(0, 300) : "";
       throw new Error(data.error || serverMessage || `No se pudo guardar la factura (HTTP ${response.status}).`);
     }
+    if (data.existed && !isEditing) {
+      throw new Error(`Ya existe la factura ${buildInvoiceCode(form)}. Puedes abrirla desde el historial para editarla.`);
+    }
     await refreshIssuedInvoices();
+    setInvoiceMonthFilter(form.invoiceDate.slice(0, 7));
   }
 
   function handlePrintIssuedInvoice(invoice: IssuedInvoice) {
