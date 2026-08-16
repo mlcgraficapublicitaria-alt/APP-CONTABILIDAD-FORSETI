@@ -21,7 +21,7 @@ export default function LoginPage() {
         </header>
 
         <div className="flex justify-center">
-          <LoginForm />
+          <LoginForm showDevAccess={process.env.NODE_ENV !== "production"} />
         </div>
       </div>
     </main>

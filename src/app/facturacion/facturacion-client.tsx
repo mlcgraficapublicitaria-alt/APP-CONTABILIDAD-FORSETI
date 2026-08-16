@@ -1810,10 +1810,24 @@ export function FacturacionClient() {
                   {savedServices.map((service) => {
                     const selected = selectedServiceIds.includes(service.id);
                     return (
-                      <div key={service.id} className={`flex min-w-0 items-stretch overflow-hidden rounded-xl border transition ${selected ? "border-[#87ba2f]" : "border-white/15"}`}>
-                        <button type="button" aria-pressed={selected} onClick={() => handleToggleService(service)} className={`min-w-0 flex-1 px-3 py-2.5 text-left transition ${selected ? "bg-[#87ba2f] text-slate-950" : "bg-white/5 text-slate-200 hover:bg-white/10"}`}>
+                      <div key={service.id} className={`flex min-w-0 items-stretch rounded-xl border transition ${selected ? "border-[#87ba2f]" : "border-white/15"}`}>
+                        <button
+                          type="button"
+                          aria-pressed={selected}
+                          aria-describedby={`service-tooltip-${service.id}`}
+                          onClick={() => handleToggleService(service)}
+                          className={`group/service relative min-w-0 flex-1 rounded-l-xl px-3 py-2.5 text-left transition ${selected ? "bg-[#87ba2f] text-slate-950" : "bg-white/5 text-slate-200 hover:bg-white/10"}`}
+                        >
                           <span className="block truncate text-xs font-semibold">{selected ? "✓ " : "+ "}{service.name}</span>
                           <span className={`mt-0.5 block text-[10px] font-semibold uppercase tracking-wider ${selected ? "text-slate-800/70" : "text-slate-400"}`}>Artículo {service.articleCode || "H"}</span>
+                          <span
+                            id={`service-tooltip-${service.id}`}
+                            role="tooltip"
+                            className="pointer-events-none absolute bottom-[calc(100%+0.6rem)] left-1/2 z-30 w-max max-w-64 -translate-x-1/2 rounded-xl border border-white/15 bg-slate-950 px-3 py-2 text-center text-xs font-medium leading-5 text-white opacity-0 shadow-xl transition-opacity duration-150 group-hover/service:opacity-100 group-focus-visible/service:opacity-100"
+                          >
+                            {service.name}
+                            <span className="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 -translate-y-1/2 rotate-45 border-b border-r border-white/15 bg-slate-950" />
+                          </span>
                         </button>
                         <button type="button" onClick={() => handleEditService(service)} className="shrink-0 border-l border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-[#d7f0a7] hover:bg-white/15" aria-label={`Editar ${service.name}`}>
                           Editar

@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 
 type LoginFormProps = {
   showBrand?: boolean;
+  showDevAccess?: boolean;
 };
 
-export function LoginForm({ showBrand = true }: LoginFormProps) {
+export function LoginForm({ showBrand = true, showDevAccess = false }: LoginFormProps) {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showRecovery, setShowRecovery] = useState(false);
@@ -17,6 +18,7 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
+  const [isEnteringDevMode, setIsEnteringDevMode] = useState(false);
 
   useEffect(() => {
     document.documentElement.dataset.forsetiHydrated = "true";
@@ -71,6 +73,23 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
     setRecoveryEmail("");
     setRecoveryMessage("");
     setRecoveryStatus(result?.message ?? "Solicitud enviada.");
+  }
+
+  async function handleDevAccess() {
+    setError("");
+    setIsEnteringDevMode(true);
+
+    const response = await fetch("/api/dev-login", { method: "POST" });
+    const result = await response.json().catch(() => null);
+
+    setIsEnteringDevMode(false);
+    if (!response.ok) {
+      setError(result?.message ?? "No se pudo activar el acceso de pruebas.");
+      return;
+    }
+
+    router.push(typeof result?.redirectTo === "string" ? result.redirectTo : "/");
+    router.refresh();
   }
 
   return (
@@ -200,6 +219,17 @@ export function LoginForm({ showBrand = true }: LoginFormProps) {
       >
         {isSubmitting ? "Entrando..." : "Entrar"}
       </button>
+
+      {showDevAccess ? (
+        <button
+          type="button"
+          onClick={handleDevAccess}
+          disabled={isEnteringDevMode}
+          className="rounded-lg border border-cyan-300/40 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100 transition hover:border-cyan-300/70 hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isEnteringDevMode ? "Abriendo modo pruebas..." : "Entrar sin iniciar sesión"}
+        </button>
+      ) : null}
     </form>
   );
 }
