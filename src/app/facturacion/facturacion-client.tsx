@@ -2103,7 +2103,7 @@ export function FacturacionClient() {
 
         <div className="mt-6 grid gap-4 lg:grid-cols-12">
           <div className="lg:col-span-4">
-            <FormField label="Base imponible (suma de servicios)" htmlFor={`${baseId}-base`}>
+            <FormField label="Base imponible" htmlFor={`${baseId}-base`}>
               <input id={`${baseId}-base`} inputMode="decimal" className={`${fieldClassName} disabled:cursor-not-allowed disabled:opacity-70`} value={invoiceLines.length ? String(summary.baseAmount) : form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} disabled={invoiceLines.length > 0} />
             </FormField>
           </div>
