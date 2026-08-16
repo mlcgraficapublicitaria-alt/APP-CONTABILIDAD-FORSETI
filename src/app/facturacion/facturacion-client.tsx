@@ -30,6 +30,7 @@ type InvoiceLineDraft = {
   description: string;
   unitPrice: string;
   noCost?: boolean;
+  notes?: string;
 };
 
 type IssuedInvoiceLine = {
@@ -38,6 +39,7 @@ type IssuedInvoiceLine = {
   description: string;
   unitPrice: number;
   lineTotalAmount?: number;
+  notes?: string;
 };
 
 type DriveFolderOption = {
@@ -323,6 +325,7 @@ function invoiceToLines(invoice: IssuedInvoice): InvoiceLineDraft[] {
       description: line.description,
       unitPrice: String(line.unitPrice ?? line.lineTotalAmount ?? 0),
       noCost: (line.unitPrice ?? line.lineTotalAmount ?? 0) === 0,
+      notes: line.notes || "",
     }));
   }
 
@@ -332,6 +335,7 @@ function invoiceToLines(invoice: IssuedInvoice): InvoiceLineDraft[] {
     description: invoice.serviceDescription || "Servicio",
     unitPrice: String(invoice.subtotalAmount ?? 0),
     noCost: (invoice.subtotalAmount ?? 0) === 0,
+    notes: invoice.notes || "",
   }];
 }
 
@@ -365,7 +369,7 @@ function buildPrintableInvoiceDocument(
     const displayedAmount = line.noCost ? "S/N" : formatMoney(amount);
     return `<tr>
       <td>${escapeHtml(line.articleCode.trim() || "H")}</td>
-      <td>${multilineToHtml(line.description || "SERVICIO")}</td>
+      <td>${multilineToHtml(line.description || "SERVICIO")}${line.notes?.trim() ? `<div style="margin-top:6px;font-size:12px;color:#777;line-height:1.35">${multilineToHtml(line.notes)}</div>` : ""}</td>
       <td class="right">${displayedAmount}</td>
       <td class="right"></td>
       <td class="right">${displayedAmount}</td>
@@ -981,6 +985,7 @@ export function FacturacionClient() {
           unitPrice: parseDecimal(line.unitPrice),
           discountAmount: 0,
           lineTotalAmount: parseDecimal(line.unitPrice),
+          notes: line.notes || "",
         })),
       }),
     });
@@ -1197,6 +1202,7 @@ export function FacturacionClient() {
         description: service || "Servicio",
         unitPrice: base ? formatInvoiceBaseParam(base) : "",
         noCost: false,
+        notes: "",
       }]);
       setSelectedServiceIds([]);
     }
@@ -1345,6 +1351,7 @@ export function FacturacionClient() {
           description: service.name,
           unitPrice: "",
           noCost: false,
+          notes: "",
         }]);
   }
 
@@ -1366,6 +1373,7 @@ export function FacturacionClient() {
       description: "",
       unitPrice: "",
       noCost: false,
+      notes: "",
     }]);
     setGenerated(false);
   }
@@ -1610,7 +1618,10 @@ export function FacturacionClient() {
                     return (
                       <tr key={line.id} className="text-[16px] text-slate-800">
                         <td className="pt-5 align-top">{line.articleCode || "H"}</td>
-                        <td className="pt-5 whitespace-pre-line align-top">{line.description || "SERVICIO"}</td>
+                        <td className="pt-5 whitespace-pre-line align-top">
+                          {line.description || "SERVICIO"}
+                          {line.notes?.trim() ? <span className="mt-1.5 block text-[12px] leading-4 text-slate-500">{line.notes}</span> : null}
+                        </td>
                         <td className="pt-5 text-right align-top">{displayedAmount}</td>
                         <td className="pt-5 text-right align-top"></td>
                         <td className="pt-5 text-right align-top">{displayedAmount}</td>
@@ -1917,6 +1928,7 @@ export function FacturacionClient() {
                 ) : null}
               </div>
 
+              <p className="mt-5 border-b border-white/10 pb-3 text-xs font-semibold uppercase tracking-[0.16em] text-[#b3d87d]">Listado de servicios</p>
               {savedServices.length > 0 ? (
                 <div className="mt-5 grid gap-2">
                   {savedServices.map((service) => {
@@ -1999,12 +2011,29 @@ export function FacturacionClient() {
                           S/N
                         </label>
                       </div>
+                      <details className="group/note mt-4 rounded-xl border border-white/10 bg-white/[0.03]">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-left marker:content-none">
+                          <span className="text-xs font-semibold text-[#d7f0a7]">{line.notes?.trim() ? "Editar anotación" : "+ Añadir anotación"}</span>
+                          <span className="text-slate-400 transition group-open/note:rotate-180">⌄</span>
+                        </summary>
+                        <div className="px-4 pb-4">
+                          <FormField label="Anotación de este servicio" htmlFor={`${baseId}-line-notes-${line.id}`}>
+                            <textarea
+                              id={`${baseId}-line-notes-${line.id}`}
+                              className={`${fieldClassName} min-h-24 resize-y`}
+                              value={line.notes || ""}
+                              onChange={(event) => updateInvoiceLine(line.id, { notes: event.target.value })}
+                              placeholder="Detalles específicos que aparecerán debajo de este servicio"
+                            />
+                          </FormField>
+                        </div>
+                      </details>
                     </div>
                   ))}
                 </div>
               ) : <p className="mt-4 text-center text-sm text-slate-400">Selecciona un servicio para añadirlo a la factura.</p>}
             </div>
-            <div className="mt-3">
+            <div className="hidden" aria-hidden="true">
               {!isServiceNoteOpen ? (
                 <button
                   type="button"

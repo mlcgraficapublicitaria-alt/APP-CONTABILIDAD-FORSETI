@@ -34,6 +34,7 @@ type InvoiceLineInput = {
   unitPrice?: number;
   discountAmount?: number;
   lineTotalAmount?: number;
+  notes?: string;
 };
 
 type LocalInvoice = {
@@ -93,6 +94,7 @@ function normalizeInvoiceLines(body: Partial<RegisterInvoiceBody>) {
       unitPrice,
       discountAmount,
       lineTotalAmount: Number.isFinite(line.lineTotalAmount) ? Number(line.lineTotalAmount) : quantity * unitPrice - discountAmount,
+      notes: line.notes?.trim() || "",
     };
   });
 }
@@ -111,10 +113,35 @@ function invoiceBankAccountFromMetadata(value?: string | null) {
   }
 }
 
+function invoiceLinesForDatabase(body: Partial<RegisterInvoiceBody>) {
+  return normalizeInvoiceLines(body).map((line) => ({
+    sortOrder: line.sortOrder,
+    articleCode: line.articleCode,
+    description: line.description,
+    quantity: line.quantity,
+    unitPrice: line.unitPrice,
+    discountAmount: line.discountAmount,
+    lineTotalAmount: line.lineTotalAmount,
+  }));
+}
+
+function invoiceLineNotesFromMetadata(value?: string | null) {
+  if (!value?.trim().startsWith("{")) return [];
+  try {
+    const metadata = JSON.parse(value) as { lineNotes?: unknown };
+    return Array.isArray(metadata.lineNotes)
+      ? metadata.lineNotes.map((note) => typeof note === "string" ? note : "")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 function buildInvoiceMetadata(body: RegisterInvoiceBody) {
   return JSON.stringify({
     issuerBankAccount: body.issuerBankAccount?.trim() || "",
     renderedHtml: body.renderedHtml?.trim() || "",
+    lineNotes: body.lines?.map((line) => line.notes?.trim() || "") || [],
   });
 }
 
@@ -232,7 +259,9 @@ export async function GET() {
     });
 
     return ok({
-      invoices: invoices.map((invoice) => ({
+      invoices: invoices.map((invoice) => {
+        const lineNotes = invoiceLineNotesFromMetadata(invoice.renderedHtml);
+        return ({
         id: invoice.id,
         documentName: invoice.documentName,
         series: invoice.series ?? "A",
@@ -249,12 +278,13 @@ export async function GET() {
         irpfRate: Number(invoice.irpfRate),
         irpfAmount: Number(invoice.irpfAmount),
         totalAmount: Number(invoice.totalAmount),
-        lines: invoice.lines.map((line) => ({
+        lines: invoice.lines.map((line, index) => ({
           id: line.id,
           articleCode: line.articleCode ?? "H",
           description: line.description,
           unitPrice: Number(line.unitPrice),
           lineTotalAmount: Number(line.lineTotalAmount),
+          notes: lineNotes[index] || "",
         })),
         issuer: {
           legalName: invoice.issuerProfile.legalName,
@@ -266,7 +296,8 @@ export async function GET() {
           phone: invoice.issuerProfile.phone ?? "",
           bankAccount: invoiceBankAccountFromMetadata(invoice.renderedHtml) || invoice.issuerProfile.bankAccount || "",
         },
-      })),
+      });
+      }),
     });
   } catch (error) {
     return badRequest(`No se pudieron cargar las facturas emitidas: ${errorMessage(error)}`);
@@ -350,7 +381,7 @@ async function createInvoice(body: Partial<RegisterInvoiceBody>, userId: string)
         createdById: userId === "forseti-session-fallback" ? null : userId,
         status: "ISSUED",
         ...buildInvoiceData(body, documentName, series, number, issueDate, serviceDescription),
-        lines: { create: normalizeInvoiceLines(body) },
+        lines: { create: invoiceLinesForDatabase(body) },
       },
     });
 
@@ -471,7 +502,7 @@ async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
         ...buildInvoiceData(body, documentName, series, number, issueDate, serviceDescription),
         lines: {
           deleteMany: {},
-          create: normalizeInvoiceLines(body),
+          create: invoiceLinesForDatabase(body),
         },
       },
     });
