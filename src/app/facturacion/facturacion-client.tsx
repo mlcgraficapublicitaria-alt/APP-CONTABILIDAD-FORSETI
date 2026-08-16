@@ -369,7 +369,7 @@ function buildPrintableInvoiceDocument(
     const displayedAmount = line.noCost ? "S/N" : formatMoney(amount);
     return `<tr>
       <td>${escapeHtml(line.articleCode.trim() || "H")}</td>
-      <td>${multilineToHtml(line.description || "SERVICIO")}${line.notes?.trim() ? `<div style="margin-top:6px;font-size:12px;color:#777;line-height:1.35">${multilineToHtml(line.notes)}</div>` : ""}</td>
+      <td>${multilineToHtml(line.description || "SERVICIO")}${line.notes?.trim() ? `<div style="margin-top:6px;font-size:12px;color:#777;line-height:1.35;text-align:left">${multilineToHtml(line.notes)}</div>` : ""}</td>
       <td class="right">${displayedAmount}</td>
       <td class="right"></td>
       <td class="right">${displayedAmount}</td>
@@ -1620,7 +1620,7 @@ export function FacturacionClient() {
                         <td className="pt-5 align-top">{line.articleCode || "H"}</td>
                         <td className="pt-5 whitespace-pre-line align-top">
                           {line.description || "SERVICIO"}
-                          {line.notes?.trim() ? <span className="mt-1.5 block text-[12px] leading-4 text-slate-500">{line.notes}</span> : null}
+                          {line.notes?.trim() ? <span className="mt-1.5 block text-left text-[12px] leading-4 text-slate-500">{line.notes}</span> : null}
                         </td>
                         <td className="pt-5 text-right align-top">{displayedAmount}</td>
                         <td className="pt-5 text-right align-top"></td>
@@ -2020,7 +2020,7 @@ export function FacturacionClient() {
                           <FormField label="Anotación de este servicio" htmlFor={`${baseId}-line-notes-${line.id}`}>
                             <textarea
                               id={`${baseId}-line-notes-${line.id}`}
-                              className={`${fieldClassName} min-h-24 resize-y`}
+                              className={`${fieldClassName} min-h-24 resize-y text-left`}
                               value={line.notes || ""}
                               onChange={(event) => updateInvoiceLine(line.id, { notes: event.target.value })}
                               placeholder="Detalles específicos que aparecerán debajo de este servicio"
