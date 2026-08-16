@@ -901,9 +901,15 @@ export function FacturacionClient() {
     [hoveredInvoiceId, issuedInvoices],
   );
   const filteredIssuedInvoices = useMemo(
-    () => invoiceMonthFilter
+    () => (invoiceMonthFilter
       ? issuedInvoices.filter((invoice) => invoice.issueDate.slice(0, 7) === invoiceMonthFilter)
-      : issuedInvoices,
+      : issuedInvoices
+    ).slice().sort((a, b) => {
+      const seriesOrder = (a.series || "A").localeCompare(b.series || "A", "es");
+      if (seriesOrder !== 0) return seriesOrder;
+      if (a.number !== b.number) return b.number - a.number;
+      return b.issueDate.localeCompare(a.issueDate);
+    }),
     [invoiceMonthFilter, issuedInvoices],
   );
   const printDisabled =
