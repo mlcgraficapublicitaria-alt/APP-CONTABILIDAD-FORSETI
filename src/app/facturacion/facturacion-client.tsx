@@ -1829,7 +1829,7 @@ export function FacturacionClient() {
 
         <details className="group mt-6 overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/55">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left marker:content-none">
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Cliente y precio</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Cliente</span>
             <span className="text-lg text-slate-400 transition group-open:rotate-180">⌄</span>
           </summary>
           <div className="px-4 pb-4">
@@ -1873,6 +1873,15 @@ export function FacturacionClient() {
               <input id={`${baseId}-client-details-size`} type="range" min="9" max="18" step="1" className="w-full accent-[#87ba2f]" value={form.clientDetailsFontSize} onChange={(event) => updateField("clientDetailsFontSize", event.target.value)} />
             </FormField>
           </div>
+          </div>
+        </details>
+
+        <details className="group mt-6 overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/55">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left marker:content-none">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Servicios y precios</span>
+            <span className="text-lg text-slate-400 transition group-open:rotate-180">⌄</span>
+          </summary>
+          <div className="px-4 pb-4">
           <div className="mt-4">
             <div className="rounded-2xl border border-white/10 bg-slate-900/55 p-5">
               <div>
