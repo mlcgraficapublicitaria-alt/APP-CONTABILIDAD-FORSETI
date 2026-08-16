@@ -23,6 +23,22 @@ type SavedService = {
   articleCode: string;
 };
 
+type InvoiceLineDraft = {
+  id: string;
+  serviceId?: string;
+  articleCode: string;
+  description: string;
+  unitPrice: string;
+};
+
+type IssuedInvoiceLine = {
+  id?: string;
+  articleCode?: string;
+  description: string;
+  unitPrice: number;
+  lineTotalAmount?: number;
+};
+
 type DriveFolderOption = {
   id: string;
   name: string;
@@ -46,6 +62,7 @@ type IssuedInvoice = {
   irpfRate?: number;
   irpfAmount?: number;
   totalAmount?: number;
+  lines?: IssuedInvoiceLine[];
   issuer?: {
     legalName: string;
     taxId: string;
@@ -297,9 +314,37 @@ function invoiceToSummary(invoice: IssuedInvoice): InvoiceSummary {
   };
 }
 
+function invoiceToLines(invoice: IssuedInvoice): InvoiceLineDraft[] {
+  if (invoice.lines?.length) {
+    return invoice.lines.map((line, index) => ({
+      id: line.id || `saved-${invoice.id}-${index}`,
+      articleCode: line.articleCode || "H",
+      description: line.description,
+      unitPrice: String(line.unitPrice ?? line.lineTotalAmount ?? 0),
+    }));
+  }
+
+  return [{
+    id: `legacy-${invoice.id}`,
+    articleCode: invoice.articleCode || "H",
+    description: invoice.serviceDescription || "Servicio",
+    unitPrice: String(invoice.subtotalAmount ?? 0),
+  }];
+}
+
+function printableLines(form: InvoiceFormState, lines?: InvoiceLineDraft[]) {
+  return lines?.length ? lines : [{
+    id: "legacy",
+    articleCode: form.articleCode || "H",
+    description: form.billedService || "SERVICIO",
+    unitPrice: form.baseAmount,
+  }];
+}
+
 function buildPrintableInvoiceDocument(
   form: InvoiceFormState,
   summary: InvoiceSummary,
+  lines?: InvoiceLineDraft[],
 ) {
   const invoiceTitle = escapeHtml(buildInvoiceDocumentName(form));
   const invoiceCode = escapeHtml(buildInvoiceCode(form));
@@ -307,13 +352,21 @@ function buildPrintableInvoiceDocument(
   const clientDetailsLines = buildClientCircleLines(form).slice(1).map(escapeHtml).join("<br />");
   const clientNameFontSize = fontSize(form.clientNameFontSize, 11, 20, 17);
   const clientDetailsFontSize = fontSize(form.clientDetailsFontSize, 9, 18, 14);
-  const billedService = multilineToHtml(form.billedService || "SERVICIO");
   const serviceNotes = richTextHasContent(form.serviceNotes) ? safeRichNoteHtml(form.serviceNotes) : "";
   const issuerBank = escapeHtml(form.issuerBankAccount || "");
   const issuerPhone = escapeHtml(form.issuerPhone || "");
   const issuerEmail = escapeHtml(form.issuerEmail || "");
   const invoiceDate = escapeHtml(formatDate(form.invoiceDate) || form.invoiceDate);
-  const articleCode = escapeHtml((form.articleCode || "H").trim());
+  const itemRows = printableLines(form, lines).map((line) => {
+    const amount = parseDecimal(line.unitPrice);
+    return `<tr>
+      <td>${escapeHtml(line.articleCode.trim() || "H")}</td>
+      <td>${multilineToHtml(line.description || "SERVICIO")}</td>
+      <td class="right">${formatMoney(amount)}</td>
+      <td class="right"></td>
+      <td class="right">${formatMoney(amount)}</td>
+    </tr>`;
+  }).join("");
 
   return `<!doctype html>
 <html lang="es">
@@ -556,13 +609,7 @@ function buildPrintableInvoiceDocument(
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>${articleCode}</td>
-              <td>${billedService}</td>
-              <td class="right">${formatMoney(summary.baseAmount)}</td>
-              <td class="right"></td>
-              <td class="right">${formatMoney(summary.baseAmount)}</td>
-            </tr>
+            ${itemRows}
             ${serviceNotes ? `<tr class="service-note"><td></td><td colspan="4">${serviceNotes}</td></tr>` : ""}
           </tbody>
         </table>
@@ -793,6 +840,7 @@ export function FacturacionClient() {
   const [bankAccountStatus, setBankAccountStatus] = useState("");
   const [savedServices, setSavedServices] = useState<SavedService[]>([]);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [invoiceLines, setInvoiceLines] = useState<InvoiceLineDraft[]>([]);
   const [newServiceName, setNewServiceName] = useState("");
   const [newServiceArticleCode, setNewServiceArticleCode] = useState("H");
   const [editingServiceId, setEditingServiceId] = useState("");
@@ -809,7 +857,7 @@ export function FacturacionClient() {
   const [invoiceHistoryStatus, setInvoiceHistoryStatus] = useState("");
   const [invoiceMonthFilter, setInvoiceMonthFilter] = useState("");
   const [hoveredInvoiceId, setHoveredInvoiceId] = useState("");
-  const [historicalPrint, setHistoricalPrint] = useState<{ form: InvoiceFormState; summary: InvoiceSummary; title: string } | null>(null);
+  const [historicalPrint, setHistoricalPrint] = useState<{ form: InvoiceFormState; summary: InvoiceSummary; lines: InvoiceLineDraft[]; title: string } | null>(null);
   const baseId = useId();
   const printPreviewRef = useRef<HTMLDivElement>(null);
   const historicalPrintRef = useRef<HTMLDivElement>(null);
@@ -819,7 +867,9 @@ export function FacturacionClient() {
   const fieldClassName = inputClassName();
 
   const summary = useMemo(() => {
-    const baseAmount = parseDecimal(form.baseAmount);
+    const baseAmount = invoiceLines.length
+      ? invoiceLines.reduce((total, line) => total + parseDecimal(line.unitPrice), 0)
+      : parseDecimal(form.baseAmount);
     const vatRate = parseDecimal(form.vatRate);
     const irpfRate = parseDecimal(form.irpfRate);
     const vatAmount = baseAmount * (vatRate / 100);
@@ -834,7 +884,7 @@ export function FacturacionClient() {
       irpfAmount,
       totalAmount,
     };
-  }, [form.baseAmount, form.irpfRate, form.vatRate]);
+  }, [form.baseAmount, form.irpfRate, form.vatRate, invoiceLines]);
 
   const previewDocumentName = buildInvoiceDocumentName(form);
   const previewInvoiceCode = buildInvoiceCode(form);
@@ -855,7 +905,7 @@ export function FacturacionClient() {
   const printDisabled =
     !generated ||
     !form.clientName.trim() ||
-    !form.billedService.trim() ||
+    !(invoiceLines.length ? invoiceLines.every((line) => line.description.trim()) : form.billedService.trim()) ||
     summary.baseAmount <= 0;
 
   const refreshIssuedInvoices = useCallback(async () => {
@@ -904,8 +954,8 @@ export function FacturacionClient() {
         issueDate: form.invoiceDate,
         clientName: form.clientName,
         clientDetails: form.clientDetails,
-        articleCode: form.articleCode,
-        serviceDescription: form.billedService,
+        articleCode: invoiceLines[0]?.articleCode || form.articleCode,
+        serviceDescription: invoiceLines.length ? invoiceLines.map((line) => line.description).join("\n") : form.billedService,
         issuerBankAccount: form.issuerBankAccount,
         notes: form.serviceNotes,
         subtotalAmount: summary.baseAmount,
@@ -914,6 +964,14 @@ export function FacturacionClient() {
         irpfRate: summary.irpfRate,
         irpfAmount: summary.irpfAmount,
         totalAmount: summary.totalAmount,
+        lines: printableLines(form, invoiceLines).map((line) => ({
+          articleCode: line.articleCode,
+          description: line.description,
+          quantity: 1,
+          unitPrice: parseDecimal(line.unitPrice),
+          discountAmount: 0,
+          lineTotalAmount: parseDecimal(line.unitPrice),
+        })),
       }),
     });
     const responseText = await response.text();
@@ -933,7 +991,7 @@ export function FacturacionClient() {
   function handlePrintIssuedInvoice(invoice: IssuedInvoice) {
     const historicalForm = invoiceToFormState(invoice);
     const historicalSummary = invoiceToSummary(invoice);
-    setHistoricalPrint({ form: historicalForm, summary: historicalSummary, title: invoice.documentName });
+    setHistoricalPrint({ form: historicalForm, summary: historicalSummary, lines: invoiceToLines(invoice), title: invoice.documentName });
   }
 
   function handleDownloadInvoiceMonth() {
@@ -953,6 +1011,8 @@ export function FacturacionClient() {
   function handleEditIssuedInvoice(invoice: IssuedInvoice) {
     const nextForm = invoiceToFormState(invoice);
     setForm(nextForm);
+    setInvoiceLines(invoiceToLines(invoice));
+    setSelectedServiceIds([]);
     setEditingInvoiceId(invoice.id);
     setSelectedClientId("");
     setGenerated(true);
@@ -965,6 +1025,8 @@ export function FacturacionClient() {
   async function handleCancelInvoiceEdit() {
     const series = form.invoiceSeries || INITIAL_STATE.invoiceSeries;
     setEditingInvoiceId("");
+    setInvoiceLines([]);
+    setSelectedServiceIds([]);
     setGenerated(false);
     setServiceNoteDraft("");
     setIsServiceNoteOpen(false);
@@ -1114,6 +1176,15 @@ export function FacturacionClient() {
       billedService: service || current.billedService,
       baseAmount: base ? formatInvoiceBaseParam(base) : current.baseAmount,
     }));
+    if (service || base) {
+      setInvoiceLines([{
+        id: "imported-service",
+        articleCode: "H",
+        description: service || "Servicio",
+        unitPrice: base ? formatInvoiceBaseParam(base) : "",
+      }]);
+      setSelectedServiceIds([]);
+    }
     setSelectedClientId(savedClient?.id ?? "");
     setGenerated(false);
 
@@ -1250,15 +1321,36 @@ export function FacturacionClient() {
     const selected = selectedServiceIds.includes(service.id);
     setSelectedServiceIds((current) => (selected ? current.filter((id) => id !== service.id) : [...current, service.id]));
     setServiceStatus("");
-    setForm((current) => {
-      const lines = current.billedService.split("\n").map((line) => line.trim()).filter(Boolean);
-      const nextLines = selected
-        ? lines.filter((line) => line.toLocaleLowerCase("es") !== service.name.toLocaleLowerCase("es"))
-        : lines.some((line) => line.toLocaleLowerCase("es") === service.name.toLocaleLowerCase("es"))
-          ? lines
-          : [...lines, service.name];
-      return { ...current, billedService: nextLines.join("\n"), articleCode: selected ? current.articleCode : service.articleCode || current.articleCode };
-    });
+    setInvoiceLines((current) => selected
+      ? current.filter((line) => line.serviceId !== service.id)
+      : [...current, {
+          id: crypto.randomUUID(),
+          serviceId: service.id,
+          articleCode: service.articleCode || "H",
+          description: service.name,
+          unitPrice: "",
+        }]);
+  }
+
+  function updateInvoiceLine(id: string, patch: Partial<InvoiceLineDraft>) {
+    setInvoiceLines((current) => current.map((line) => line.id === id ? { ...line, ...patch } : line));
+    setGenerated(false);
+  }
+
+  function removeInvoiceLine(line: InvoiceLineDraft) {
+    setInvoiceLines((current) => current.filter((item) => item.id !== line.id));
+    if (line.serviceId) setSelectedServiceIds((current) => current.filter((id) => id !== line.serviceId));
+    setGenerated(false);
+  }
+
+  function addFreeInvoiceLine() {
+    setInvoiceLines((current) => [...current, {
+      id: crypto.randomUUID(),
+      articleCode: "H",
+      description: "",
+      unitPrice: "",
+    }]);
+    setGenerated(false);
   }
 
   function applyServiceNoteFormat(command: "bold" | "underline" | "justifyLeft" | "justifyFull") {
@@ -1285,13 +1377,7 @@ export function FacturacionClient() {
 
       setSavedServices((current) => current.filter((item) => item.id !== service.id));
       setSelectedServiceIds((current) => current.filter((id) => id !== service.id));
-      setForm((current) => ({
-        ...current,
-        billedService: current.billedService
-          .split("\n")
-          .filter((line) => line.trim().toLocaleLowerCase("es") !== service.name.toLocaleLowerCase("es"))
-          .join("\n"),
-      }));
+      setInvoiceLines((current) => current.filter((line) => line.serviceId !== service.id));
       if (editingServiceId === service.id) {
         setEditingServiceId("");
         setNewServiceName("");
@@ -1347,14 +1433,9 @@ export function FacturacionClient() {
       setServiceStatus(editingServiceId ? "Servicio actualizado." : "Servicio guardado y seleccionado.");
       if (previousService && selectedServiceIds.includes(previousService.id)) {
         setSelectedServiceIds((current) => current.map((id) => (id === previousService.id ? service.id : id)));
-        setForm((current) => ({
-          ...current,
-          articleCode: service.articleCode || current.articleCode,
-          billedService: current.billedService
-            .split("\n")
-            .map((line) => (line.trim().toLocaleLowerCase("es") === previousService.name.toLocaleLowerCase("es") ? service.name : line))
-            .join("\n"),
-        }));
+        setInvoiceLines((current) => current.map((line) => line.serviceId === previousService.id
+          ? { ...line, serviceId: service.id, articleCode: service.articleCode || "H", description: service.name }
+          : line));
       } else if (!selectedServiceIds.includes(service.id)) {
         handleToggleService(service);
       }
@@ -1416,7 +1497,7 @@ export function FacturacionClient() {
     setDriveStatus("Guardando documento en Drive...");
 
     try {
-      const html = buildPrintableInvoiceDocument(form, summary);
+      const html = buildPrintableInvoiceDocument(form, summary, invoiceLines);
       const response = await fetch("/api/drive/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1451,11 +1532,12 @@ export function FacturacionClient() {
 
   const currentForm = form;
   const currentSummary = summary;
-  const renderInvoicePreview = (className = "", form = currentForm, summary = currentSummary) => {
+  const renderInvoicePreview = (className = "", form = currentForm, summary = currentSummary, lines: InvoiceLineDraft[] = invoiceLines) => {
     const invoiceCode = buildInvoiceCode(form);
     const localIssuerCircleLines = buildIssuerCircleLines(form);
     const localClientCircleLines = buildClientCircleLines(form);
     const hasServiceNotes = richTextHasContent(form.serviceNotes);
+    const localLines = printableLines(form, lines);
 
     return (
     <article className={`overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.12)] ${className}`}> 
@@ -1505,15 +1587,18 @@ export function FacturacionClient() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="text-[16px] text-slate-800">
-                    <td className="pt-5">{form.articleCode || "H"}</td>
-                    <td className="pt-5 whitespace-pre-line">
-                      {form.billedService || "SERVICIO"}
-                    </td>
-                    <td className="pt-5 text-right">{formatMoney(summary.baseAmount)}</td>
-                    <td className="pt-5 text-right"></td>
-                    <td className="pt-5 text-right">{formatMoney(summary.baseAmount)}</td>
-                  </tr>
+                  {localLines.map((line) => {
+                    const amount = parseDecimal(line.unitPrice);
+                    return (
+                      <tr key={line.id} className="text-[16px] text-slate-800">
+                        <td className="pt-5 align-top">{line.articleCode || "H"}</td>
+                        <td className="pt-5 whitespace-pre-line align-top">{line.description || "SERVICIO"}</td>
+                        <td className="pt-5 text-right align-top">{formatMoney(amount)}</td>
+                        <td className="pt-5 text-right align-top"></td>
+                        <td className="pt-5 text-right align-top">{formatMoney(amount)}</td>
+                      </tr>
+                    );
+                  })}
                   {hasServiceNotes ? (
                     <tr>
                       <td />
@@ -1848,19 +1933,33 @@ export function FacturacionClient() {
             </div>
           </div>
           <div className="mt-4">
-            <FormField label="Descripcion del servicio" htmlFor={`${baseId}-service`}>
-              <textarea
-                id={`${baseId}-service`}
-                className={`${fieldClassName} min-h-24 resize-y`}
-                value={form.billedService}
-                onChange={(event) => {
-                  updateField("billedService", event.target.value);
-                  const lines = event.target.value.split("\n").map((line) => line.trim().toLocaleLowerCase("es"));
-                  setSelectedServiceIds(savedServices.filter((service) => lines.includes(service.name.toLocaleLowerCase("es"))).map((service) => service.id));
-                }}
-                placeholder="Selecciona uno o varios servicios, o escribe una descripción libre"
-              />
-            </FormField>
+            <div className="rounded-2xl border border-white/10 bg-slate-900/55 p-4 text-left">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#b3d87d]">Líneas de factura</p>
+                  <p className="mt-1 text-xs text-slate-400">Cada servicio aparecerá con su artículo y su precio.</p>
+                </div>
+                <button type="button" onClick={addFreeInvoiceLine} className="min-h-10 rounded-xl border border-[#87ba2f]/50 bg-[#87ba2f]/10 px-4 py-2 text-sm font-semibold text-[#d7f0a7] hover:bg-[#87ba2f]/20">+ Añadir línea libre</button>
+              </div>
+              {invoiceLines.length ? (
+                <div className="mt-4 grid gap-3">
+                  {invoiceLines.map((line, index) => (
+                    <div key={line.id} className="grid gap-3 rounded-xl border border-white/10 bg-slate-950/45 p-3 sm:grid-cols-[7rem_minmax(0,1fr)_9rem_auto] sm:items-end">
+                      <FormField label={`Artículo ${index + 1}`} htmlFor={`${baseId}-line-article-${line.id}`}>
+                        <input id={`${baseId}-line-article-${line.id}`} className={fieldClassName} value={line.articleCode} onChange={(event) => updateInvoiceLine(line.id, { articleCode: event.target.value.toUpperCase() })} />
+                      </FormField>
+                      <FormField label="Descripción" htmlFor={`${baseId}-line-description-${line.id}`}>
+                        <input id={`${baseId}-line-description-${line.id}`} className={fieldClassName} value={line.description} onChange={(event) => updateInvoiceLine(line.id, { description: event.target.value })} />
+                      </FormField>
+                      <FormField label="Precio (€)" htmlFor={`${baseId}-line-price-${line.id}`}>
+                        <input id={`${baseId}-line-price-${line.id}`} inputMode="decimal" className={fieldClassName} value={line.unitPrice} onChange={(event) => updateInvoiceLine(line.id, { unitPrice: event.target.value })} placeholder="0,00" />
+                      </FormField>
+                      <button type="button" onClick={() => removeInvoiceLine(line)} className="min-h-11 rounded-xl border border-red-400/30 bg-red-500/10 px-3 text-xs font-semibold text-red-200 hover:bg-red-500/20">Quitar</button>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="mt-4 text-center text-sm text-slate-400">Selecciona un servicio para añadirlo a la factura.</p>}
+            </div>
             <div className="mt-3">
               {!isServiceNoteOpen ? (
                 <button
@@ -1931,8 +2030,8 @@ export function FacturacionClient() {
 
         <div className="mt-6 grid gap-4 lg:grid-cols-12">
           <div className="lg:col-span-4">
-            <FormField label="Base imponible" htmlFor={`${baseId}-base`}>
-              <input id={`${baseId}-base`} inputMode="decimal" className={fieldClassName} value={form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} />
+            <FormField label="Base imponible (suma de servicios)" htmlFor={`${baseId}-base`}>
+              <input id={`${baseId}-base`} inputMode="decimal" className={`${fieldClassName} disabled:cursor-not-allowed disabled:opacity-70`} value={invoiceLines.length ? String(summary.baseAmount) : form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} disabled={invoiceLines.length > 0} />
             </FormField>
           </div>
           <div className="lg:col-span-2">
@@ -2166,12 +2265,12 @@ export function FacturacionClient() {
           {renderInvoicePreview("w-[760px]")}
         </div>
         <div ref={historicalPrintRef} className="pointer-events-none fixed -left-[10000px] top-0 w-[760px]" aria-hidden="true">
-          {historicalPrint ? renderInvoicePreview("w-[760px]", historicalPrint.form, historicalPrint.summary) : null}
+          {historicalPrint ? renderInvoicePreview("w-[760px]", historicalPrint.form, historicalPrint.summary, historicalPrint.lines) : null}
         </div>
         <div ref={monthlyPrintRef} className="pointer-events-none fixed -left-[10000px] top-0 w-[760px]" aria-hidden="true">
           {invoiceMonthFilter ? filteredIssuedInvoices.map((invoice) => (
             <div key={invoice.id} className="invoice-batch-page">
-              {renderInvoicePreview("w-[760px]", invoiceToFormState(invoice), invoiceToSummary(invoice))}
+              {renderInvoicePreview("w-[760px]", invoiceToFormState(invoice), invoiceToSummary(invoice), invoiceToLines(invoice))}
             </div>
           )) : null}
         </div>

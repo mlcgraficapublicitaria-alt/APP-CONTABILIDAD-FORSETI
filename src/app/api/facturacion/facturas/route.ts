@@ -24,6 +24,16 @@ type RegisterInvoiceBody = {
   irpfAmount?: number;
   totalAmount?: number;
   renderedHtml?: string;
+  lines?: InvoiceLineInput[];
+};
+
+type InvoiceLineInput = {
+  articleCode?: string;
+  description?: string;
+  quantity?: number;
+  unitPrice?: number;
+  discountAmount?: number;
+  lineTotalAmount?: number;
 };
 
 type LocalInvoice = {
@@ -45,6 +55,7 @@ type LocalInvoice = {
   irpfAmount?: number;
   totalAmount?: number;
   renderedHtml?: string;
+  lines?: Array<InvoiceLineInput & { id: string; sortOrder: number }>;
   createdAt: string;
 };
 
@@ -58,6 +69,32 @@ function parseInvoiceNumber(value: string | number | undefined) {
 
 function decimalNumber(value: number | undefined) {
   return Number.isFinite(value) ? Number(value) : 0;
+}
+
+function normalizeInvoiceLines(body: Partial<RegisterInvoiceBody>) {
+  const source = body.lines?.length ? body.lines : [{
+    articleCode: body.articleCode,
+    description: body.serviceDescription,
+    quantity: 1,
+    unitPrice: body.subtotalAmount,
+    discountAmount: 0,
+    lineTotalAmount: body.subtotalAmount,
+  }];
+
+  return source.map((line, sortOrder) => {
+    const quantity = decimalNumber(line.quantity) || 1;
+    const unitPrice = decimalNumber(line.unitPrice);
+    const discountAmount = decimalNumber(line.discountAmount);
+    return {
+      sortOrder,
+      articleCode: line.articleCode?.trim() || "H",
+      description: line.description?.trim() || "Servicio",
+      quantity,
+      unitPrice,
+      discountAmount,
+      lineTotalAmount: Number.isFinite(line.lineTotalAmount) ? Number(line.lineTotalAmount) : quantity * unitPrice - discountAmount,
+    };
+  });
 }
 
 function errorMessage(error: unknown) {
@@ -189,7 +226,7 @@ export async function GET() {
   try {
     const invoices = await prisma.invoice.findMany({
       where: { status: "ISSUED" },
-      include: { issuerProfile: true, client: true },
+      include: { issuerProfile: true, client: true, lines: { orderBy: { sortOrder: "asc" } } },
       orderBy: [{ issueDate: "desc" }, { number: "desc" }],
       take: 100,
     });
@@ -212,6 +249,13 @@ export async function GET() {
         irpfRate: Number(invoice.irpfRate),
         irpfAmount: Number(invoice.irpfAmount),
         totalAmount: Number(invoice.totalAmount),
+        lines: invoice.lines.map((line) => ({
+          id: line.id,
+          articleCode: line.articleCode ?? "H",
+          description: line.description,
+          unitPrice: Number(line.unitPrice),
+          lineTotalAmount: Number(line.lineTotalAmount),
+        })),
         issuer: {
           legalName: invoice.issuerProfile.legalName,
           taxId: invoice.issuerProfile.taxId ?? "",
@@ -277,6 +321,7 @@ async function createInvoice(body: Partial<RegisterInvoiceBody>, userId: string)
         irpfAmount: decimalNumber(body.irpfAmount),
         totalAmount: decimalNumber(body.totalAmount),
         renderedHtml: body.renderedHtml?.trim() || "",
+        lines: normalizeInvoiceLines(body).map((line) => ({ ...line, id: randomUUID() })),
         createdAt: new Date().toISOString(),
       };
       invoices.push(invoice);
@@ -305,6 +350,7 @@ async function createInvoice(body: Partial<RegisterInvoiceBody>, userId: string)
         createdById: userId === "forseti-session-fallback" ? null : userId,
         status: "ISSUED",
         ...buildInvoiceData(body, documentName, series, number, issueDate, serviceDescription),
+        lines: { create: normalizeInvoiceLines(body) },
       },
     });
 
@@ -392,6 +438,7 @@ async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
         irpfAmount: decimalNumber(body.irpfAmount),
         totalAmount: decimalNumber(body.totalAmount),
         renderedHtml: body.renderedHtml?.trim() || "",
+        lines: normalizeInvoiceLines(body).map((line) => ({ ...line, id: randomUUID() })),
       };
 
       invoices[invoiceIndex] = invoice;
@@ -422,6 +469,10 @@ async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
         clientId: client.id,
         status: "ISSUED",
         ...buildInvoiceData(body, documentName, series, number, issueDate, serviceDescription),
+        lines: {
+          deleteMany: {},
+          create: normalizeInvoiceLines(body),
+        },
       },
     });
 
