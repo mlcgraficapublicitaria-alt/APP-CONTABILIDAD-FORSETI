@@ -1712,7 +1712,7 @@ export function FacturacionClient() {
         <div className="mx-auto mt-4 grid w-full max-w-lg gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
           <div className="w-full">
             <FormField label="Fecha de factura" htmlFor={`${baseId}-date`}>
-              <input id={`${baseId}-date`} type="date" className={fieldClassName} value={form.invoiceDate} onChange={(event) => updateField("invoiceDate", event.target.value)} />
+              <input id={`${baseId}-date`} type="date" className={`${fieldClassName} [color-scheme:dark]`} value={form.invoiceDate} onChange={(event) => updateField("invoiceDate", event.target.value)} />
             </FormField>
           </div>
           <div className="w-full">
