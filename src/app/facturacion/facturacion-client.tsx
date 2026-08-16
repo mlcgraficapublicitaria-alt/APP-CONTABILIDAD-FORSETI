@@ -1942,19 +1942,24 @@ export function FacturacionClient() {
                 <button type="button" onClick={addFreeInvoiceLine} className="min-h-10 rounded-xl border border-[#87ba2f]/50 bg-[#87ba2f]/10 px-4 py-2 text-sm font-semibold text-[#d7f0a7] hover:bg-[#87ba2f]/20">+ Añadir línea libre</button>
               </div>
               {invoiceLines.length ? (
-                <div className="mt-4 grid gap-3">
+                <div className="mt-5 grid gap-4">
                   {invoiceLines.map((line, index) => (
-                    <div key={line.id} className="grid gap-3 rounded-xl border border-white/10 bg-slate-950/45 p-3 sm:grid-cols-[7rem_minmax(0,1fr)_9rem_auto] sm:items-end">
-                      <FormField label={`Artículo ${index + 1}`} htmlFor={`${baseId}-line-article-${line.id}`}>
-                        <input id={`${baseId}-line-article-${line.id}`} className={fieldClassName} value={line.articleCode} onChange={(event) => updateInvoiceLine(line.id, { articleCode: event.target.value.toUpperCase() })} />
-                      </FormField>
+                    <div key={line.id} className="rounded-2xl border border-white/10 bg-slate-950/55 p-4">
+                      <div className="mb-4 flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+                        <p className="text-sm font-semibold text-white">Servicio {index + 1}</p>
+                        <button type="button" onClick={() => removeInvoiceLine(line)} className="rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-500/20">Quitar</button>
+                      </div>
                       <FormField label="Descripción" htmlFor={`${baseId}-line-description-${line.id}`}>
                         <input id={`${baseId}-line-description-${line.id}`} className={fieldClassName} value={line.description} onChange={(event) => updateInvoiceLine(line.id, { description: event.target.value })} />
                       </FormField>
-                      <FormField label="Precio (€)" htmlFor={`${baseId}-line-price-${line.id}`}>
-                        <input id={`${baseId}-line-price-${line.id}`} inputMode="decimal" className={fieldClassName} value={line.unitPrice} onChange={(event) => updateInvoiceLine(line.id, { unitPrice: event.target.value })} placeholder="0,00" />
-                      </FormField>
-                      <button type="button" onClick={() => removeInvoiceLine(line)} className="min-h-11 rounded-xl border border-red-400/30 bg-red-500/10 px-3 text-xs font-semibold text-red-200 hover:bg-red-500/20">Quitar</button>
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <FormField label="Artículo" htmlFor={`${baseId}-line-article-${line.id}`}>
+                          <input id={`${baseId}-line-article-${line.id}`} className={fieldClassName} value={line.articleCode} onChange={(event) => updateInvoiceLine(line.id, { articleCode: event.target.value.toUpperCase() })} />
+                        </FormField>
+                        <FormField label="Precio (€)" htmlFor={`${baseId}-line-price-${line.id}`}>
+                          <input id={`${baseId}-line-price-${line.id}`} inputMode="decimal" className={fieldClassName} value={line.unitPrice} onChange={(event) => updateInvoiceLine(line.id, { unitPrice: event.target.value })} placeholder="0,00" />
+                        </FormField>
+                      </div>
                     </div>
                   ))}
                 </div>
