@@ -362,12 +362,13 @@ function buildPrintableInvoiceDocument(
   const invoiceDate = escapeHtml(formatDate(form.invoiceDate) || form.invoiceDate);
   const itemRows = printableLines(form, lines).map((line) => {
     const amount = parseDecimal(line.unitPrice);
+    const displayedAmount = line.noCost ? "S/N" : formatMoney(amount);
     return `<tr>
       <td>${escapeHtml(line.articleCode.trim() || "H")}</td>
       <td>${multilineToHtml(line.description || "SERVICIO")}</td>
-      <td class="right">${formatMoney(amount)}</td>
+      <td class="right">${displayedAmount}</td>
       <td class="right"></td>
-      <td class="right">${formatMoney(amount)}</td>
+      <td class="right">${displayedAmount}</td>
     </tr>`;
   }).join("");
 
@@ -1595,13 +1596,14 @@ export function FacturacionClient() {
                 <tbody>
                   {localLines.map((line) => {
                     const amount = parseDecimal(line.unitPrice);
+                    const displayedAmount = line.noCost ? "S/N" : formatMoney(amount);
                     return (
                       <tr key={line.id} className="text-[16px] text-slate-800">
                         <td className="pt-5 align-top">{line.articleCode || "H"}</td>
                         <td className="pt-5 whitespace-pre-line align-top">{line.description || "SERVICIO"}</td>
-                        <td className="pt-5 text-right align-top">{formatMoney(amount)}</td>
+                        <td className="pt-5 text-right align-top">{displayedAmount}</td>
                         <td className="pt-5 text-right align-top"></td>
-                        <td className="pt-5 text-right align-top">{formatMoney(amount)}</td>
+                        <td className="pt-5 text-right align-top">{displayedAmount}</td>
                       </tr>
                     );
                   })}
