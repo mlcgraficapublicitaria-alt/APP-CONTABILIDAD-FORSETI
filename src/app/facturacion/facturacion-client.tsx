@@ -1709,20 +1709,20 @@ export function FacturacionClient() {
           </div>
         ) : null}
 
-        <div className="mx-auto mt-4 grid w-full max-w-lg justify-items-center gap-4 sm:grid-cols-3">
-          <div>
+        <div className="mx-auto mt-4 grid w-full max-w-lg gap-4 sm:grid-cols-[minmax(0,1fr)_9rem]">
+          <div className="w-full">
             <FormField label="Fecha de factura" htmlFor={`${baseId}-date`}>
               <input id={`${baseId}-date`} type="date" className={fieldClassName} value={form.invoiceDate} onChange={(event) => updateField("invoiceDate", event.target.value)} />
             </FormField>
           </div>
-          <div>
+          <div className="w-full">
             <FormField label="Serie" htmlFor={`${baseId}-series`}>
               <input id={`${baseId}-series`} className={fieldClassName} value={form.invoiceSeries} onChange={(event) => updateField("invoiceSeries", event.target.value)} />
             </FormField>
           </div>
-          <div>
+          <div className="w-full sm:col-span-2">
             <FormField label="Numero" htmlFor={`${baseId}-number`}>
-              <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] gap-2">
+              <div className="grid grid-cols-[48px_minmax(0,1fr)_48px] gap-3">
                 <button
                   type="button"
                   className="min-h-11 rounded-xl border border-white/12 bg-white/6 text-lg font-semibold text-white transition hover:bg-white/10"
