@@ -29,6 +29,7 @@ type InvoiceLineDraft = {
   articleCode: string;
   description: string;
   unitPrice: string;
+  noCost?: boolean;
 };
 
 type IssuedInvoiceLine = {
@@ -321,6 +322,7 @@ function invoiceToLines(invoice: IssuedInvoice): InvoiceLineDraft[] {
       articleCode: line.articleCode || "H",
       description: line.description,
       unitPrice: String(line.unitPrice ?? line.lineTotalAmount ?? 0),
+      noCost: (line.unitPrice ?? line.lineTotalAmount ?? 0) === 0,
     }));
   }
 
@@ -329,6 +331,7 @@ function invoiceToLines(invoice: IssuedInvoice): InvoiceLineDraft[] {
     articleCode: invoice.articleCode || "H",
     description: invoice.serviceDescription || "Servicio",
     unitPrice: String(invoice.subtotalAmount ?? 0),
+    noCost: (invoice.subtotalAmount ?? 0) === 0,
   }];
 }
 
@@ -1182,6 +1185,7 @@ export function FacturacionClient() {
         articleCode: "H",
         description: service || "Servicio",
         unitPrice: base ? formatInvoiceBaseParam(base) : "",
+        noCost: false,
       }]);
       setSelectedServiceIds([]);
     }
@@ -1329,6 +1333,7 @@ export function FacturacionClient() {
           articleCode: service.articleCode || "H",
           description: service.name,
           unitPrice: "",
+          noCost: false,
         }]);
   }
 
@@ -1349,6 +1354,7 @@ export function FacturacionClient() {
       articleCode: "H",
       description: "",
       unitPrice: "",
+      noCost: false,
     }]);
     setGenerated(false);
   }
@@ -1952,13 +1958,25 @@ export function FacturacionClient() {
                       <FormField label="Descripción" htmlFor={`${baseId}-line-description-${line.id}`}>
                         <input id={`${baseId}-line-description-${line.id}`} className={fieldClassName} value={line.description} onChange={(event) => updateInvoiceLine(line.id, { description: event.target.value })} />
                       </FormField>
-                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
                         <FormField label="Artículo" htmlFor={`${baseId}-line-article-${line.id}`}>
                           <input id={`${baseId}-line-article-${line.id}`} className={fieldClassName} value={line.articleCode} onChange={(event) => updateInvoiceLine(line.id, { articleCode: event.target.value.toUpperCase() })} />
                         </FormField>
                         <FormField label="Precio (€)" htmlFor={`${baseId}-line-price-${line.id}`}>
-                          <input id={`${baseId}-line-price-${line.id}`} inputMode="decimal" className={fieldClassName} value={line.unitPrice} onChange={(event) => updateInvoiceLine(line.id, { unitPrice: event.target.value })} placeholder="0,00" />
+                          <input id={`${baseId}-line-price-${line.id}`} inputMode="decimal" className={`${fieldClassName} disabled:cursor-not-allowed disabled:opacity-60`} value={line.unitPrice} onChange={(event) => updateInvoiceLine(line.id, { unitPrice: event.target.value })} placeholder="0,00" disabled={line.noCost} />
                         </FormField>
+                        <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-semibold text-slate-200 hover:bg-white/10">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(line.noCost)}
+                            onChange={(event) => updateInvoiceLine(line.id, {
+                              noCost: event.target.checked,
+                              unitPrice: event.target.checked ? "0" : (parseDecimal(line.unitPrice) === 0 ? "" : line.unitPrice),
+                            })}
+                            className="h-4 w-4 accent-[#87ba2f]"
+                          />
+                          S/N
+                        </label>
                       </div>
                     </div>
                   ))}
