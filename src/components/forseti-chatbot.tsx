@@ -69,6 +69,7 @@ export function ForsetiChatbot({ authenticated, userName }: ForsetiChatbotProps)
   const tone = process.env.NEXT_PUBLIC_CHATBOT_TONE ?? "clear";
   const objective = process.env.NEXT_PUBLIC_CHATBOT_OBJECTIVE ?? "support";
   const primaryColor = process.env.NEXT_PUBLIC_CHATBOT_PRIMARY_COLOR ?? "#87ba2f";
+  const avatarUrl = process.env.NEXT_PUBLIC_CHATBOT_AVATAR_URL ?? "/logo-forseti.png";
   const position = process.env.NEXT_PUBLIC_CHATBOT_POSITION === "left" ? "left" : "right";
   const includePaths = parsePathList(
     process.env.NEXT_PUBLIC_CHATBOT_INCLUDE_PATHS,
@@ -81,7 +82,7 @@ export function ForsetiChatbot({ authenticated, userName }: ForsetiChatbotProps)
   const blockedByExclude = excludePaths.length > 0 && matchesPath(normalizedPath, excludePaths);
   const hasRequiredConfig = Boolean(widgetBaseUrl && tenant && installation);
   const shouldMount = hasRequiredConfig && allowedByInclude && !blockedByExclude;
-  const widgetVersion = "2026-08-22b";
+  const widgetVersion = "2026-08-22c";
 
   useEffect(() => {
     const config = {
@@ -98,6 +99,7 @@ export function ForsetiChatbot({ authenticated, userName }: ForsetiChatbotProps)
       tone,
       objective,
       primaryColor,
+      avatarUrl,
       position,
       apiBaseUrl: widgetBaseUrl,
       widgetBaseUrl,
@@ -133,6 +135,7 @@ export function ForsetiChatbot({ authenticated, userName }: ForsetiChatbotProps)
     promptLabel,
     position,
     primaryColor,
+    avatarUrl,
     shouldMount,
     tenant,
     tone,
