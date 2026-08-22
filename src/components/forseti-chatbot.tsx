@@ -81,6 +81,7 @@ export function ForsetiChatbot({ authenticated, userName }: ForsetiChatbotProps)
   const blockedByExclude = excludePaths.length > 0 && matchesPath(normalizedPath, excludePaths);
   const hasRequiredConfig = Boolean(widgetBaseUrl && tenant && installation);
   const shouldMount = hasRequiredConfig && allowedByInclude && !blockedByExclude;
+  const widgetVersion = "2026-08-22b";
 
   useEffect(() => {
     const config = {
@@ -144,5 +145,5 @@ export function ForsetiChatbot({ authenticated, userName }: ForsetiChatbotProps)
     return null;
   }
 
-  return <Script src={`${widgetBaseUrl}/chatbot/widget.js`} strategy="afterInteractive" />;
+  return <Script src={`${widgetBaseUrl}/chatbot/widget.js?v=${encodeURIComponent(widgetVersion)}`} strategy="afterInteractive" />;
 }
