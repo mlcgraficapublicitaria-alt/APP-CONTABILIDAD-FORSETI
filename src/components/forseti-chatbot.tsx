@@ -24,10 +24,10 @@ type ForsetiChatbotProps = {
 };
 
 const FORSETI_QUICK_ACTIONS = [
-  { label: "Facturas", message: "Quiero revisar facturas." },
-  { label: "Gastos", message: "Quiero revisar gastos." },
-  { label: "Presupuestos", message: "Quiero revisar presupuestos." },
-  { label: "Estado del negocio", message: "Quiero ver el estado del negocio." },
+  { label: "Facturas", message: "Ayúdame con las facturas." },
+  { label: "Gastos", message: "Quiero poner en orden los gastos." },
+  { label: "Presupuestos", message: "Necesito preparar un presupuesto." },
+  { label: "Estado del negocio", message: "Dame una visión rápida del negocio." },
 ];
 
 function normalizePath(path: string) {
