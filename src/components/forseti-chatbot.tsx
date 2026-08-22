@@ -82,7 +82,7 @@ export function ForsetiChatbot({ authenticated, userName }: ForsetiChatbotProps)
   const blockedByExclude = excludePaths.length > 0 && matchesPath(normalizedPath, excludePaths);
   const hasRequiredConfig = Boolean(widgetBaseUrl && tenant && installation);
   const shouldMount = hasRequiredConfig && allowedByInclude && !blockedByExclude;
-  const widgetVersion = "2026-08-22e";
+  const widgetVersion = "2026-08-22f";
 
   useEffect(() => {
     const config = {
