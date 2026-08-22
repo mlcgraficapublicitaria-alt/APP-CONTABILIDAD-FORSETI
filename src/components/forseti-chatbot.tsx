@@ -11,6 +11,9 @@ declare global {
       mount: () => void;
       unmount: () => void;
       update: (config: Record<string, unknown>) => void;
+      open?: () => void;
+      close?: () => void;
+      getConfig?: () => Record<string, unknown>;
     };
   }
 }
@@ -19,6 +22,13 @@ type ForsetiChatbotProps = {
   authenticated: boolean;
   userName?: string;
 };
+
+const FORSETI_QUICK_ACTIONS = [
+  { label: "Facturas", message: "Quiero revisar facturas." },
+  { label: "Gastos", message: "Quiero revisar gastos." },
+  { label: "Presupuestos", message: "Quiero revisar presupuestos." },
+  { label: "Estado del negocio", message: "Quiero ver el estado del negocio." },
+];
 
 function normalizePath(path: string) {
   if (!path) return "/";
@@ -51,9 +61,11 @@ export function ForsetiChatbot({ authenticated, userName }: ForsetiChatbotProps)
   const hostApp = process.env.NEXT_PUBLIC_CHATBOT_HOST_APP ?? "forseti-web";
   const appName = process.env.NEXT_PUBLIC_CHATBOT_APP_NAME ?? "Forseti";
   const launcherLabel = process.env.NEXT_PUBLIC_CHATBOT_LAUNCHER_LABEL ?? "Hablar con Forseti";
-  const placeholder = process.env.NEXT_PUBLIC_CHATBOT_PLACEHOLDER ?? "Escribe tu consulta";
+  const placeholder = process.env.NEXT_PUBLIC_CHATBOT_PLACEHOLDER ?? "Habla con Forseti...";
+  const promptLabel = process.env.NEXT_PUBLIC_CHATBOT_PROMPT_LABEL ?? "¿Qué necesitas gestionar?";
   const welcomeMessage =
-    process.env.NEXT_PUBLIC_CHATBOT_WELCOME_MESSAGE ?? "Hola, soy Forseti. ¿Qué necesitas revisar hoy?";
+    process.env.NEXT_PUBLIC_CHATBOT_WELCOME_MESSAGE ??
+    "Soy Forseti. Mantengo en orden la administración de tu negocio. Pregúntame por tus cuentas, facturas, gastos, cobros o documentos, o envíame uno para que lo procese.";
   const tone = process.env.NEXT_PUBLIC_CHATBOT_TONE ?? "clear";
   const objective = process.env.NEXT_PUBLIC_CHATBOT_OBJECTIVE ?? "support";
   const primaryColor = process.env.NEXT_PUBLIC_CHATBOT_PRIMARY_COLOR ?? "#42c7ed";
@@ -79,7 +91,9 @@ export function ForsetiChatbot({ authenticated, userName }: ForsetiChatbotProps)
       appName,
       launcherLabel,
       placeholder,
+      promptLabel,
       welcomeMessage,
+      quickActions: FORSETI_QUICK_ACTIONS,
       tone,
       objective,
       primaryColor,
@@ -115,6 +129,7 @@ export function ForsetiChatbot({ authenticated, userName }: ForsetiChatbotProps)
     launcherLabel,
     objective,
     placeholder,
+    promptLabel,
     position,
     primaryColor,
     shouldMount,
