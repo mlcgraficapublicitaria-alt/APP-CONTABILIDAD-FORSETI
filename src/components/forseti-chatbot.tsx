@@ -68,7 +68,7 @@ export function ForsetiChatbot({ authenticated, userName }: ForsetiChatbotProps)
     "Soy Forseti. Mantengo en orden la administración de tu negocio. Pregúntame por tus cuentas, facturas, gastos, cobros o documentos, o envíame uno para que lo procese.";
   const tone = process.env.NEXT_PUBLIC_CHATBOT_TONE ?? "clear";
   const objective = process.env.NEXT_PUBLIC_CHATBOT_OBJECTIVE ?? "support";
-  const primaryColor = process.env.NEXT_PUBLIC_CHATBOT_PRIMARY_COLOR ?? "#42c7ed";
+  const primaryColor = process.env.NEXT_PUBLIC_CHATBOT_PRIMARY_COLOR ?? "#87ba2f";
   const position = process.env.NEXT_PUBLIC_CHATBOT_POSITION === "left" ? "left" : "right";
   const includePaths = parsePathList(
     process.env.NEXT_PUBLIC_CHATBOT_INCLUDE_PATHS,
