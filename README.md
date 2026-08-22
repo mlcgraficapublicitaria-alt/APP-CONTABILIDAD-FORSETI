@@ -23,6 +23,37 @@ Local login defaults:
 
 Override them with `APP_LOGIN_USER`, `APP_LOGIN_PASSWORD`, and optionally `APP_SESSION_SECRET`.
 
+## Chatbot widget in Forseti
+
+The app already includes the `Next` chatbot mount in the root layout.
+
+Minimum setup to test it in environment:
+
+```env
+NEXT_PUBLIC_CHATBOT_WIDGET_BASE_URL="https://tu-chatbot-host.com"
+NEXT_PUBLIC_CHATBOT_INSTALLATION="forseti-main"
+```
+
+If you do not override them, Forseti already assumes these defaults:
+
+```env
+NEXT_PUBLIC_CHATBOT_TENANT="forseti"
+NEXT_PUBLIC_CHATBOT_INSTALLATION="forseti-main"
+NEXT_PUBLIC_CHATBOT_HOST_APP="forseti-web"
+NEXT_PUBLIC_CHATBOT_APP_NAME="Forseti"
+NEXT_PUBLIC_CHATBOT_WELCOME_MESSAGE="Hola, soy Forseti. ¿Qué necesitas revisar hoy?"
+NEXT_PUBLIC_CHATBOT_INCLUDE_PATHS="/,/facturacion,/presupuestos,/forseti"
+NEXT_PUBLIC_CHATBOT_EXCLUDE_PATHS="/login"
+```
+
+By default the widget:
+
+- mounts from the root layout
+- stays hidden on `/login`
+- is ready to appear on `/`, `/facturacion`, `/presupuestos` and `/forseti/*`
+- receives a minimal auth context when the local session is valid
+- only needs `NEXT_PUBLIC_CHATBOT_WIDGET_BASE_URL` to start loading with the built-in Forseti defaults
+
 Password recovery email requires:
 
 - `RESEND_API_KEY`
