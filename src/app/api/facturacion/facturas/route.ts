@@ -116,6 +116,10 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Error desconocido.";
 }
 
+function isMissingNumberLabelColumn(error: unknown) {
+  return errorMessage(error).includes("Invoice.numberLabel") || errorMessage(error).includes("column `numberLabel` does not exist");
+}
+
 function invoiceBankAccountFromMetadata(value?: string | null) {
   if (!value?.trim().startsWith("{")) return "";
   try {
@@ -316,6 +320,80 @@ export async function GET() {
       }),
     });
   } catch (error) {
+    if (isMissingNumberLabelColumn(error)) {
+      try {
+        const invoices = await prisma.invoice.findMany({
+          where: { status: "ISSUED" },
+          select: {
+            id: true,
+            documentName: true,
+            series: true,
+            number: true,
+            issueDate: true,
+            articleCode: true,
+            serviceDescription: true,
+            notes: true,
+            subtotalAmount: true,
+            vatRate: true,
+            vatAmount: true,
+            irpfRate: true,
+            irpfAmount: true,
+            totalAmount: true,
+            renderedHtml: true,
+            issuerProfile: true,
+            client: true,
+            lines: { orderBy: { sortOrder: "asc" } },
+          },
+          orderBy: [{ issueDate: "desc" }, { number: "desc" }],
+          take: 100,
+        });
+
+        return ok({
+          invoices: invoices.map((invoice) => {
+            const lineNotes = invoiceLineNotesFromMetadata(invoice.renderedHtml);
+            return ({
+              id: invoice.id,
+              documentName: invoice.documentName,
+              series: invoice.series ?? "A",
+              numberLabel: invoiceNumberLabel(invoice),
+              number: invoice.number,
+              issueDate: invoice.issueDate.toISOString().slice(0, 10),
+              clientName: invoice.client.legalName,
+              clientDetails: invoice.client.notes ?? "",
+              articleCode: invoice.articleCode ?? "H",
+              serviceDescription: invoice.serviceDescription,
+              notes: invoice.notes ?? "",
+              subtotalAmount: Number(invoice.subtotalAmount),
+              vatRate: Number(invoice.vatRate),
+              vatAmount: Number(invoice.vatAmount),
+              irpfRate: Number(invoice.irpfRate),
+              irpfAmount: Number(invoice.irpfAmount),
+              totalAmount: Number(invoice.totalAmount),
+              lines: invoice.lines.map((line, index) => ({
+                id: line.id,
+                articleCode: line.articleCode ?? "H",
+                description: line.description,
+                unitPrice: Number(line.unitPrice),
+                lineTotalAmount: Number(line.lineTotalAmount),
+                notes: lineNotes[index] || "",
+              })),
+              issuer: {
+                legalName: invoice.issuerProfile.legalName,
+                taxId: invoice.issuerProfile.taxId ?? "",
+                addressLine1: invoice.issuerProfile.addressLine1 ?? "",
+                postalCode: invoice.issuerProfile.postalCode ?? "",
+                city: invoice.issuerProfile.city ?? "",
+                email: invoice.issuerProfile.email ?? "",
+                phone: invoice.issuerProfile.phone ?? "",
+                bankAccount: invoiceBankAccountFromMetadata(invoice.renderedHtml) || invoice.issuerProfile.bankAccount || "",
+              },
+            });
+          }),
+        });
+      } catch (legacyError) {
+        return badRequest(`No se pudieron cargar las facturas emitidas: ${errorMessage(legacyError)}`);
+      }
+    }
     return badRequest(`No se pudieron cargar las facturas emitidas: ${errorMessage(error)}`);
   }
 }
