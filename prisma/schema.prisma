@@ -263,6 +263,7 @@ model Invoice {
   status             InvoiceStatus        @default(DRAFT)
   documentName       String
   series             String?
+  numberLabel        String               @default("")
   number             Int
   issueDate          DateTime
   articleCode        String?
@@ -283,7 +284,8 @@ model Invoice {
   createdBy          User?                @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   lines              InvoiceLine[]
 
-  @@unique([series, number])
+  @@unique([series, numberLabel])
+  @@index([series, number])
   @@index([clientId, issueDate])
   @@index([issuerProfileId, issueDate])
 }

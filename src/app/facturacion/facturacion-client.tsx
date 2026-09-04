@@ -52,6 +52,7 @@ type IssuedInvoice = {
   id: string;
   documentName: string;
   series: string;
+  numberLabel?: string;
   number: number;
   issueDate: string;
   clientName: string;
@@ -249,12 +250,21 @@ function buildInvoiceCode(form: InvoiceFormState) {
   return "Sin numeración";
 }
 
+function displayInvoiceNumber(invoice: Pick<IssuedInvoice, "number" | "numberLabel">) {
+  return invoice.numberLabel?.trim() || String(invoice.number).padStart(6, "0");
+}
+
 function stepFormattedNumber(value: string, step: number) {
-  const width = Math.max(value.trim().length, 1);
-  const current = Number.parseInt(value.replace(/\D/g, ""), 10);
+  const trimmedValue = value.trim();
+  const match = trimmedValue.match(/^(\D*)(\d+)(\D*)$/);
+  const prefix = match?.[1] ?? "";
+  const digits = match?.[2] ?? trimmedValue.replace(/\D/g, "");
+  const suffix = match?.[3] ?? "";
+  const width = Math.max(digits.length, 1);
+  const current = Number.parseInt(digits, 10);
   const next = Math.max(1, (Number.isFinite(current) ? current : 1) + step);
 
-  return String(next).padStart(width, "0");
+  return `${prefix}${String(next).padStart(width, "0")}${suffix}`;
 }
 
 function buildIssuerCircleLines(form: InvoiceFormState) {
@@ -286,7 +296,7 @@ function invoiceToFormState(invoice: IssuedInvoice): InvoiceFormState {
     documentName: invoice.documentName,
     invoiceDate: invoice.issueDate.slice(0, 10),
     invoiceSeries: invoice.series || "A",
-    invoiceNumber: String(invoice.number).padStart(6, "0"),
+    invoiceNumber: displayInvoiceNumber(invoice),
     articleCode: invoice.articleCode || "H",
     issuerName: invoice.issuer?.legalName || INITIAL_STATE.issuerName,
     issuerTaxId: invoice.issuer?.taxId || INITIAL_STATE.issuerTaxId,
@@ -912,6 +922,8 @@ export function FacturacionClient() {
       const seriesOrder = (a.series || "A").localeCompare(b.series || "A", "es");
       if (seriesOrder !== 0) return seriesOrder;
       if (a.number !== b.number) return b.number - a.number;
+      const numberLabelOrder = displayInvoiceNumber(b).localeCompare(displayInvoiceNumber(a), "es");
+      if (numberLabelOrder !== 0) return numberLabelOrder;
       return b.issueDate.localeCompare(a.issueDate);
     }),
     [invoiceMonthFilter, issuedInvoices],
@@ -1415,7 +1427,7 @@ export function FacturacionClient() {
   }
 
   async function handleDeleteIssuedInvoice(invoice: IssuedInvoice) {
-    const invoiceLabel = `${invoice.series}/${String(invoice.number).padStart(6, "0")}`;
+    const invoiceLabel = `${invoice.series}/${displayInvoiceNumber(invoice)}`;
     if (!window.confirm(`¿Eliminar definitivamente la factura ${invoiceLabel} de ${invoice.clientName}?`)) return;
 
     setInvoiceHistoryStatus(`Eliminando factura ${invoiceLabel}...`);
@@ -1715,7 +1727,7 @@ export function FacturacionClient() {
           <div className="mx-auto mt-4 w-full max-w-lg rounded-2xl border border-[#87ba2f]/35 bg-[#87ba2f]/12 px-4 py-3 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#d7f0a7]">Editando factura emitida</p>
             <p className="mt-1 text-sm font-semibold text-white">
-              {editingInvoice.series}/{String(editingInvoice.number).padStart(6, "0")} · {editingInvoice.clientName}
+              {editingInvoice.series}/{displayInvoiceNumber(editingInvoice)} · {editingInvoice.clientName}
             </p>
           </div>
         ) : null}
@@ -2246,7 +2258,7 @@ export function FacturacionClient() {
                     onFocus={() => setHoveredInvoiceId(invoice.id)}
                     onBlur={() => setHoveredInvoiceId("")}
                   >
-                    <p className="truncate text-sm font-semibold text-white">{invoice.series}/{String(invoice.number).padStart(6, "0")} · {invoice.clientName}</p>
+                    <p className="truncate text-sm font-semibold text-white">{invoice.series}/{displayInvoiceNumber(invoice)} · {invoice.clientName}</p>
                     <p className="mt-1 truncate text-xs font-semibold text-[#d7f0a7]">{invoice.documentName}</p>
                     <p className="mt-1 text-xs text-slate-300">{formatDate(invoice.issueDate.slice(0, 10))} · {formatMoney(invoice.totalAmount ?? 0)}</p>
                   </div>
@@ -2272,12 +2284,12 @@ export function FacturacionClient() {
       </div>
 
       {hoveredInvoice ? (
-        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-[2px]" role="dialog" aria-label={`Información de la factura ${hoveredInvoice.series}/${String(hoveredInvoice.number).padStart(6, "0")}`}>
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-[2px]" role="dialog" aria-label={`Información de la factura ${hoveredInvoice.series}/${displayInvoiceNumber(hoveredInvoice)}`}>
           <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-[28px] border border-white/15 bg-slate-950 p-6 text-left text-white shadow-[0_28px_90px_rgba(0,0,0,0.65)]">
             <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#b3d87d]">Factura emitida</p>
-                <h3 className="mt-2 text-2xl font-semibold">{hoveredInvoice.series}/{String(hoveredInvoice.number).padStart(6, "0")}</h3>
+                <h3 className="mt-2 text-2xl font-semibold">{hoveredInvoice.series}/{displayInvoiceNumber(hoveredInvoice)}</h3>
                 <p className="mt-1 text-sm text-slate-300">{hoveredInvoice.documentName}</p>
               </div>
               <div className="text-right">

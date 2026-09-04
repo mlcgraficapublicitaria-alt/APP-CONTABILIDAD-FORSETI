@@ -41,6 +41,7 @@ type LocalInvoice = {
   id: string;
   documentName: string;
   series: string;
+  numberLabel?: string;
   number: number;
   issueDate: string;
   clientName: string;
@@ -66,6 +67,18 @@ function parseInvoiceNumber(value: string | number | undefined) {
   const normalized = String(value ?? "").replace(/\D/g, "");
   const number = Number.parseInt(normalized, 10);
   return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function normalizeInvoiceNumberLabel(value: string | number | undefined) {
+  return String(value ?? "").trim().toUpperCase().replace(/\s+/g, "");
+}
+
+function formatInvoiceNumber(value: number) {
+  return String(value).padStart(6, "0");
+}
+
+function invoiceNumberLabel(invoice: { number: number; numberLabel?: string | null }) {
+  return invoice.numberLabel?.trim() || formatInvoiceNumber(invoice.number);
 }
 
 function decimalNumber(value: number | undefined) {
@@ -215,10 +228,11 @@ async function resolveInvoiceClient(clientName: string, clientDetails?: string) 
       });
 }
 
-function buildInvoiceData(body: RegisterInvoiceBody, documentName: string, series: string, number: number, issueDate: Date, serviceDescription: string) {
+function buildInvoiceData(body: Partial<RegisterInvoiceBody>, documentName: string, series: string, number: number, numberLabel: string, issueDate: Date, serviceDescription: string) {
   return {
     documentName,
     series,
+    numberLabel,
     number,
     issueDate,
     articleCode: body.articleCode?.trim() || null,
@@ -245,6 +259,7 @@ export async function GET() {
         .sort((a, b) => b.issueDate.localeCompare(a.issueDate))
         .map((invoice) => ({
           ...invoice,
+          numberLabel: invoiceNumberLabel(invoice),
           issuer: { bankAccount: invoice.issuerBankAccount ?? "" },
         })),
     });
@@ -265,6 +280,7 @@ export async function GET() {
         id: invoice.id,
         documentName: invoice.documentName,
         series: invoice.series ?? "A",
+        numberLabel: invoiceNumberLabel(invoice),
         number: invoice.number,
         issueDate: invoice.issueDate.toISOString().slice(0, 10),
         clientName: invoice.client.legalName,
@@ -316,6 +332,7 @@ export async function POST(request: Request) {
 
 async function createInvoice(body: Partial<RegisterInvoiceBody>, userId: string) {
   const series = body.series?.trim() || "A";
+  const numberLabel = normalizeInvoiceNumberLabel(body.number);
   const number = parseInvoiceNumber(body.number);
   const clientName = body.clientName?.trim();
   const documentName = body.documentName?.trim();
@@ -323,6 +340,7 @@ async function createInvoice(body: Partial<RegisterInvoiceBody>, userId: string)
   const issueDate = body.issueDate ? new Date(body.issueDate) : new Date();
 
   if (!number) return badRequest("El número de factura es obligatorio.");
+  if (!numberLabel) return badRequest("El número de factura es obligatorio.");
   if (!clientName) return badRequest("El cliente de la factura es obligatorio.");
   if (!documentName) return badRequest("El nombre del documento es obligatorio.");
   if (Number.isNaN(issueDate.getTime())) return badRequest("La fecha de factura no es válida.");
@@ -330,13 +348,14 @@ async function createInvoice(body: Partial<RegisterInvoiceBody>, userId: string)
   if (!hasMysqlDatabaseUrl()) {
     try {
       const invoices = await readLocalInvoices();
-      const existing = invoices.find((invoice) => invoice.series === series && invoice.number === number);
+      const existing = invoices.find((invoice) => invoice.series === series && invoiceNumberLabel(invoice) === numberLabel);
       if (existing) return ok({ invoice: existing, existed: true });
 
       const invoice: LocalInvoice = {
         id: randomUUID(),
         documentName,
         series,
+        numberLabel,
         number,
         issueDate: issueDate.toISOString(),
         clientName,
@@ -364,8 +383,8 @@ async function createInvoice(body: Partial<RegisterInvoiceBody>, userId: string)
   }
 
   try {
-    const existing = await prisma.invoice.findUnique({
-      where: { series_number: { series, number } },
+    const existing = await prisma.invoice.findFirst({
+      where: { series, numberLabel },
     });
     if (existing) return ok({ invoice: existing, existed: true });
 
@@ -380,7 +399,7 @@ async function createInvoice(body: Partial<RegisterInvoiceBody>, userId: string)
         templateId: template.id,
         createdById: userId === "forseti-session-fallback" ? null : userId,
         status: "ISSUED",
-        ...buildInvoiceData(body, documentName, series, number, issueDate, serviceDescription),
+        ...buildInvoiceData(body, documentName, series, number, numberLabel, issueDate, serviceDescription),
         lines: { create: invoiceLinesForDatabase(body) },
       },
     });
@@ -429,6 +448,7 @@ export async function DELETE(request: Request) {
 async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
   const invoiceId = body.id?.trim();
   const series = body.series?.trim() || "A";
+  const numberLabel = normalizeInvoiceNumberLabel(body.number);
   const number = parseInvoiceNumber(body.number);
   const clientName = body.clientName?.trim();
   const documentName = body.documentName?.trim();
@@ -437,6 +457,7 @@ async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
 
   if (!invoiceId) return badRequest("La factura que quieres editar no está identificada.");
   if (!number) return badRequest("El número de factura es obligatorio.");
+  if (!numberLabel) return badRequest("El número de factura es obligatorio.");
   if (!clientName) return badRequest("El cliente de la factura es obligatorio.");
   if (!documentName) return badRequest("El nombre del documento es obligatorio.");
   if (Number.isNaN(issueDate.getTime())) return badRequest("La fecha de factura no es válida.");
@@ -447,13 +468,14 @@ async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
       const invoiceIndex = invoices.findIndex((invoice) => invoice.id === invoiceId);
       if (invoiceIndex < 0) return badRequest("No se encontró la factura emitida para editar.");
 
-      const duplicate = invoices.find((invoice) => invoice.id !== invoiceId && invoice.series === series && invoice.number === number);
-      if (duplicate) return badRequest(`Ya existe la factura ${series}/${String(number).padStart(6, "0")}.`);
+      const duplicate = invoices.find((invoice) => invoice.id !== invoiceId && invoice.series === series && invoiceNumberLabel(invoice) === numberLabel);
+      if (duplicate) return badRequest(`Ya existe la factura ${series}/${numberLabel}.`);
 
       const invoice: LocalInvoice = {
         ...invoices[invoiceIndex],
         documentName,
         series,
+        numberLabel,
         number,
         issueDate: issueDate.toISOString(),
         clientName,
@@ -487,11 +509,11 @@ async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
     const duplicate = await prisma.invoice.findFirst({
       where: {
         series,
-        number,
+        numberLabel,
         NOT: { id: invoiceId },
       },
     });
-    if (duplicate) return badRequest(`Ya existe la factura ${series}/${String(number).padStart(6, "0")}.`);
+    if (duplicate) return badRequest(`Ya existe la factura ${series}/${numberLabel}.`);
 
     const client = await resolveInvoiceClient(clientName, body.clientDetails);
     const updatedInvoice = await prisma.invoice.update({
@@ -499,7 +521,7 @@ async function updateInvoice(body: Partial<RegisterInvoiceBody>) {
       data: {
         clientId: client.id,
         status: "ISSUED",
-        ...buildInvoiceData(body, documentName, series, number, issueDate, serviceDescription),
+        ...buildInvoiceData(body, documentName, series, number, numberLabel, issueDate, serviceDescription),
         lines: {
           deleteMany: {},
           create: invoiceLinesForDatabase(body),
