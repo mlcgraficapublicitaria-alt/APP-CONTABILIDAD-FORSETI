@@ -2286,6 +2286,11 @@ export function FacturacionClient() {
                     <button type="button" onClick={() => handleEditIssuedInvoice(invoice)} className="rounded-xl border border-white/12 bg-white/6 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10">
                       Editar
                     </button>
+                    {editingInvoiceId === invoice.id ? (
+                      <button type="button" onClick={() => void handleSaveInvoiceEdit()} disabled={printDisabled} className="rounded-xl bg-[#87ba2f] px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-[#98cb44] disabled:cursor-not-allowed disabled:opacity-40">
+                        Guardar
+                      </button>
+                    ) : null}
                     <button type="button" onClick={() => handlePrintIssuedInvoice(invoice)} className="rounded-xl bg-[#87ba2f] px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-[#98cb44]">
                       PDF
                     </button>
