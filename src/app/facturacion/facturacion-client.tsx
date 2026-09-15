@@ -1485,6 +1485,21 @@ export function FacturacionClient() {
     setGenerated(true);
   }
 
+  async function handleSaveInvoiceEdit() {
+    if (!editingInvoiceId) return;
+
+    setDriveStatus("Guardando cambios de la factura...");
+
+    try {
+      await registerCurrentInvoice();
+      setGenerated(false);
+      setEditingInvoiceId("");
+      setDriveStatus(`Factura ${previewInvoiceCode} guardada.`);
+    } catch (error) {
+      setDriveStatus(error instanceof Error ? error.message : "No se pudo guardar la factura.");
+    }
+  }
+
   async function handlePrintInvoice() {
     const isEditing = Boolean(editingInvoiceId);
     setDriveStatus(isEditing ? "Actualizando factura emitida..." : "Guardando número de factura...");
@@ -2165,9 +2180,14 @@ export function FacturacionClient() {
             {editingInvoiceId ? "Actualizar e imprimir PDF" : "Imprimir o guardar PDF"}
           </button>
           {editingInvoiceId ? (
-            <button type="button" onClick={() => void handleCancelInvoiceEdit()} className="rounded-2xl border border-amber-300/40 bg-amber-300/10 px-5 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/15">
-              Cancelar edición
-            </button>
+            <>
+              <button type="button" onClick={() => void handleSaveInvoiceEdit()} disabled={printDisabled} className="rounded-2xl bg-[#87ba2f] px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-[#98cb44] disabled:cursor-not-allowed disabled:opacity-40">
+                Guardar cambios
+              </button>
+              <button type="button" onClick={() => void handleCancelInvoiceEdit()} className="rounded-2xl border border-amber-300/40 bg-amber-300/10 px-5 py-3 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/15">
+                Cancelar edición
+              </button>
+            </>
           ) : null}
         </div>
         </div>
