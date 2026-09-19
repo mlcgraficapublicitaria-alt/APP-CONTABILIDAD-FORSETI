@@ -46,6 +46,13 @@ export const SECTIONS = [
 
 export const TOOLS = [
   {
+    id: "cierres-trimestres-autonomo",
+    label: "CIERRES TRIMESTRES AUTONOMO",
+    title: "CIERRES TRIMESTRES AUTONOMO",
+    description: "Preparar, conciliar y revisar cierres trimestrales dentro de FORSETI, sin presentación automática ante la AEAT.",
+    href: "/forseti/cierres-trimestres-autonomo",
+  },
+  {
     id: "horas-auditoria",
     label: "Auditoría de horas",
     title: "Comparador de horas",

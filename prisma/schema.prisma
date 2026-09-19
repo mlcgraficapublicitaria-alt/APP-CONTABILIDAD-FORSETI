@@ -51,6 +51,77 @@ enum InvoiceStatus {
   CANCELLED
 }
 
+enum QuarterlyClosureStatus {
+  DRAFT
+  NEEDS_REVIEW
+  READY_FOR_REVIEW
+}
+
+enum QuarterlyPaymentStatus {
+  UNKNOWN
+  PENDING_DEFERRAL
+  PAID
+  DEBITED
+}
+
+enum QuarterlyEntryDirection {
+  PURCHASE
+  SALE
+}
+
+enum QuarterlyDocumentType {
+  INVOICE
+  CREDIT_NOTE
+  OTHER
+}
+
+enum QuarterlyTaxKind {
+  DOMESTIC
+  INTRA_EU
+  INTRA_EU_GOODS
+  INTRA_EU_SERVICES
+  REVERSE_CHARGE
+  EXEMPT
+  NOT_SUBJECT_LOCATION
+  OTHER
+}
+
+enum QuarterlyReviewStatus {
+  OK
+  REVIEW
+}
+
+enum QuarterlyIssueSeverity {
+  INFO
+  WARNING
+  BLOCKER
+}
+
+enum Quarterly349OperationType {
+  INTRA_EU_ACQUISITION
+  INTRA_EU_SUPPLY
+}
+
+enum QuarterlyIssueCode {
+  DOMESTIC_PURCHASE_EXCLUDED_FROM_303
+  EXEMPT_OPERATION_REVIEW
+  DEFERRAL_PENDING
+  FORM_LEDGER_MISMATCH
+}
+
+enum QuarterlyImportBatchStatus {
+  PREVIEW
+  CONFIRMED
+  FAILED
+}
+
+enum QuarterlyImportRowStatus {
+  VALID
+  INVALID
+  DUPLICATE
+  IMPORTED
+}
+
 model User {
   id           String       @id @default(cuid())
   email        String       @unique
@@ -66,23 +137,172 @@ model User {
 }
 
 model TaxCase {
-  id           String            @id @default(cuid())
-  reference    String            @unique
-  title        String
-  taxpayerName String
-  taxpayerNif  String?
-  fiscalYear   Int
-  status       TaxCaseStatus     @default(DRAFT)
-  ownerId      String
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  owner        User              @relation(fields: [ownerId], references: [id])
-  taxProfile   TaxProfile?
-  documents    Document[]
-  dataPoints   DataPoint[]
-  issues       ValidationIssue[]
-  summary      CaseSummary?
-  auditEvents  AuditEvent[]
+  id                String             @id @default(cuid())
+  reference         String             @unique
+  title             String
+  taxpayerName      String
+  taxpayerNif       String?
+  fiscalYear        Int
+  status            TaxCaseStatus      @default(DRAFT)
+  ownerId           String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  owner             User               @relation(fields: [ownerId], references: [id])
+  taxProfile        TaxProfile?
+  documents         Document[]
+  dataPoints        DataPoint[]
+  issues            ValidationIssue[]
+  summary           CaseSummary?
+  auditEvents       AuditEvent[]
+  quarterlyClosures QuarterlyClosure[]
+}
+
+model QuarterlyClosure {
+  id                       String                    @id @default(cuid())
+  taxCaseId                String
+  fiscalYear               Int
+  quarter                  Int
+  status                   QuarterlyClosureStatus    @default(DRAFT)
+  declared303ResultCents   BigInt?
+  calculated303ResultCents BigInt?
+  difference303Cents       BigInt?
+  payment303Status         QuarterlyPaymentStatus    @default(UNKNOWN)
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  taxCase                  TaxCase                   @relation(fields: [taxCaseId], references: [id], onDelete: Cascade)
+  ledgerEntries            QuarterlyLedgerEntry[]
+  operations349            Quarterly349Operation[]
+  issues                   QuarterlyIssue[]
+  sourceDocuments          QuarterlySourceDocument[]
+  importBatches            QuarterlyImportBatch[]
+
+  @@unique([taxCaseId, fiscalYear, quarter])
+  @@index([fiscalYear, quarter, status])
+}
+
+model QuarterlySourceDocument {
+  id            String                 @id @default(cuid())
+  closureId     String
+  fileName      String
+  mimeType      String
+  sizeBytes     Int
+  sha256        String                 @db.Char(64)
+  storageKey    String?
+  createdAt     DateTime               @default(now())
+  closure       QuarterlyClosure       @relation(fields: [closureId], references: [id], onDelete: Cascade)
+  importBatches QuarterlyImportBatch[]
+
+  @@unique([closureId, sha256])
+  @@unique([id, closureId])
+}
+
+model QuarterlyImportBatch {
+  id               String                     @id @default(cuid())
+  closureId        String
+  sourceDocumentId String
+  importerKey      String
+  importerVersion  String
+  mappingHash      String                     @db.Char(64)
+  status           QuarterlyImportBatchStatus @default(PREVIEW)
+  mappingJson      Json
+  validRowCount    Int                        @default(0)
+  invalidRowCount  Int                        @default(0)
+  duplicateCount   Int                        @default(0)
+  confirmedAt      DateTime?
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+  closure          QuarterlyClosure           @relation(fields: [closureId], references: [id], onDelete: Cascade)
+  sourceDocument   QuarterlySourceDocument    @relation(fields: [sourceDocumentId, closureId], references: [id, closureId], onDelete: Cascade)
+  rows             QuarterlyImportRow[]
+  ledgerEntries    QuarterlyLedgerEntry[]
+
+  @@unique([closureId, sourceDocumentId, importerKey, importerVersion, mappingHash], map: "QuarterlyImportBatch_identity_key")
+  @@index([closureId, status])
+}
+
+model QuarterlyImportRow {
+  id             String                   @id @default(cuid())
+  importBatchId  String
+  sourceRow      Int
+  fingerprint    String                   @db.Char(64)
+  status         QuarterlyImportRowStatus
+  originalJson   Json
+  normalizedJson Json?
+  errorsJson     Json
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  importBatch    QuarterlyImportBatch     @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  ledgerEntry    QuarterlyLedgerEntry?
+
+  @@unique([importBatchId, sourceRow])
+  @@index([importBatchId, fingerprint])
+}
+
+model Quarterly349Operation {
+  id                      String                    @id @default(cuid())
+  closureId               String
+  anonymousCounterpartyId String
+  operationType           Quarterly349OperationType
+  amountCents             BigInt
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  closure                 QuarterlyClosure          @relation(fields: [closureId], references: [id], onDelete: Cascade)
+
+  @@index([closureId, anonymousCounterpartyId])
+}
+
+model QuarterlyLedgerEntry {
+  id                      String                  @id @default(cuid())
+  closureId               String
+  anonymousEntryId        String
+  anonymousCounterpartyId String?
+  operationDate           DateTime
+  direction               QuarterlyEntryDirection
+  documentType            QuarterlyDocumentType
+  taxKind                 QuarterlyTaxKind
+  currency                String                  @default("EUR") @db.Char(3)
+  baseCents               BigInt
+  vatCents                BigInt
+  totalCents              BigInt
+  vatRateBasisPoints      Int?
+  includedIn303           Boolean                 @default(false)
+  includedIn349           Boolean                 @default(false)
+  reviewStatus            QuarterlyReviewStatus   @default(REVIEW)
+  sourceFileId            String?
+  sourceSheet             String?
+  sourceRow               Int?
+  importBatchId           String?
+  importRowId             String?                 @unique
+  deduplicationKey        String?                 @db.Char(64)
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  closure                 QuarterlyClosure        @relation(fields: [closureId], references: [id], onDelete: Cascade)
+  importBatch             QuarterlyImportBatch?   @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+  importRow               QuarterlyImportRow?     @relation(fields: [importRowId], references: [id], onDelete: SetNull)
+
+  @@unique([closureId, anonymousEntryId])
+  @@unique([closureId, deduplicationKey])
+  @@index([closureId, operationDate])
+  @@index([closureId, anonymousCounterpartyId])
+  @@index([importBatchId])
+}
+
+model QuarterlyIssue {
+  id                       String                 @id @default(cuid())
+  closureId                String
+  code                     QuarterlyIssueCode
+  severity                 QuarterlyIssueSeverity
+  relatedAnonymousEntryIds Json
+  amountCents              BigInt?
+  baseCents                BigInt?
+  vatCents                 BigInt?
+  message                  String                 @db.Text
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  closure                  QuarterlyClosure       @relation(fields: [closureId], references: [id], onDelete: Cascade)
+
+  @@index([closureId, code])
+  @@index([closureId, severity])
 }
 
 model TaxProfile {

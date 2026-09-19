@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "year": 2026,
+  "quarter": 1,
+  "status": "NEEDS_REVIEW",
+  "forms": {
+    "m303": {
+      "declaredResultCents": 122320,
+      "paymentStatus": "PENDING_DEFERRAL"
+    },
+    "m349": {
+      "declaredOperations": [
+        {
+          "anonymousCounterpartyId": "EU-SUPPLIER-001",
+          "operationType": "INTRA_EU_ACQUISITION",
+          "amountCents": 28550
+        }
+      ]
+    }
+  },
+  "ledger": {
+    "purchases": [
+      {
+        "anonymousEntryId": "ENTRY-EU-001",
+        "anonymousCounterpartyId": "EU-SUPPLIER-001",
+        "operationDate": "2026-02-15",
+        "direction": "PURCHASE",
+        "documentType": "INVOICE",
+        "kind": "INTRA_EU",
+        "currency": "EUR",
+        "baseCents": 28550,
+        "vatCents": 0,
+        "totalCents": 28550,
+        "vatRateBasisPoints": null,
+        "includedIn303": true,
+        "includedIn349": true,
+        "reviewStatus": "OK"
+      },
+      {
+        "anonymousEntryId": "ENTRY-DOM-001",
+        "operationDate": "2026-01-20",
+        "direction": "PURCHASE",
+        "documentType": "INVOICE",
+        "kind": "DOMESTIC",
+        "currency": "EUR",
+        "baseCents": 35500,
+        "vatCents": 7455,
+        "totalCents": 42955,
+        "vatRateBasisPoints": 2100,
+        "includedIn303": false,
+        "includedIn349": false,
+        "reviewStatus": "REVIEW"
+      },
+      {
+        "anonymousEntryId": "ENTRY-DOM-002",
+        "operationDate": "2026-03-10",
+        "direction": "PURCHASE",
+        "documentType": "INVOICE",
+        "kind": "DOMESTIC",
+        "currency": "EUR",
+        "baseCents": 35500,
+        "vatCents": 7455,
+        "totalCents": 42955,
+        "vatRateBasisPoints": 2100,
+        "includedIn303": false,
+        "includedIn349": false,
+        "reviewStatus": "REVIEW"
+      }
+    ],
+    "sales": [
+      {
+        "anonymousEntryId": "ENTRY-EXEMPT-001",
+        "operationDate": "2026-03-18",
+        "direction": "SALE",
+        "documentType": "INVOICE",
+        "kind": "EXEMPT",
+        "currency": "EUR",
+        "baseCents": 3500,
+        "vatCents": 0,
+        "totalCents": 3500,
+        "vatRateBasisPoints": null,
+        "includedIn303": true,
+        "includedIn349": false,
+        "reviewStatus": "REVIEW"
+      }
+    ]
+  },
+  "expectedTotals": {
+    "declared303ResultCents": 122320,
+    "intraEu349AmountCents": 28550,
+    "excludedDomesticBaseCents": 71000,
+    "excludedDomesticVatCents": 14910,
+    "exemptAmountCents": 3500
+  },
+  "issues": [
+    {
+      "code": "DOMESTIC_PURCHASE_EXCLUDED_FROM_303",
+      "severity": "WARNING",
+      "relatedAnonymousEntryIds": ["ENTRY-DOM-001", "ENTRY-DOM-002"],
+      "baseCents": 71000,
+      "vatCents": 14910,
+      "message": "Revisar dos compras domésticas con IVA no incluidas en el 303."
+    },
+    {
+      "code": "EXEMPT_OPERATION_REVIEW",
+      "severity": "WARNING",
+      "relatedAnonymousEntryIds": ["ENTRY-EXEMPT-001"],
+      "amountCents": 3500,
+      "message": "Revisar tratamiento y soporte de la operación exenta."
+    },
+    {
+      "code": "DEFERRAL_PENDING",
+      "severity": "BLOCKER",
+      "relatedAnonymousEntryIds": [],
+      "message": "La solicitud de aplazamiento está pendiente; no consta pago confirmado."
+    }
+  ]
+}

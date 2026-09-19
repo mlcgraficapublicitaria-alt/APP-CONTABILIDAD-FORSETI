@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { getDatabaseUrl } from "@/lib/database-url";
+import { getDatabaseUrl } from "../database-url";
 
 const globalForPrisma = globalThis as unknown as {
   rentaFiscalPrisma?: PrismaClient;

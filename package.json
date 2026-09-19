@@ -11,6 +11,9 @@
     "build": "next build",
     "start": "node server.js",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:cierre-trimestral": "vitest run src/lib/cierre-trimestral",
+    "test:cierre-trimestral:db": "vitest run tests/integration/quarterly-db.integration.test.ts",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -42,6 +45,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.3.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
