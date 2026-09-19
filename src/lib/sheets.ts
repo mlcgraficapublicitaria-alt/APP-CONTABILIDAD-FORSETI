@@ -1,4 +1,5 @@
-const SHEET_ID = "1C-4g6B4iiQzCuiWiDGi-YyTm1Tm5Z88bIrTOhlKSsQo";
+export const DEFAULT_SHEET_ID = "1C-4g6B4iiQzCuiWiDGi-YyTm1Tm5Z88bIrTOhlKSsQo";
+const SHEET_ID = DEFAULT_SHEET_ID;
 const MONTH_NAMES = [
   "ENERO",
   "FEBRERO",
@@ -169,7 +170,7 @@ const demoDashboardData: DashboardData = {
   ],
 };
 
-function parseCsv(csv: string) {
+export function parseSheetCsv(csv: string) {
   const rows: string[][] = [];
   let row: string[] = [];
   let value = "";
@@ -212,11 +213,12 @@ function parseCsv(csv: string) {
   return rows.filter((items) => items.some((item) => item.length > 0));
 }
 
-async function getRange(range: string) {
+export async function getPublicSheetRange(range: string, sheetId = SHEET_ID) {
   const separatorIndex = range.lastIndexOf("!");
   const sheet = range.slice(0, separatorIndex);
   const cells = range.slice(separatorIndex + 1);
-  const url = new URL(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`);
+  if (!/^[a-zA-Z0-9_-]{20,120}$/.test(sheetId)) throw new Error("Identificador de Google Sheets no válido.");
+  const url = new URL(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq`);
   url.searchParams.set("tqx", "out:csv");
   url.searchParams.set("sheet", sheet);
   url.searchParams.set("range", cells);
@@ -226,7 +228,11 @@ async function getRange(range: string) {
   });
 
   if (!res.ok) throw new Error(`Public Sheets error: ${res.status}`);
-  return parseCsv(await res.text());
+  return parseSheetCsv(await res.text());
+}
+
+async function getRange(range: string) {
+  return getPublicSheetRange(range);
 }
 
 function pick(row: string[] | undefined, index: number) {

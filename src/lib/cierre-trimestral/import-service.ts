@@ -103,7 +103,12 @@ export async function createCsvImportPreview(input: PreviewInput) {
       ...row,
       normalized: row.normalized ? {
         ...row.normalized,
-        sourceRef: { ...row.normalized.sourceRef, sourceFileId: sourceDocument.id, sourceRow: row.sourceRow },
+        sourceRef: {
+          ...row.normalized.sourceRef,
+          sourceFileId: sourceDocument.id,
+          sourceSheet: row.original.hoja_origen?.trim() || row.normalized.sourceRef?.sourceSheet,
+          sourceRow: row.sourceRow,
+        },
       } : undefined,
     }));
     await tx.quarterlyImportRow.deleteMany({ where: { importBatchId: batch.id } });
