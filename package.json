@@ -9,6 +9,7 @@
     "dev": "next dev --webpack",
     "prebuild": "prisma generate",
     "build": "next build",
+    "forseti:operator": "node scripts/run-forseti-operator.mjs",
     "start": "node server.js",
     "lint": "eslint",
     "test": "vitest run",
