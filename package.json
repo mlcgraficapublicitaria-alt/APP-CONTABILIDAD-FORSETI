@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "prebuild": "PRISMA_CLIENT_ENGINE_TYPE=binary prisma generate",
-    "build": "next build",
+    "build": "next build --webpack",
     "forseti:operator": "node scripts/run-forseti-operator.mjs",
     "start": "node server.js",
     "lint": "eslint",
