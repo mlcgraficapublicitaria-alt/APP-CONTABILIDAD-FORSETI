@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { DEFAULT_CSV_MAPPING } from "./csv";
 
 const mocks = vi.hoisted(() => {

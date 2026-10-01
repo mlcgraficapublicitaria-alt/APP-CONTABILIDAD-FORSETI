@@ -9,7 +9,7 @@
     "dev": "next dev --webpack",
     "prebuild": "prisma generate",
     "build": "next build --webpack",
-    "postbuild": "prisma generate && test -f node_modules/.prisma/client/query_compiler_bg.js && test -f node_modules/.prisma/client/query_compiler_bg.wasm",
+    "postbuild": "prisma generate && test -f src/generated/prisma/client.ts && test -f node_modules/@prisma/client/runtime/query_compiler_bg.mysql.wasm-base64.mjs",
     "forseti:operator": "node scripts/run-forseti-operator.mjs",
     "start": "node server.js",
     "lint": "eslint",

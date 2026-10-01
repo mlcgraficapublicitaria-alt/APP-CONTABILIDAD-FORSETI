@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "../renta-fiscal/prisma";
 import { previewCsv } from "./csv";
 import { mapLedgerEntryForPersistence } from "./persistence";

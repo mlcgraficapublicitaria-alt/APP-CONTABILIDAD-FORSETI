@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@/generated/prisma/client";
 
 const RECONCILED_ISSUE_CODES = [
   "DOMESTIC_PURCHASE_EXCLUDED_FROM_303",
