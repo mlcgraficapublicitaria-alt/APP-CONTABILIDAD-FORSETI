@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev --webpack",
-    "prebuild": "PRISMA_CLIENT_ENGINE_TYPE=binary prisma generate",
+    "prebuild": "prisma generate",
     "build": "next build --webpack",
     "forseti:operator": "node scripts/run-forseti-operator.mjs",
     "start": "node server.js",
@@ -15,8 +15,8 @@
     "test": "vitest run",
     "test:cierre-trimestral": "vitest run src/lib/cierre-trimestral",
     "test:cierre-trimestral:db": "vitest run tests/integration/quarterly-db.integration.test.ts",
-    "postinstall": "PRISMA_CLIENT_ENGINE_TYPE=binary prisma generate",
-    "prisma:generate": "PRISMA_CLIENT_ENGINE_TYPE=binary prisma generate",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "db:init": "prisma migrate deploy && npm run db:seed",
@@ -27,6 +27,7 @@
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
+    "@prisma/adapter-mariadb": "^6.19.3",
     "@prisma/client": "^6.19.3",
     "@tesseract.js-data/spa": "^1.0.0",
     "jszip": "^3.10.1",
