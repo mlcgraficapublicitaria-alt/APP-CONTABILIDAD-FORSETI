@@ -525,6 +525,10 @@ function buildPrintableInvoiceDocument(
         padding: 18px 0 0;
         vertical-align: top;
       }
+      .items td:first-child,
+      .items td:nth-child(2) {
+        text-align: left;
+      }
       .divider {
         border-bottom: 1px solid var(--line);
       }
@@ -535,8 +539,9 @@ function buildPrintableInvoiceDocument(
         line-height: 1.35;
       }
       .service-note td {
-        padding-top: 10px;
+        padding-top: 28px;
         border-top: 0;
+        text-align: left;
       }
       .sheet.has-note .items { margin-top: 42px; }
       .sheet.has-note .summary { margin-top: 92px; }
@@ -1644,8 +1649,8 @@ export function FacturacionClient() {
                     const displayedAmount = line.noCost ? "S/N" : formatMoney(amount);
                     return (
                       <tr key={line.id} className="text-[16px] text-slate-800">
-                        <td className="pt-5 align-top">{line.articleCode || "H"}</td>
-                        <td className="pt-5 whitespace-pre-line align-top">
+                        <td className="pt-5 text-left align-top">{line.articleCode || "H"}</td>
+                        <td className="pt-5 whitespace-pre-line text-left align-top">
                           {line.description || "SERVICIO"}
                           {line.notes?.trim() ? <span className="mt-1.5 block text-left text-[12px] leading-4 text-slate-500">{line.notes}</span> : null}
                         </td>
@@ -1658,7 +1663,7 @@ export function FacturacionClient() {
                   {hasServiceNotes ? (
                     <tr>
                       <td />
-                      <td colSpan={4} className="pt-3 text-[13px] leading-5 text-slate-500" dangerouslySetInnerHTML={{ __html: safeRichNoteHtml(form.serviceNotes) }} />
+                      <td colSpan={4} className="pt-7 text-left text-[13px] leading-5 text-slate-500" dangerouslySetInnerHTML={{ __html: safeRichNoteHtml(form.serviceNotes) }} />
                     </tr>
                   ) : null}
                 </tbody>
