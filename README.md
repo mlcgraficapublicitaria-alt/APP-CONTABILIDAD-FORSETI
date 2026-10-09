@@ -107,10 +107,15 @@ Notes:
 
 ### Production deployment
 
-The private FORSETI operator supports read-only listing plus two narrowly scoped,
-idempotent write operations: `client-upsert` and `invoice-draft-create`. Write
-payloads are passed as JSON in the third CLI argument. Draft creation never emits
-an invoice and does not expose or modify bank accounts.
+The private FORSETI operator supports read-only listing plus three narrowly scoped
+write operations: `client-upsert`, `invoice-draft-create`, and `invoice-issue`.
+Write payloads are passed as JSON in the third CLI argument. Draft creation never
+emits an invoice and no operator action exposes or modifies bank accounts. Emission
+requires the invoice ID and the exact explicit confirmation `EMITIR`:
+
+```bash
+npm run forseti:operator -- invoice-issue '{"invoice":{"id":"<invoice-id>","confirmation":"EMITIR"}}'
+```
 
 For production, configure one of these in the hosting platform/server:
 

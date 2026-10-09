@@ -25,6 +25,8 @@ type DraftLineInput = {
 };
 
 type InvoiceDraftInput = {
+  id?: string;
+  confirmation?: string;
   documentName?: string;
   series?: string;
   number?: string | number;
@@ -223,6 +225,47 @@ export async function POST(request: Request) {
         select: { id: true, documentName: true, series: true, numberLabel: true, issueDate: true, status: true, totalAmount: true },
       });
       return NextResponse.json({ ok: true, operation: body.operation, created: true, data: invoice }, { status: 201 });
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+  if (body.operation === "invoice-issue") {
+    const invoiceId = body.invoice?.id?.trim();
+    const confirmation = body.invoice?.confirmation?.trim();
+    if (!invoiceId) {
+      return NextResponse.json({ ok: false, error: "La factura que quieres emitir no está identificada." }, { status: 400 });
+    }
+    if (confirmation !== "EMITIR") {
+      return NextResponse.json({ ok: false, error: "La emisión requiere confirmation: \"EMITIR\"." }, { status: 400 });
+    }
+
+    try {
+      const existing = await prisma.invoice.findUnique({
+        where: { id: invoiceId },
+        select: { id: true, documentName: true, series: true, numberLabel: true, issueDate: true, status: true, totalAmount: true },
+      });
+      if (!existing) {
+        return NextResponse.json({ ok: false, error: "No se encontró la factura indicada." }, { status: 404 });
+      }
+      if (existing.status === "ISSUED") {
+        return NextResponse.json({ ok: true, operation: body.operation, issued: false, alreadyIssued: true, data: existing });
+      }
+      if (existing.status !== "DRAFT") {
+        return NextResponse.json({ ok: false, error: `La factura no puede emitirse desde el estado ${existing.status}.` }, { status: 409 });
+      }
+
+      const result = await prisma.invoice.updateMany({
+        where: { id: invoiceId, status: "DRAFT" },
+        data: { status: "ISSUED" },
+      });
+      if (result.count !== 1) {
+        return NextResponse.json({ ok: false, error: "La factura cambió de estado durante la emisión; vuelve a consultarla." }, { status: 409 });
+      }
+      const invoice = await prisma.invoice.findUniqueOrThrow({
+        where: { id: invoiceId },
+        select: { id: true, documentName: true, series: true, numberLabel: true, issueDate: true, status: true, totalAmount: true },
+      });
+      return NextResponse.json({ ok: true, operation: body.operation, issued: true, alreadyIssued: false, data: invoice });
     } catch (error) {
       return errorResponse(error);
     }
