@@ -107,6 +107,11 @@ Notes:
 
 ### Production deployment
 
+The private FORSETI operator supports read-only listing plus two narrowly scoped,
+idempotent write operations: `client-upsert` and `invoice-draft-create`. Write
+payloads are passed as JSON in the third CLI argument. Draft creation never emits
+an invoice and does not expose or modify bank accounts.
+
 For production, configure one of these in the hosting platform/server:
 
 ```env
