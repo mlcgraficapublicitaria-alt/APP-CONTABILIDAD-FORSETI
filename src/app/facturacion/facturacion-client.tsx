@@ -29,6 +29,7 @@ type InvoiceLineDraft = {
   articleCode: string;
   description: string;
   unitPrice: string;
+  discountRate: string;
   noCost?: boolean;
   notes?: string;
 };
@@ -38,6 +39,7 @@ type IssuedInvoiceLine = {
   articleCode?: string;
   description: string;
   unitPrice: number;
+  discountAmount?: number;
   lineTotalAmount?: number;
   notes?: string;
 };
@@ -151,6 +153,19 @@ function parseDecimal(value: string) {
   const normalized = value.replace(/\s/g, "").replace(",", ".");
   const parsed = Number.parseFloat(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function discountRateForLine(line: Pick<InvoiceLineDraft, "unitPrice" | "discountRate" | "noCost">) {
+  if (line.noCost) return 0;
+  return Math.min(100, Math.max(0, parseDecimal(line.discountRate)));
+}
+
+function lineDiscountAmount(line: Pick<InvoiceLineDraft, "unitPrice" | "discountRate" | "noCost">) {
+  return parseDecimal(line.unitPrice) * discountRateForLine(line) / 100;
+}
+
+function lineTotalAmount(line: Pick<InvoiceLineDraft, "unitPrice" | "discountRate" | "noCost">) {
+  return Math.max(0, parseDecimal(line.unitPrice) - lineDiscountAmount(line));
 }
 
 function formatMoney(value: number) {
@@ -334,6 +349,9 @@ function invoiceToLines(invoice: IssuedInvoice): InvoiceLineDraft[] {
       articleCode: line.articleCode || "H",
       description: line.description,
       unitPrice: String(line.unitPrice ?? line.lineTotalAmount ?? 0),
+      discountRate: line.unitPrice
+        ? String(Math.max(0, (line.discountAmount ?? 0) / line.unitPrice * 100))
+        : "0",
       noCost: (line.unitPrice ?? line.lineTotalAmount ?? 0) === 0,
       notes: line.notes || "",
     }));
@@ -344,6 +362,7 @@ function invoiceToLines(invoice: IssuedInvoice): InvoiceLineDraft[] {
     articleCode: invoice.articleCode || "H",
     description: invoice.serviceDescription || "Servicio",
     unitPrice: String(invoice.subtotalAmount ?? 0),
+    discountRate: "0",
     noCost: (invoice.subtotalAmount ?? 0) === 0,
     notes: invoice.notes || "",
   }];
@@ -355,6 +374,7 @@ function printableLines(form: InvoiceFormState, lines?: InvoiceLineDraft[]) {
     articleCode: form.articleCode || "H",
     description: form.billedService || "SERVICIO",
     unitPrice: form.baseAmount,
+    discountRate: "0",
   }];
 }
 
@@ -376,13 +396,17 @@ function buildPrintableInvoiceDocument(
   const invoiceDate = escapeHtml(formatDate(form.invoiceDate) || form.invoiceDate);
   const itemRows = printableLines(form, lines).map((line) => {
     const amount = parseDecimal(line.unitPrice);
+    const discount = lineDiscountAmount(line);
+    const total = lineTotalAmount(line);
     const displayedAmount = line.noCost ? "S/N" : formatMoney(amount);
+    const displayedDiscount = line.noCost || discount === 0 ? "" : `${formatPercent(discountRateForLine(line))} (${formatMoney(discount)})`;
+    const displayedTotal = line.noCost ? "S/N" : formatMoney(total);
     return `<tr>
       <td>${escapeHtml(line.articleCode.trim() || "H")}</td>
       <td>${multilineToHtml(line.description || "SERVICIO")}${line.notes?.trim() ? `<div style="margin-top:6px;font-size:12px;color:#777;line-height:1.35;text-align:left">${multilineToHtml(line.notes)}</div>` : ""}</td>
       <td class="right">${displayedAmount}</td>
-      <td class="right"></td>
-      <td class="right">${displayedAmount}</td>
+      <td class="right">${displayedDiscount}</td>
+      <td class="right">${displayedTotal}</td>
     </tr>`;
   }).join("");
 
@@ -891,7 +915,7 @@ export function FacturacionClient() {
 
   const summary = useMemo(() => {
     const baseAmount = invoiceLines.length
-      ? invoiceLines.reduce((total, line) => total + parseDecimal(line.unitPrice), 0)
+      ? invoiceLines.reduce((total, line) => total + lineTotalAmount(line), 0)
       : parseDecimal(form.baseAmount);
     const vatRate = parseDecimal(form.vatRate);
     const irpfRate = parseDecimal(form.irpfRate);
@@ -1000,8 +1024,8 @@ export function FacturacionClient() {
           description: line.description,
           quantity: 1,
           unitPrice: parseDecimal(line.unitPrice),
-          discountAmount: 0,
-          lineTotalAmount: parseDecimal(line.unitPrice),
+          discountAmount: lineDiscountAmount(line),
+          lineTotalAmount: lineTotalAmount(line),
           notes: line.notes || "",
         })),
       }),
@@ -1218,6 +1242,7 @@ export function FacturacionClient() {
         articleCode: "H",
         description: service || "Servicio",
         unitPrice: base ? formatInvoiceBaseParam(base) : "",
+        discountRate: "0",
         noCost: false,
         notes: "",
       }]);
@@ -1367,6 +1392,7 @@ export function FacturacionClient() {
           articleCode: service.articleCode || "H",
           description: service.name,
           unitPrice: "",
+          discountRate: "0",
           noCost: false,
           notes: "",
         }]);
@@ -1389,6 +1415,7 @@ export function FacturacionClient() {
       articleCode: "H",
       description: "",
       unitPrice: "",
+      discountRate: "0",
       noCost: false,
       notes: "",
     }]);
@@ -1646,7 +1673,11 @@ export function FacturacionClient() {
                 <tbody>
                   {localLines.map((line) => {
                     const amount = parseDecimal(line.unitPrice);
+                    const discount = lineDiscountAmount(line);
+                    const total = lineTotalAmount(line);
                     const displayedAmount = line.noCost ? "S/N" : formatMoney(amount);
+                    const displayedDiscount = line.noCost || discount === 0 ? "" : `${formatPercent(discountRateForLine(line))} (${formatMoney(discount)})`;
+                    const displayedTotal = line.noCost ? "S/N" : formatMoney(total);
                     return (
                       <tr key={line.id} className="text-[16px] text-slate-800">
                         <td className="pt-5 text-left align-top">{line.articleCode || "H"}</td>
@@ -1655,8 +1686,8 @@ export function FacturacionClient() {
                           {line.notes?.trim() ? <span className="mt-1.5 block text-left text-[12px] leading-4 text-slate-500">{line.notes}</span> : null}
                         </td>
                         <td className="pt-5 text-right align-top">{displayedAmount}</td>
-                        <td className="pt-5 text-right align-top"></td>
-                        <td className="pt-5 text-right align-top">{displayedAmount}</td>
+                        <td className="pt-5 text-right align-top">{displayedDiscount}</td>
+                        <td className="pt-5 text-right align-top">{displayedTotal}</td>
                       </tr>
                     );
                   })}
@@ -2008,7 +2039,7 @@ export function FacturacionClient() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#b3d87d]">Líneas de factura</p>
-                  <p className="mt-1 text-xs text-slate-400">Cada servicio aparecerá con su artículo y su precio.</p>
+                  <p className="mt-1 text-xs text-slate-400">Cada servicio permite indicar precio y descuento porcentual.</p>
                 </div>
                 <button type="button" onClick={addFreeInvoiceLine} className="min-h-10 rounded-xl border border-[#87ba2f]/50 bg-[#87ba2f]/10 px-4 py-2 text-sm font-semibold text-[#d7f0a7] hover:bg-[#87ba2f]/20">+ Añadir línea libre</button>
               </div>
@@ -2023,12 +2054,15 @@ export function FacturacionClient() {
                       <FormField label="Descripción" htmlFor={`${baseId}-line-description-${line.id}`}>
                         <input id={`${baseId}-line-description-${line.id}`} className={fieldClassName} value={line.description} onChange={(event) => updateInvoiceLine(line.id, { description: event.target.value })} />
                       </FormField>
-                      <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+                      <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
                         <FormField label="Artículo" htmlFor={`${baseId}-line-article-${line.id}`}>
                           <input id={`${baseId}-line-article-${line.id}`} className={fieldClassName} value={line.articleCode} onChange={(event) => updateInvoiceLine(line.id, { articleCode: event.target.value.toUpperCase() })} />
                         </FormField>
                         <FormField label="Precio (€)" htmlFor={`${baseId}-line-price-${line.id}`}>
                           <input id={`${baseId}-line-price-${line.id}`} inputMode="decimal" className={`${fieldClassName} disabled:cursor-not-allowed disabled:opacity-60`} value={line.unitPrice} onChange={(event) => updateInvoiceLine(line.id, { unitPrice: event.target.value })} placeholder="0,00" disabled={line.noCost} />
+                        </FormField>
+                        <FormField label="Descuento (%)" htmlFor={`${baseId}-line-discount-${line.id}`}>
+                          <input id={`${baseId}-line-discount-${line.id}`} type="number" min="0" max="100" step="0.01" inputMode="decimal" className={`${fieldClassName} disabled:cursor-not-allowed disabled:opacity-60`} value={line.discountRate} onChange={(event) => updateInvoiceLine(line.id, { discountRate: event.target.value })} placeholder="0" disabled={line.noCost} />
                         </FormField>
                         <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 text-sm font-semibold text-slate-200 hover:bg-white/10">
                           <input
@@ -2037,6 +2071,7 @@ export function FacturacionClient() {
                             onChange={(event) => updateInvoiceLine(line.id, {
                               noCost: event.target.checked,
                               unitPrice: event.target.checked ? "0" : (parseDecimal(line.unitPrice) === 0 ? "" : line.unitPrice),
+                              discountRate: event.target.checked ? "0" : line.discountRate,
                             })}
                             className="h-4 w-4 accent-[#87ba2f]"
                           />
