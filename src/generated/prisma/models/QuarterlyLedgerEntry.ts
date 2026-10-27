@@ -341,7 +341,7 @@ export type QuarterlyLedgerEntryGroupByOutputType = {
   _max: QuarterlyLedgerEntryMaxAggregateOutputType | null
 }
 
-export type GetQuarterlyLedgerEntryGroupByPayload<T extends QuarterlyLedgerEntryGroupByArgs> = Prisma.PrismaPromise<
+type GetQuarterlyLedgerEntryGroupByPayload<T extends QuarterlyLedgerEntryGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<QuarterlyLedgerEntryGroupByOutputType, T['by']> &
       {
@@ -2181,11 +2181,6 @@ export type QuarterlyLedgerEntryFindManyArgs<ExtArgs extends runtime.Types.Exten
    * Skip the first `n` QuarterlyLedgerEntries.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of QuarterlyLedgerEntries.
-   */
   distinct?: Prisma.QuarterlyLedgerEntryScalarFieldEnum | Prisma.QuarterlyLedgerEntryScalarFieldEnum[]
 }
 

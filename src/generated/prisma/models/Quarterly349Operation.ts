@@ -206,7 +206,7 @@ export type Quarterly349OperationGroupByOutputType = {
   _max: Quarterly349OperationMaxAggregateOutputType | null
 }
 
-export type GetQuarterly349OperationGroupByPayload<T extends Quarterly349OperationGroupByArgs> = Prisma.PrismaPromise<
+type GetQuarterly349OperationGroupByPayload<T extends Quarterly349OperationGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<Quarterly349OperationGroupByOutputType, T['by']> &
       {
@@ -1175,11 +1175,6 @@ export type Quarterly349OperationFindManyArgs<ExtArgs extends runtime.Types.Exte
    * Skip the first `n` Quarterly349Operations.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of Quarterly349Operations.
-   */
   distinct?: Prisma.Quarterly349OperationScalarFieldEnum | Prisma.Quarterly349OperationScalarFieldEnum[]
 }
 

@@ -238,7 +238,7 @@ export type QuarterlyIssueGroupByOutputType = {
   _max: QuarterlyIssueMaxAggregateOutputType | null
 }
 
-export type GetQuarterlyIssueGroupByPayload<T extends QuarterlyIssueGroupByArgs> = Prisma.PrismaPromise<
+type GetQuarterlyIssueGroupByPayload<T extends QuarterlyIssueGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<QuarterlyIssueGroupByOutputType, T['by']> &
       {
@@ -1309,11 +1309,6 @@ export type QuarterlyIssueFindManyArgs<ExtArgs extends runtime.Types.Extensions.
    * Skip the first `n` QuarterlyIssues.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of QuarterlyIssues.
-   */
   distinct?: Prisma.QuarterlyIssueScalarFieldEnum | Prisma.QuarterlyIssueScalarFieldEnum[]
 }
 

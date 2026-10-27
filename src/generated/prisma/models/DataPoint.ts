@@ -186,7 +186,7 @@ export type DataPointGroupByOutputType = {
   _max: DataPointMaxAggregateOutputType | null
 }
 
-export type GetDataPointGroupByPayload<T extends DataPointGroupByArgs> = Prisma.PrismaPromise<
+type GetDataPointGroupByPayload<T extends DataPointGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<DataPointGroupByOutputType, T['by']> &
       {
@@ -1191,11 +1191,6 @@ export type DataPointFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
    * Skip the first `n` DataPoints.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of DataPoints.
-   */
   distinct?: Prisma.DataPointScalarFieldEnum | Prisma.DataPointScalarFieldEnum[]
 }
 

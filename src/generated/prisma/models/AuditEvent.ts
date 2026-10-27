@@ -186,7 +186,7 @@ export type AuditEventGroupByOutputType = {
   _max: AuditEventMaxAggregateOutputType | null
 }
 
-export type GetAuditEventGroupByPayload<T extends AuditEventGroupByArgs> = Prisma.PrismaPromise<
+type GetAuditEventGroupByPayload<T extends AuditEventGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<AuditEventGroupByOutputType, T['by']> &
       {
@@ -1325,11 +1325,6 @@ export type AuditEventFindManyArgs<ExtArgs extends runtime.Types.Extensions.Inte
    * Skip the first `n` AuditEvents.
    */
   skip?: number
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-   * 
-   * Filter by unique combinations of AuditEvents.
-   */
   distinct?: Prisma.AuditEventScalarFieldEnum | Prisma.AuditEventScalarFieldEnum[]
 }
 
