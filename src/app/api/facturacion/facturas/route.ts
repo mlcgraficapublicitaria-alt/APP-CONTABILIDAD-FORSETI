@@ -18,6 +18,8 @@ type RegisterInvoiceBody = {
   issuerBankAccount?: string;
   notes?: string;
   subtotalAmount?: number;
+  totalDiscountRate?: number;
+  totalDiscountAmount?: number;
   vatRate?: number;
   vatAmount?: number;
   irpfRate?: number;
@@ -51,6 +53,8 @@ type LocalInvoice = {
   issuerBankAccount?: string;
   notes?: string;
   subtotalAmount?: number;
+  totalDiscountRate?: number;
+  totalDiscountAmount?: number;
   vatRate?: number;
   vatAmount?: number;
   irpfRate?: number;
@@ -154,11 +158,26 @@ function invoiceLineNotesFromMetadata(value?: string | null) {
   }
 }
 
+function invoiceDiscountFromMetadata(value?: string | null) {
+  if (!value?.trim().startsWith("{")) return { totalDiscountRate: 0, totalDiscountAmount: 0 };
+  try {
+    const metadata = JSON.parse(value) as { totalDiscountRate?: unknown; totalDiscountAmount?: unknown };
+    return {
+      totalDiscountRate: typeof metadata.totalDiscountRate === "number" && Number.isFinite(metadata.totalDiscountRate) ? metadata.totalDiscountRate : 0,
+      totalDiscountAmount: typeof metadata.totalDiscountAmount === "number" && Number.isFinite(metadata.totalDiscountAmount) ? metadata.totalDiscountAmount : 0,
+    };
+  } catch {
+    return { totalDiscountRate: 0, totalDiscountAmount: 0 };
+  }
+}
+
 function buildInvoiceMetadata(body: RegisterInvoiceBody) {
   return JSON.stringify({
     issuerBankAccount: body.issuerBankAccount?.trim() || "",
     renderedHtml: body.renderedHtml?.trim() || "",
     lineNotes: body.lines?.map((line) => line.notes?.trim() || "") || [],
+    totalDiscountRate: decimalNumber(body.totalDiscountRate),
+    totalDiscountAmount: decimalNumber(body.totalDiscountAmount),
   });
 }
 
@@ -280,6 +299,7 @@ export async function GET() {
     return ok({
       invoices: invoices.map((invoice) => {
         const lineNotes = invoiceLineNotesFromMetadata(invoice.renderedHtml);
+        const invoiceDiscount = invoiceDiscountFromMetadata(invoice.renderedHtml);
         return ({
         id: invoice.id,
         documentName: invoice.documentName,
@@ -293,6 +313,7 @@ export async function GET() {
         serviceDescription: invoice.serviceDescription,
         notes: invoice.notes ?? "",
         subtotalAmount: Number(invoice.subtotalAmount),
+        ...invoiceDiscount,
         vatRate: Number(invoice.vatRate),
         vatAmount: Number(invoice.vatAmount),
         irpfRate: Number(invoice.irpfRate),
@@ -351,6 +372,7 @@ export async function GET() {
         return ok({
           invoices: invoices.map((invoice) => {
             const lineNotes = invoiceLineNotesFromMetadata(invoice.renderedHtml);
+            const invoiceDiscount = invoiceDiscountFromMetadata(invoice.renderedHtml);
             return ({
               id: invoice.id,
               documentName: invoice.documentName,
@@ -364,6 +386,7 @@ export async function GET() {
               serviceDescription: invoice.serviceDescription,
               notes: invoice.notes ?? "",
               subtotalAmount: Number(invoice.subtotalAmount),
+              ...invoiceDiscount,
               vatRate: Number(invoice.vatRate),
               vatAmount: Number(invoice.vatAmount),
               irpfRate: Number(invoice.irpfRate),

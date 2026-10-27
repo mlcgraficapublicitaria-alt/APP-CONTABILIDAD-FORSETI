@@ -63,6 +63,8 @@ type IssuedInvoice = {
   serviceDescription?: string;
   notes?: string;
   subtotalAmount?: number;
+  totalDiscountRate?: number;
+  totalDiscountAmount?: number;
   vatRate?: number;
   vatAmount?: number;
   irpfRate?: number;
@@ -82,6 +84,9 @@ type IssuedInvoice = {
 };
 
 type InvoiceSummary = {
+  grossBaseAmount: number;
+  totalDiscountRate: number;
+  totalDiscountAmount: number;
   baseAmount: number;
   vatRate: number;
   irpfRate: number;
@@ -111,6 +116,7 @@ type InvoiceFormState = {
   billedService: string;
   serviceNotes: string;
   baseAmount: string;
+  totalDiscountRate: string;
   vatRate: string;
   irpfRate: string;
 };
@@ -136,6 +142,7 @@ const INITIAL_STATE: InvoiceFormState = {
   billedService: "",
   serviceNotes: "",
   baseAmount: "",
+  totalDiscountRate: "0",
   vatRate: "21",
   irpfRate: "15",
 };
@@ -326,6 +333,7 @@ function invoiceToFormState(invoice: IssuedInvoice): InvoiceFormState {
     billedService: invoice.serviceDescription || "Servicio",
     serviceNotes: invoice.notes || "",
     baseAmount: String(invoice.subtotalAmount ?? 0),
+    totalDiscountRate: String(invoice.totalDiscountRate ?? 0),
     vatRate: String(invoice.vatRate ?? 0),
     irpfRate: String(invoice.irpfRate ?? 0),
   };
@@ -333,6 +341,9 @@ function invoiceToFormState(invoice: IssuedInvoice): InvoiceFormState {
 
 function invoiceToSummary(invoice: IssuedInvoice): InvoiceSummary {
   return {
+    grossBaseAmount: (invoice.subtotalAmount ?? 0) + (invoice.totalDiscountAmount ?? 0),
+    totalDiscountRate: invoice.totalDiscountRate ?? 0,
+    totalDiscountAmount: invoice.totalDiscountAmount ?? 0,
     baseAmount: invoice.subtotalAmount ?? 0,
     vatRate: invoice.vatRate ?? 0,
     vatAmount: invoice.vatAmount ?? 0,
@@ -674,6 +685,7 @@ function buildPrintableInvoiceDocument(
             </tr>
           </thead>
           <tbody>
+            ${summary.totalDiscountAmount > 0 ? `<tr><td>DESCUENTO TOTAL (${formatPercent(summary.totalDiscountRate)})</td><td></td><td></td><td></td>${summary.irpfRate > 0 ? '<td></td>' : ''}<td class="right">-${formatMoney(summary.totalDiscountAmount)}</td></tr>` : ""}
             <tr>
               <td>${formatMoney(summary.baseAmount)}</td>
               <td class="right">${formatPercent(summary.vatRate)}</td>
@@ -914,9 +926,12 @@ export function FacturacionClient() {
   const fieldClassName = inputClassName();
 
   const summary = useMemo(() => {
-    const baseAmount = invoiceLines.length
+    const grossBaseAmount = invoiceLines.length
       ? invoiceLines.reduce((total, line) => total + lineTotalAmount(line), 0)
       : parseDecimal(form.baseAmount);
+    const totalDiscountRate = Math.min(100, Math.max(0, parseDecimal(form.totalDiscountRate)));
+    const totalDiscountAmount = grossBaseAmount * totalDiscountRate / 100;
+    const baseAmount = grossBaseAmount - totalDiscountAmount;
     const vatRate = parseDecimal(form.vatRate);
     const irpfRate = parseDecimal(form.irpfRate);
     const vatAmount = baseAmount * (vatRate / 100);
@@ -924,6 +939,9 @@ export function FacturacionClient() {
     const totalAmount = baseAmount + vatAmount - irpfAmount;
 
     return {
+      grossBaseAmount,
+      totalDiscountRate,
+      totalDiscountAmount,
       baseAmount,
       vatRate,
       irpfRate,
@@ -931,7 +949,7 @@ export function FacturacionClient() {
       irpfAmount,
       totalAmount,
     };
-  }, [form.baseAmount, form.irpfRate, form.vatRate, invoiceLines]);
+  }, [form.baseAmount, form.irpfRate, form.totalDiscountRate, form.vatRate, invoiceLines]);
 
   const previewDocumentName = buildInvoiceDocumentName(form);
   const previewInvoiceCode = buildInvoiceCode(form);
@@ -1014,6 +1032,8 @@ export function FacturacionClient() {
         issuerBankAccount: form.issuerBankAccount,
         notes: form.serviceNotes,
         subtotalAmount: summary.baseAmount,
+        totalDiscountRate: summary.totalDiscountRate,
+        totalDiscountAmount: summary.totalDiscountAmount,
         vatRate: summary.vatRate,
         vatAmount: summary.vatAmount,
         irpfRate: summary.irpfRate,
@@ -1718,6 +1738,15 @@ export function FacturacionClient() {
                   </tr>
                 </thead>
                 <tbody>
+                  {summary.totalDiscountAmount > 0 ? (
+                    <tr className="text-[16px] text-slate-800">
+                      <td className="pt-4">DESCUENTO TOTAL ({formatPercent(summary.totalDiscountRate)})</td>
+                      <td className="pt-4" />
+                      <td className="pt-4" />
+                      {summary.irpfRate > 0 ? <><td className="pt-4" /><td className="pt-4" /></> : null}
+                      <td className="pt-4 text-right">-{formatMoney(summary.totalDiscountAmount)}</td>
+                    </tr>
+                  ) : null}
                   <tr className="text-[16px] text-slate-800">
                     <td className="pt-4">{formatMoney(summary.baseAmount)}</td>
                     <td className="pt-4 text-right">{formatPercent(summary.vatRate)}</td>
@@ -2169,7 +2198,7 @@ export function FacturacionClient() {
           </div>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-3">
             <FormField label="Base imponible" htmlFor={`${baseId}-base`}>
               <input id={`${baseId}-base`} inputMode="decimal" className={`${fieldClassName} disabled:cursor-not-allowed disabled:opacity-70`} value={invoiceLines.length ? String(summary.baseAmount) : form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} disabled={invoiceLines.length > 0} />
             </FormField>
@@ -2179,7 +2208,12 @@ export function FacturacionClient() {
               <input id={`${baseId}-vat`} inputMode="decimal" className={fieldClassName} value={form.vatRate} onChange={(event) => updateField("vatRate", event.target.value)} />
             </FormField>
           </div>
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-2">
+            <FormField label="Descuento total (%)" htmlFor={`${baseId}-total-discount`}>
+              <input id={`${baseId}-total-discount`} type="number" min="0" max="100" step="0.01" inputMode="decimal" className={fieldClassName} value={form.totalDiscountRate} onChange={(event) => { updateField("totalDiscountRate", event.target.value); setGenerated(false); }} placeholder="0" />
+            </FormField>
+          </div>
+          <div className="lg:col-span-2">
             <FormField label="Aplicar IRPF" htmlFor={`${baseId}-apply-irpf`}>
               <select
                 id={`${baseId}-apply-irpf`}
