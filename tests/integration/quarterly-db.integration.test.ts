@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const databaseUrl = process.env.QUARTERLY_TEST_DATABASE_URL;
@@ -13,7 +14,18 @@ describe.skipIf(!databaseUrl)("cierre trimestral contra MySQL temporal", () => {
     throw new Error("QUARTERLY_TEST_DATABASE_URL debe apuntar a una base cuyo nombre incluya test, tmp o temp.");
   }
 
-  const prisma = new PrismaClient({ datasourceUrl: databaseUrl! });
+  const connection = new URL(databaseUrl ?? "mysql://forseti:forseti@localhost:3306/forseti_test");
+  const createClient = () => new PrismaClient({
+    adapter: new PrismaMariaDb({
+      host: connection.hostname,
+      port: Number(connection.port || 3306),
+      user: decodeURIComponent(connection.username),
+      password: decodeURIComponent(connection.password),
+      database: decodeURIComponent(connection.pathname.slice(1)),
+      connectionLimit: 2,
+    }),
+  });
+  const prisma = createClient();
   const migrationDirectory = resolve(process.cwd(), "prisma/migrations/20260919143000_add_quarterly_closure_domain");
 
   beforeAll(() => {
@@ -91,7 +103,7 @@ describe.skipIf(!databaseUrl)("cierre trimestral contra MySQL temporal", () => {
   });
 
   it("resuelve una colisión concurrente mediante la unicidad de deduplicación", async () => {
-    const peer = new PrismaClient({ datasourceUrl: databaseUrl! });
+    const peer = createClient();
     const data = {
       closureId: "q-close-a", operationDate: new Date("2026-02-01T00:00:00Z"), direction: "PURCHASE" as const,
       documentType: "INVOICE" as const, taxKind: "DOMESTIC" as const, currency: "EUR", baseCents: BigInt(100),

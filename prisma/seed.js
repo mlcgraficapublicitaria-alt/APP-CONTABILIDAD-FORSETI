@@ -1,7 +1,19 @@
-const { PrismaClient } = require("@prisma/client");
-const crypto = require("node:crypto");
+import crypto from "node:crypto";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import { PrismaClient } from "../src/generated/prisma/client";
 
-const prisma = new PrismaClient();
+const connection = new URL(process.env.DATABASE_URL ?? "");
+const prisma = new PrismaClient({
+  adapter: new PrismaMariaDb({
+    host: connection.hostname,
+    port: Number(connection.port || 3306),
+    user: decodeURIComponent(connection.username),
+    password: decodeURIComponent(connection.password),
+    database: decodeURIComponent(connection.pathname.slice(1)),
+    connectionLimit: 2,
+  }),
+});
+
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString("hex");

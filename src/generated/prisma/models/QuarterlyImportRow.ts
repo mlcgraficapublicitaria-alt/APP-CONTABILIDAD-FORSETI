@@ -215,7 +215,7 @@ export type QuarterlyImportRowGroupByOutputType = {
   _max: QuarterlyImportRowMaxAggregateOutputType | null
 }
 
-type GetQuarterlyImportRowGroupByPayload<T extends QuarterlyImportRowGroupByArgs> = Prisma.PrismaPromise<
+export type GetQuarterlyImportRowGroupByPayload<T extends QuarterlyImportRowGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<QuarterlyImportRowGroupByOutputType, T['by']> &
       {
@@ -1358,6 +1358,11 @@ export type QuarterlyImportRowFindManyArgs<ExtArgs extends runtime.Types.Extensi
    * Skip the first `n` QuarterlyImportRows.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of QuarterlyImportRows.
+   */
   distinct?: Prisma.QuarterlyImportRowScalarFieldEnum | Prisma.QuarterlyImportRowScalarFieldEnum[]
 }
 

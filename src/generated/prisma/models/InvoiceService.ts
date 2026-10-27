@@ -158,7 +158,7 @@ export type InvoiceServiceGroupByOutputType = {
   _max: InvoiceServiceMaxAggregateOutputType | null
 }
 
-type GetInvoiceServiceGroupByPayload<T extends InvoiceServiceGroupByArgs> = Prisma.PrismaPromise<
+export type GetInvoiceServiceGroupByPayload<T extends InvoiceServiceGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<InvoiceServiceGroupByOutputType, T['by']> &
       {
@@ -893,6 +893,11 @@ export type InvoiceServiceFindManyArgs<ExtArgs extends runtime.Types.Extensions.
    * Skip the first `n` InvoiceServices.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of InvoiceServices.
+   */
   distinct?: Prisma.InvoiceServiceScalarFieldEnum | Prisma.InvoiceServiceScalarFieldEnum[]
 }
 

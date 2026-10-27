@@ -250,7 +250,7 @@ export type QuarterlyClosureGroupByOutputType = {
   _max: QuarterlyClosureMaxAggregateOutputType | null
 }
 
-type GetQuarterlyClosureGroupByPayload<T extends QuarterlyClosureGroupByArgs> = Prisma.PrismaPromise<
+export type GetQuarterlyClosureGroupByPayload<T extends QuarterlyClosureGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<QuarterlyClosureGroupByOutputType, T['by']> &
       {
@@ -1999,6 +1999,11 @@ export type QuarterlyClosureFindManyArgs<ExtArgs extends runtime.Types.Extension
    * Skip the first `n` QuarterlyClosures.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of QuarterlyClosures.
+   */
   distinct?: Prisma.QuarterlyClosureScalarFieldEnum | Prisma.QuarterlyClosureScalarFieldEnum[]
 }
 

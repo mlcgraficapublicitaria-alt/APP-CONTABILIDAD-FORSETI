@@ -151,7 +151,7 @@ export type InvoiceBankAccountGroupByOutputType = {
   _max: InvoiceBankAccountMaxAggregateOutputType | null
 }
 
-type GetInvoiceBankAccountGroupByPayload<T extends InvoiceBankAccountGroupByArgs> = Prisma.PrismaPromise<
+export type GetInvoiceBankAccountGroupByPayload<T extends InvoiceBankAccountGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<InvoiceBankAccountGroupByOutputType, T['by']> &
       {
@@ -867,6 +867,11 @@ export type InvoiceBankAccountFindManyArgs<ExtArgs extends runtime.Types.Extensi
    * Skip the first `n` InvoiceBankAccounts.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of InvoiceBankAccounts.
+   */
   distinct?: Prisma.InvoiceBankAccountScalarFieldEnum | Prisma.InvoiceBankAccountScalarFieldEnum[]
 }
 

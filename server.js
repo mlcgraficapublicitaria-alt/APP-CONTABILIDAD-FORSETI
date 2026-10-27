@@ -1,5 +1,5 @@
-const http = require("http");
-const next = require("next");
+import http from "node:http";
+import next from "next";
 
 process.env.DATABASE_URL ||= "file:./dev.db";
 

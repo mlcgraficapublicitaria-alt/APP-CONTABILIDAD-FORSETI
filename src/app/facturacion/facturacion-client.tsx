@@ -2054,7 +2054,7 @@ export function FacturacionClient() {
                       <FormField label="Descripción" htmlFor={`${baseId}-line-description-${line.id}`}>
                         <input id={`${baseId}-line-description-${line.id}`} className={fieldClassName} value={line.description} onChange={(event) => updateInvoiceLine(line.id, { description: event.target.value })} />
                       </FormField>
-                      <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+                      <div className="mt-4 grid grid-cols-2 gap-4 items-end">
                         <FormField label="Artículo" htmlFor={`${baseId}-line-article-${line.id}`}>
                           <input id={`${baseId}-line-article-${line.id}`} className={fieldClassName} value={line.articleCode} onChange={(event) => updateInvoiceLine(line.id, { articleCode: event.target.value.toUpperCase() })} />
                         </FormField>

@@ -179,7 +179,7 @@ export type InvoiceTemplateGroupByOutputType = {
   _max: InvoiceTemplateMaxAggregateOutputType | null
 }
 
-type GetInvoiceTemplateGroupByPayload<T extends InvoiceTemplateGroupByArgs> = Prisma.PrismaPromise<
+export type GetInvoiceTemplateGroupByPayload<T extends InvoiceTemplateGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<InvoiceTemplateGroupByOutputType, T['by']> &
       {
@@ -1117,6 +1117,11 @@ export type InvoiceTemplateFindManyArgs<ExtArgs extends runtime.Types.Extensions
    * Skip the first `n` InvoiceTemplates.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of InvoiceTemplates.
+   */
   distinct?: Prisma.InvoiceTemplateScalarFieldEnum | Prisma.InvoiceTemplateScalarFieldEnum[]
 }
 

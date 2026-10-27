@@ -213,7 +213,7 @@ export type QuarterlySourceDocumentGroupByOutputType = {
   _max: QuarterlySourceDocumentMaxAggregateOutputType | null
 }
 
-type GetQuarterlySourceDocumentGroupByPayload<T extends QuarterlySourceDocumentGroupByArgs> = Prisma.PrismaPromise<
+export type GetQuarterlySourceDocumentGroupByPayload<T extends QuarterlySourceDocumentGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<QuarterlySourceDocumentGroupByOutputType, T['by']> &
       {
@@ -1333,6 +1333,11 @@ export type QuarterlySourceDocumentFindManyArgs<ExtArgs extends runtime.Types.Ex
    * Skip the first `n` QuarterlySourceDocuments.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of QuarterlySourceDocuments.
+   */
   distinct?: Prisma.QuarterlySourceDocumentScalarFieldEnum | Prisma.QuarterlySourceDocumentScalarFieldEnum[]
 }
 

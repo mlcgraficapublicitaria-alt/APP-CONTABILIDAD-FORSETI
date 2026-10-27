@@ -249,7 +249,7 @@ export type InvoiceIssuerProfileGroupByOutputType = {
   _max: InvoiceIssuerProfileMaxAggregateOutputType | null
 }
 
-type GetInvoiceIssuerProfileGroupByPayload<T extends InvoiceIssuerProfileGroupByArgs> = Prisma.PrismaPromise<
+export type GetInvoiceIssuerProfileGroupByPayload<T extends InvoiceIssuerProfileGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<InvoiceIssuerProfileGroupByOutputType, T['by']> &
       {
@@ -1415,6 +1415,11 @@ export type InvoiceIssuerProfileFindManyArgs<ExtArgs extends runtime.Types.Exten
    * Skip the first `n` InvoiceIssuerProfiles.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of InvoiceIssuerProfiles.
+   */
   distinct?: Prisma.InvoiceIssuerProfileScalarFieldEnum | Prisma.InvoiceIssuerProfileScalarFieldEnum[]
 }
 

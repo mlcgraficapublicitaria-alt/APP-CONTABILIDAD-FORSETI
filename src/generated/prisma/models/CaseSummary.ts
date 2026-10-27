@@ -232,7 +232,7 @@ export type CaseSummaryGroupByOutputType = {
   _max: CaseSummaryMaxAggregateOutputType | null
 }
 
-type GetCaseSummaryGroupByPayload<T extends CaseSummaryGroupByArgs> = Prisma.PrismaPromise<
+export type GetCaseSummaryGroupByPayload<T extends CaseSummaryGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<CaseSummaryGroupByOutputType, T['by']> &
       {
@@ -1185,6 +1185,11 @@ export type CaseSummaryFindManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Skip the first `n` CaseSummaries.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of CaseSummaries.
+   */
   distinct?: Prisma.CaseSummaryScalarFieldEnum | Prisma.CaseSummaryScalarFieldEnum[]
 }
 

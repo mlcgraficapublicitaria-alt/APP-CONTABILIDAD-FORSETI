@@ -1,12 +1,12 @@
 import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { getDatabaseUrl } from "../database-url";
+import { cleanDatabaseUrl } from "../database-url";
 
 const globalForPrisma = globalThis as unknown as {
   rentaFiscalPrisma?: PrismaClient;
 };
 
-const databaseUrl = getDatabaseUrl();
+const databaseUrl = cleanDatabaseUrl() || "mysql://forseti:forseti@localhost:3306/forseti";
 process.env.DATABASE_URL = databaseUrl;
 
 function createMariaDbAdapter(url: string) {

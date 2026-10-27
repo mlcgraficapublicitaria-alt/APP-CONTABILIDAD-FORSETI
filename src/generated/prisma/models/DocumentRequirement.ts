@@ -206,7 +206,7 @@ export type DocumentRequirementGroupByOutputType = {
   _max: DocumentRequirementMaxAggregateOutputType | null
 }
 
-type GetDocumentRequirementGroupByPayload<T extends DocumentRequirementGroupByArgs> = Prisma.PrismaPromise<
+export type GetDocumentRequirementGroupByPayload<T extends DocumentRequirementGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<DocumentRequirementGroupByOutputType, T['by']> &
       {
@@ -1131,6 +1131,11 @@ export type DocumentRequirementFindManyArgs<ExtArgs extends runtime.Types.Extens
    * Skip the first `n` DocumentRequirements.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of DocumentRequirements.
+   */
   distinct?: Prisma.DocumentRequirementScalarFieldEnum | Prisma.DocumentRequirementScalarFieldEnum[]
 }
 

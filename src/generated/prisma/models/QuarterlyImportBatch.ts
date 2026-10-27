@@ -259,7 +259,7 @@ export type QuarterlyImportBatchGroupByOutputType = {
   _max: QuarterlyImportBatchMaxAggregateOutputType | null
 }
 
-type GetQuarterlyImportBatchGroupByPayload<T extends QuarterlyImportBatchGroupByArgs> = Prisma.PrismaPromise<
+export type GetQuarterlyImportBatchGroupByPayload<T extends QuarterlyImportBatchGroupByArgs> = Prisma.PrismaPromise<
   Array<
     Prisma.PickEnumerable<QuarterlyImportBatchGroupByOutputType, T['by']> &
       {
@@ -1877,6 +1877,11 @@ export type QuarterlyImportBatchFindManyArgs<ExtArgs extends runtime.Types.Exten
    * Skip the first `n` QuarterlyImportBatches.
    */
   skip?: number
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+   * 
+   * Filter by unique combinations of QuarterlyImportBatches.
+   */
   distinct?: Prisma.QuarterlyImportBatchScalarFieldEnum | Prisma.QuarterlyImportBatchScalarFieldEnum[]
 }
 
