@@ -2201,19 +2201,19 @@ export function FacturacionClient() {
           </div>
 
         <div className="mt-6 rounded-2xl border border-[#87ba2f]/35 bg-[#87ba2f]/8 p-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1">
+          <div className="flex flex-wrap items-baseline justify-start gap-x-5 gap-y-1 text-left">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#b3d87d]">Descuento final de factura</p>
               <p className="mt-1 text-xs text-slate-400">Se aplica sobre el total de las líneas antes de IVA e IRPF.</p>
             </div>
             <p className="text-sm font-semibold text-white">Descuento: <span className="text-[#d7f0a7]">-{formatMoney(summary.totalDiscountAmount)}</span></p>
           </div>
-          <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4">
+          <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-4 [&>label]:items-start [&>label]:text-left [&>label>span]:text-left">
             <FormField label="Base antes de descuento" htmlFor={`${baseId}-base`}>
-              <input id={`${baseId}-base`} inputMode="decimal" className={`${fieldClassName} disabled:cursor-not-allowed disabled:opacity-70`} value={invoiceLines.length ? String(summary.grossBaseAmount) : form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} disabled={invoiceLines.length > 0} />
+              <input id={`${baseId}-base`} inputMode="decimal" className={`${fieldClassName} text-left placeholder:text-left disabled:cursor-not-allowed disabled:opacity-70`} value={invoiceLines.length ? String(summary.grossBaseAmount) : form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} disabled={invoiceLines.length > 0} />
             </FormField>
             <FormField label="Descuento final (%)" htmlFor={`${baseId}-total-discount`}>
-              <input id={`${baseId}-total-discount`} type="number" min="0" max="100" step="0.01" inputMode="decimal" className={fieldClassName} value={form.totalDiscountRate} onChange={(event) => { updateField("totalDiscountRate", event.target.value); setGenerated(false); }} placeholder="0" />
+              <input id={`${baseId}-total-discount`} type="number" min="0" max="100" step="0.01" inputMode="decimal" className={`${fieldClassName} text-left placeholder:text-left`} value={form.totalDiscountRate} onChange={(event) => { updateField("totalDiscountRate", event.target.value); setGenerated(false); }} placeholder="0" />
             </FormField>
             <div className="min-h-[76px] rounded-xl border border-white/10 bg-slate-950/45 px-4 py-3 text-left">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Base resultante</p>
