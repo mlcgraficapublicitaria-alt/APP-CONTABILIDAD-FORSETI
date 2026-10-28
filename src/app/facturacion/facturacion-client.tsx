@@ -1740,18 +1740,11 @@ export function FacturacionClient() {
                 </thead>
                 <tbody>
                   {summary.totalDiscountAmount > 0 ? (
-                    <>
-                      <tr className="text-[16px] text-slate-800">
-                        <td className="pt-4">BASE DE LÍNEAS</td>
-                        <td className="pt-4" colSpan={summary.irpfRate > 0 ? 4 : 2} />
-                        <td className="pt-4 text-right">{formatMoney(summary.grossBaseAmount)}</td>
-                      </tr>
-                      <tr className="text-[16px] text-slate-800">
-                        <td className="pt-4">DESCUENTO TOTAL ({formatPercent(summary.totalDiscountRate)})</td>
-                        <td className="pt-4" colSpan={summary.irpfRate > 0 ? 4 : 2} />
-                        <td className="pt-4 text-right">-{formatMoney(summary.totalDiscountAmount)}</td>
-                      </tr>
-                    </>
+                    <tr className="text-[16px] text-slate-800">
+                      <td className="pt-4">DESCUENTO TOTAL ({formatPercent(summary.totalDiscountRate)})</td>
+                      <td className="pt-4" colSpan={summary.irpfRate > 0 ? 4 : 2} />
+                      <td className="pt-4 text-right">-{formatMoney(summary.totalDiscountAmount)}</td>
+                    </tr>
                   ) : null}
                   <tr className="text-[16px] text-slate-800">
                     <td className="pt-4">{formatMoney(summary.baseAmount)}</td>
