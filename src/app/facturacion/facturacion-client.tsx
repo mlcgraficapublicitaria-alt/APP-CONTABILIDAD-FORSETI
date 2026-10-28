@@ -685,7 +685,8 @@ function buildPrintableInvoiceDocument(
             </tr>
           </thead>
           <tbody>
-            ${summary.totalDiscountAmount > 0 ? `<tr><td>DESCUENTO TOTAL (${formatPercent(summary.totalDiscountRate)})</td><td></td><td></td><td></td>${summary.irpfRate > 0 ? '<td></td>' : ''}<td class="right">-${formatMoney(summary.totalDiscountAmount)}</td></tr>` : ""}
+            ${summary.totalDiscountAmount > 0 ? `<tr><td>BASE DE LÍNEAS</td><td colspan="${summary.irpfRate > 0 ? 4 : 2}"></td><td class="right">${formatMoney(summary.grossBaseAmount)}</td></tr>
+            <tr><td>DESCUENTO TOTAL (${formatPercent(summary.totalDiscountRate)})</td><td colspan="${summary.irpfRate > 0 ? 4 : 2}"></td><td class="right">-${formatMoney(summary.totalDiscountAmount)}</td></tr>` : ""}
             <tr>
               <td>${formatMoney(summary.baseAmount)}</td>
               <td class="right">${formatPercent(summary.vatRate)}</td>
@@ -1739,13 +1740,18 @@ export function FacturacionClient() {
                 </thead>
                 <tbody>
                   {summary.totalDiscountAmount > 0 ? (
-                    <tr className="text-[16px] text-slate-800">
-                      <td className="pt-4">DESCUENTO TOTAL ({formatPercent(summary.totalDiscountRate)})</td>
-                      <td className="pt-4" />
-                      <td className="pt-4" />
-                      {summary.irpfRate > 0 ? <><td className="pt-4" /><td className="pt-4" /></> : null}
-                      <td className="pt-4 text-right">-{formatMoney(summary.totalDiscountAmount)}</td>
-                    </tr>
+                    <>
+                      <tr className="text-[16px] text-slate-800">
+                        <td className="pt-4">BASE DE LÍNEAS</td>
+                        <td className="pt-4" colSpan={summary.irpfRate > 0 ? 4 : 2} />
+                        <td className="pt-4 text-right">{formatMoney(summary.grossBaseAmount)}</td>
+                      </tr>
+                      <tr className="text-[16px] text-slate-800">
+                        <td className="pt-4">DESCUENTO TOTAL ({formatPercent(summary.totalDiscountRate)})</td>
+                        <td className="pt-4" colSpan={summary.irpfRate > 0 ? 4 : 2} />
+                        <td className="pt-4 text-right">-{formatMoney(summary.totalDiscountAmount)}</td>
+                      </tr>
+                    </>
                   ) : null}
                   <tr className="text-[16px] text-slate-800">
                     <td className="pt-4">{formatMoney(summary.baseAmount)}</td>
@@ -2083,13 +2089,16 @@ export function FacturacionClient() {
                       <FormField label="Descripción" htmlFor={`${baseId}-line-description-${line.id}`}>
                         <input id={`${baseId}-line-description-${line.id}`} className={fieldClassName} value={line.description} onChange={(event) => updateInvoiceLine(line.id, { description: event.target.value })} />
                       </FormField>
-                      <div className="mt-4 grid grid-cols-2 gap-4 items-end">
+                      <div className="mt-4 grid gap-4">
+                        <div className="grid grid-cols-2 gap-4">
                         <FormField label="Artículo" htmlFor={`${baseId}-line-article-${line.id}`}>
                           <input id={`${baseId}-line-article-${line.id}`} className={fieldClassName} value={line.articleCode} onChange={(event) => updateInvoiceLine(line.id, { articleCode: event.target.value.toUpperCase() })} />
                         </FormField>
                         <FormField label="Precio (€)" htmlFor={`${baseId}-line-price-${line.id}`}>
                           <input id={`${baseId}-line-price-${line.id}`} inputMode="decimal" className={`${fieldClassName} disabled:cursor-not-allowed disabled:opacity-60`} value={line.unitPrice} onChange={(event) => updateInvoiceLine(line.id, { unitPrice: event.target.value })} placeholder="0,00" disabled={line.noCost} />
                         </FormField>
+                        </div>
+                        <div className="grid grid-cols-2 items-end gap-4">
                         <FormField label="Descuento (%)" htmlFor={`${baseId}-line-discount-${line.id}`}>
                           <input id={`${baseId}-line-discount-${line.id}`} type="number" min="0" max="100" step="0.01" inputMode="decimal" className={`${fieldClassName} disabled:cursor-not-allowed disabled:opacity-60`} value={line.discountRate} onChange={(event) => updateInvoiceLine(line.id, { discountRate: event.target.value })} placeholder="0" disabled={line.noCost} />
                         </FormField>
@@ -2106,6 +2115,7 @@ export function FacturacionClient() {
                           />
                           S/N
                         </label>
+                        </div>
                       </div>
                       <details className="group/note mt-4 rounded-xl border border-white/10 bg-white/[0.03]">
                         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-left marker:content-none">
