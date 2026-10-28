@@ -2207,20 +2207,32 @@ export function FacturacionClient() {
             </div>
           </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-3">
-            <FormField label="Base imponible" htmlFor={`${baseId}-base`}>
-              <input id={`${baseId}-base`} inputMode="decimal" className={`${fieldClassName} disabled:cursor-not-allowed disabled:opacity-70`} value={invoiceLines.length ? String(summary.baseAmount) : form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} disabled={invoiceLines.length > 0} />
-            </FormField>
+        <div className="mt-6 rounded-2xl border border-[#87ba2f]/35 bg-[#87ba2f]/8 p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-5 gap-y-1">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#b3d87d]">Descuento final de factura</p>
+              <p className="mt-1 text-xs text-slate-400">Se aplica sobre el total de las líneas antes de IVA e IRPF.</p>
+            </div>
+            <p className="text-sm font-semibold text-white">Descuento: <span className="text-[#d7f0a7]">-{formatMoney(summary.totalDiscountAmount)}</span></p>
           </div>
-          <div className="lg:col-span-2">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+            <FormField label="Base antes de descuento" htmlFor={`${baseId}-base`}>
+              <input id={`${baseId}-base`} inputMode="decimal" className={`${fieldClassName} disabled:cursor-not-allowed disabled:opacity-70`} value={invoiceLines.length ? String(summary.grossBaseAmount) : form.baseAmount} onChange={(event) => updateField("baseAmount", event.target.value)} disabled={invoiceLines.length > 0} />
+            </FormField>
+            <FormField label="Descuento final (%)" htmlFor={`${baseId}-total-discount`}>
+              <input id={`${baseId}-total-discount`} type="number" min="0" max="100" step="0.01" inputMode="decimal" className={fieldClassName} value={form.totalDiscountRate} onChange={(event) => { updateField("totalDiscountRate", event.target.value); setGenerated(false); }} placeholder="0" />
+            </FormField>
+            <div className="rounded-xl border border-white/10 bg-slate-950/45 px-4 py-3 text-left">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Base resultante</p>
+              <p className="mt-1 text-lg font-semibold text-white">{formatMoney(summary.baseAmount)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-12">
+          <div className="lg:col-span-4">
             <FormField label="IVA (%)" htmlFor={`${baseId}-vat`}>
               <input id={`${baseId}-vat`} inputMode="decimal" className={fieldClassName} value={form.vatRate} onChange={(event) => updateField("vatRate", event.target.value)} />
-            </FormField>
-          </div>
-          <div className="lg:col-span-2">
-            <FormField label="Descuento total (%)" htmlFor={`${baseId}-total-discount`}>
-              <input id={`${baseId}-total-discount`} type="number" min="0" max="100" step="0.01" inputMode="decimal" className={fieldClassName} value={form.totalDiscountRate} onChange={(event) => { updateField("totalDiscountRate", event.target.value); setGenerated(false); }} placeholder="0" />
             </FormField>
           </div>
           <div className="lg:col-span-2">
@@ -2236,7 +2248,7 @@ export function FacturacionClient() {
               </select>
             </FormField>
           </div>
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-4">
             <FormField label="IRPF (%)" htmlFor={`${baseId}-irpf`}>
               <input
                 id={`${baseId}-irpf`}
