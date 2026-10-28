@@ -685,8 +685,7 @@ function buildPrintableInvoiceDocument(
             </tr>
           </thead>
           <tbody>
-            ${summary.totalDiscountAmount > 0 ? `<tr><td>BASE DE LÍNEAS</td><td colspan="${summary.irpfRate > 0 ? 4 : 2}"></td><td class="right">${formatMoney(summary.grossBaseAmount)}</td></tr>
-            <tr><td>DESCUENTO TOTAL (${formatPercent(summary.totalDiscountRate)})</td><td colspan="${summary.irpfRate > 0 ? 4 : 2}"></td><td class="right">-${formatMoney(summary.totalDiscountAmount)}</td></tr>` : ""}
+            ${summary.totalDiscountAmount > 0 ? `<tr><td>DESCUENTO TOTAL (${formatPercent(summary.totalDiscountRate)})</td><td colspan="${summary.irpfRate > 0 ? 4 : 2}"></td><td class="right">-${formatMoney(summary.totalDiscountAmount)}</td></tr>` : ""}
             <tr>
               <td>${formatMoney(summary.baseAmount)}</td>
               <td class="right">${formatPercent(summary.vatRate)}</td>
@@ -2222,13 +2221,13 @@ export function FacturacionClient() {
           </div>
         </div>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-4">
+        <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(270px,1fr))] gap-4 [&>label]:items-start [&>label]:text-left [&>label>span]:text-left">
+          <div>
             <FormField label="IVA (%)" htmlFor={`${baseId}-vat`}>
               <input id={`${baseId}-vat`} inputMode="decimal" className={fieldClassName} value={form.vatRate} onChange={(event) => updateField("vatRate", event.target.value)} />
             </FormField>
           </div>
-          <div className="lg:col-span-2">
+          <div>
             <FormField label="Aplicar IRPF" htmlFor={`${baseId}-apply-irpf`}>
               <select
                 id={`${baseId}-apply-irpf`}
@@ -2241,7 +2240,7 @@ export function FacturacionClient() {
               </select>
             </FormField>
           </div>
-          <div className="lg:col-span-4">
+          <div>
             <FormField label="IRPF (%)" htmlFor={`${baseId}-irpf`}>
               <input
                 id={`${baseId}-irpf`}
@@ -2255,7 +2254,7 @@ export function FacturacionClient() {
               />
             </FormField>
           </div>
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-[#87ba2f]/30 bg-[#87ba2f]/12 px-4 py-3 text-center text-sm text-[#d7f0a7] lg:col-span-12">
+          <div className="col-span-full flex flex-col items-center justify-center rounded-2xl border border-[#87ba2f]/30 bg-[#87ba2f]/12 px-4 py-3 text-center text-sm text-[#d7f0a7]">
             <p className="font-semibold">Total previsto</p>
             <p className="mt-1 text-xl font-semibold text-white">{formatMoney(summary.totalAmount)}</p>
           </div>
