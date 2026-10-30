@@ -1,4 +1,4 @@
-import { join } from "path";
+import { createRequire } from "module";
 import { pathToFileURL } from "url";
 import type { DayHours, WorkSegment } from "./forseti-hours-types";
 
@@ -7,6 +7,15 @@ type PdfJsGlobalScope = typeof globalThis & {
   ImageData?: typeof ImageData;
   Path2D?: typeof Path2D;
 };
+
+// Hostinger runs each standalone build from a versioned directory. Resolving
+// the worker from this module keeps it coupled to the installed PDF.js package
+// instead of assuming that process.cwd() points at that directory.
+const localRequire = createRequire(import.meta.url);
+
+export function getPdfJsWorkerSource() {
+  return pathToFileURL(localRequire.resolve("pdfjs-dist/legacy/build/pdf.worker.mjs")).href;
+}
 
 class PdfJsDOMMatrixFallback {
   a = 1;
@@ -119,7 +128,7 @@ export async function extractPdfHours(buffer: ArrayBuffer, month: string): Promi
 
   ensurePdfJsNodeGlobals();
   const { PDFParse } = await import("pdf-parse");
-  PDFParse.setWorker(pathToFileURL(join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs")).href);
+  PDFParse.setWorker(getPdfJsWorkerSource());
   const parser = new PDFParse({ data: Buffer.from(buffer) });
   const tableDays = await extractTableHours(parser, month);
   if (tableDays.length > 0) {
@@ -214,7 +223,7 @@ async function extractPositionedHours(buffer: ArrayBuffer, month: string): Promi
 async function extractPositionedRows(buffer: ArrayBuffer) {
   ensurePdfJsNodeGlobals();
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs")).href;
+  pdfjs.GlobalWorkerOptions.workerSrc = getPdfJsWorkerSource();
 
   const data = Uint8Array.from(new Uint8Array(buffer));
   const loadingTask = pdfjs.getDocument({

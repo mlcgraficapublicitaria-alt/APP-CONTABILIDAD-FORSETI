@@ -1,9 +1,7 @@
-import { join } from "node:path";
-import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
 import { NextResponse } from "next/server";
 import { extractExpenseFields } from "@/lib/expense-extraction";
-import { ensurePdfJsNodeGlobals } from "@/lib/forseti-hours-pdf";
+import { ensurePdfJsNodeGlobals, getPdfJsWorkerSource } from "@/lib/forseti-hours-pdf";
 import { requireUser } from "@/lib/renta-fiscal/api";
 
 const localRequire = createRequire(import.meta.url);
@@ -11,7 +9,7 @@ const localRequire = createRequire(import.meta.url);
 async function textFromPdf(buffer: Buffer) {
   ensurePdfJsNodeGlobals();
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs")).href;
+  pdfjs.GlobalWorkerOptions.workerSrc = getPdfJsWorkerSource();
   const document = await pdfjs.getDocument({ data: Uint8Array.from(buffer) }).promise;
   const lines: string[] = [];
 

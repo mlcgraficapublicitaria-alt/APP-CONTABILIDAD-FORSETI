@@ -1,5 +1,4 @@
-import { join } from "path";
-import { pathToFileURL } from "url";
+import { getPdfJsWorkerSource } from "@/lib/forseti-hours-pdf";
 
  type TaxProfileLike = {
   selfEmployment?: boolean;
@@ -109,7 +108,7 @@ export async function analyzeModel303Pdf(buffer: ArrayBuffer, profile: TaxProfil
 
 async function extractPdfText(buffer: ArrayBuffer) {
   const { PDFParse } = await import("pdf-parse");
-  PDFParse.setWorker(pathToFileURL(join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs")).href);
+  PDFParse.setWorker(getPdfJsWorkerSource());
   const parser = new PDFParse({ data: Buffer.from(buffer) });
   const parsed = await parser.getText({
     cellSeparator: " ",
