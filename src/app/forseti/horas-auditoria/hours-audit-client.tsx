@@ -55,8 +55,9 @@ function buildInvoiceHref(result: NonNullable<AuditActionState["result"]>, invoi
 }
 
 export function HoursAuditClient() {
-  const [compareState, compareFormAction, comparing] = useActionState(compareHoursAction, initialState);
+  const [compareState, setCompareState] = useState<AuditActionState>(initialState);
   const [applyState, applyFormAction, applying] = useActionState(applyHoursAction, initialState);
+  const [comparing, setComparing] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [selectedAuditClient, setSelectedAuditClient] = useState<(typeof AUDIT_CLIENTS)[number]>("SPANISH-CHEESE");
   const [savedClients, setSavedClients] = useState<SavedInvoiceClient[]>([]);
@@ -120,7 +121,27 @@ export function HoursAuditClient() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-      <form action={compareFormAction} encType="multipart/form-data" className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
+      <form
+        encType="multipart/form-data"
+        onSubmit={async (event) => {
+          event.preventDefault();
+          setComparing(true);
+          try {
+            const response = await fetch("/api/forseti/horas-auditoria/compare", {
+              method: "POST",
+              body: new FormData(event.currentTarget),
+              cache: "no-store",
+            });
+            const state = (await response.json()) as AuditActionState;
+            setCompareState(state.error && !response.ok ? { error: state.error } : state);
+          } catch {
+            setCompareState({ error: "No se pudo enviar el PDF para su comparación. Inténtalo de nuevo." });
+          } finally {
+            setComparing(false);
+          }
+        }}
+        className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur"
+      >
         <h2 className="text-xl font-semibold text-white">Fuentes de auditoría</h2>
         <div className="mt-5 space-y-4">
           <label className="block">
