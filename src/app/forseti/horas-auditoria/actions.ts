@@ -13,6 +13,7 @@ export type AuditActionState = {
   result?: HoursCompareResult;
   message?: string;
   error?: string;
+  source?: "upload" | "drive";
 };
 
 type ApplyHoursPayload = Pick<HoursCompareResult, "month" | "pdfDays" | "differences">;
@@ -28,11 +29,16 @@ export async function compareHoursAction(_state: AuditActionState, formData: For
   const month = String(formData.get("month") ?? getDefaultMonthLabel());
   const client = parseClient(formData.get("client"));
   const file = formData.get("pdf");
+  const localPdfSelected = formData.get("localPdfSelected") === "1";
 
   try {
     let pdfBuffer: ArrayBuffer;
     if (file instanceof File && file.size > 0) {
       pdfBuffer = await file.arrayBuffer();
+    } else if (localPdfSelected) {
+      // A user-selected upload must never silently fall back to Drive. That
+      // could compare the wrong source while presenting a local-file workflow.
+      return { error: "El PDF local seleccionado no llegó al servidor. Vuelve a adjuntarlo; no se ha consultado Drive." };
     } else {
       if (!hasGoogleServiceAccountCredentials()) {
         return {
@@ -57,7 +63,10 @@ export async function compareHoursAction(_state: AuditActionState, formData: For
     const pdfTotalMinutes = pdfDays.reduce((sum, day) => sum + day.totalMinutes, 0);
     const billingInfo = await readSheetClientBillingInfo(month, client, pdfTotalMinutes);
 
-    return { result: compareHours(month, client, pdfDays, sheetDays, sheetClientTotalMinutes, billingInfo, pdfDebugRows) };
+    return {
+      result: compareHours(month, client, pdfDays, sheetDays, sheetClientTotalMinutes, billingInfo, pdfDebugRows),
+      source: file instanceof File && file.size > 0 ? "upload" : "drive",
+    };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "No se pudo completar la comparacion.",

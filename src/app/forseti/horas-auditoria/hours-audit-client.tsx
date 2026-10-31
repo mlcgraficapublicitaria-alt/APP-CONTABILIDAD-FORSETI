@@ -62,6 +62,7 @@ export function HoursAuditClient() {
   const [savedClients, setSavedClients] = useState<SavedInvoiceClient[]>([]);
   const [selectedInvoiceClientId, setSelectedInvoiceClientId] = useState("");
   const [clientStatus, setClientStatus] = useState("");
+  const [selectedPdf, setSelectedPdf] = useState<{ name: string; size: number } | null>(null);
   const defaultMonth = getDefaultMonthLabel();
   const selectedInvoiceClient = useMemo(
     () => savedClients.find((client) => client.id === selectedInvoiceClientId),
@@ -119,7 +120,7 @@ export function HoursAuditClient() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-      <form action={compareFormAction} className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
+      <form action={compareFormAction} encType="multipart/form-data" className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur">
         <h2 className="text-xl font-semibold text-white">Fuentes de auditoría</h2>
         <div className="mt-5 space-y-4">
           <label className="block">
@@ -175,8 +176,18 @@ export function HoursAuditClient() {
               name="pdf"
               type="file"
               accept="application/pdf"
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                setSelectedPdf(file ? { name: file.name, size: file.size } : null);
+              }}
               className="mt-2 w-full rounded-xl border border-dashed border-emerald-300/30 bg-slate-950/50 px-4 py-5 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-[#5ab94e] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-950"
             />
+            <input type="hidden" name="localPdfSelected" value={selectedPdf ? "1" : "0"} />
+            {selectedPdf ? (
+              <span className="mt-2 block text-xs leading-5 text-emerald-200">
+                PDF local listo: {selectedPdf.name} ({Math.ceil(selectedPdf.size / 1024)} KB). Se procesará este archivo; Drive no se consultará.
+              </span>
+            ) : null}
             <span className="mt-2 block text-xs leading-5 text-zinc-500">
               Si no subes PDF, FORSETI intentara localizarlo en Drive con las credenciales del servidor.
             </span>
@@ -206,7 +217,7 @@ export function HoursAuditClient() {
           ) : null}
           {compareState.result ? (
             <p className="rounded-xl border border-emerald-300/30 bg-emerald-300/10 px-4 py-3 text-sm text-emerald-100">
-              {compareState.result.message}
+              {compareState.result.message}{compareState.source === "upload" ? " Fuente: PDF local adjunto." : " Fuente: Drive."}
             </p>
           ) : null}
         </div>
