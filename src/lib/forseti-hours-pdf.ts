@@ -129,7 +129,7 @@ export async function extractPdfHours(buffer: ArrayBuffer, month: string): Promi
   ensurePdfJsNodeGlobals();
   const { PDFParse } = await import("pdf-parse");
   PDFParse.setWorker(getPdfJsWorkerSource());
-  const parser = new PDFParse({ data: Buffer.from(buffer) });
+  const parser = new PDFParse({ data: Uint8Array.from(new Uint8Array(buffer)) });
   const tableDays = await extractTableHours(parser, month);
   if (tableDays.length > 0) {
     await parser.destroy();
