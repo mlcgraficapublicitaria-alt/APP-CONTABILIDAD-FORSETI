@@ -1,4 +1,4 @@
-import { createRequire } from "module";
+import { join } from "node:path";
 import { pathToFileURL } from "url";
 import type { DayHours, WorkSegment } from "./forseti-hours-types";
 
@@ -8,13 +8,8 @@ type PdfJsGlobalScope = typeof globalThis & {
   Path2D?: typeof Path2D;
 };
 
-// Hostinger runs each standalone build from a versioned directory. Resolving
-// the worker from this module keeps it coupled to the installed PDF.js package
-// instead of assuming that process.cwd() points at that directory.
-const localRequire = createRequire(import.meta.url);
-
 export function getPdfJsWorkerSource() {
-  return pathToFileURL(localRequire.resolve("pdfjs-dist/legacy/build/pdf.worker.mjs")).href;
+  return pathToFileURL(join(process.cwd(), "node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs")).href;
 }
 
 class PdfJsDOMMatrixFallback {
