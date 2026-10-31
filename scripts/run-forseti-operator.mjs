@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { basename } from "node:path";
 
 const envFile = process.env.FORSETI_OPERATOR_ENV_FILE || "/data/.openclaw/secrets/forseti/operator.env";
 if (!process.env.FORSETI_API_BASE_URL || !process.env.FORSETI_AGENT_TOKEN) {
@@ -39,21 +38,12 @@ if (!baseUrl || !token) {
   console.error(JSON.stringify({ ok: false, error: "Faltan FORSETI_API_BASE_URL o FORSETI_AGENT_TOKEN." }));
   process.exit(1);
 }
-let response;
 if (operation === "hours-audit-compare" && typeof payload.pdfPath === "string" && payload.pdfPath.trim()) {
   const pdfPath = payload.pdfPath.trim();
-  const formData = new FormData();
-  formData.set("month", typeof payload.month === "string" ? payload.month : "");
-  formData.set("client", typeof payload.auditClient === "string" ? payload.auditClient : "SPANISH-CHEESE");
-  formData.set("pdf", new Blob([readFileSync(pdfPath)], { type: "application/pdf" }), basename(pdfPath));
-  response = await fetch(`${baseUrl}/api/forseti/horas-auditoria/compare`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${token}` },
-    body: formData,
-  });
-} else {
-  response = await fetch(`${baseUrl}/api/agent`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ ...payload, operation }) });
+  payload = { ...payload, pdfBase64: readFileSync(pdfPath).toString("base64") };
+  delete payload.pdfPath;
 }
+const response = await fetch(`${baseUrl}/api/agent`, { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ ...payload, operation }) });
 const text = await response.text();
 try { console.log(JSON.stringify(JSON.parse(text), null, 2)); }
 catch { console.log(JSON.stringify({ ok: false, status: response.status, error: "Respuesta no JSON." })); }

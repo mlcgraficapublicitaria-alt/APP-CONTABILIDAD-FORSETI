@@ -52,6 +52,7 @@ type AgentRequestBody = {
   limit?: number;
   month?: string;
   auditClient?: AuditClient;
+  pdfBase64?: string;
   client?: ClientUpsertInput;
   invoice?: InvoiceDraftInput;
 };
@@ -190,7 +191,14 @@ export async function POST(request: Request) {
     }
 
     try {
-      const pdf = await readMonthlyHoursPdfFromDrive(month);
+      const uploadedPdf = body.pdfBase64?.trim();
+      const uploadedBuffer = uploadedPdf ? Uint8Array.from(Buffer.from(uploadedPdf, "base64")).buffer : null;
+      const pdf = uploadedPdf
+        ? { name: `${month.toLowerCase().replace(/\s+/g, "-")}.pdf`, buffer: uploadedBuffer as ArrayBuffer }
+        : await readMonthlyHoursPdfFromDrive(month);
+      if (pdf.buffer.byteLength === 0) {
+        return NextResponse.json({ ok: false, error: "El PDF de horas está vacío." }, { status: 400 });
+      }
       const [pdfDays, sheetDays, sheetClientTotalMinutes, pdfDebugRows] = await Promise.all([
         extractPdfHours(pdf.buffer, month),
         readSheetMonthHours(month),
