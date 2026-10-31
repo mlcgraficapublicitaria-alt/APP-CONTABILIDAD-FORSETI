@@ -1,3 +1,25 @@
+import { readFileSync } from "node:fs";
+
+const envFile = process.env.FORSETI_OPERATOR_ENV_FILE || "/data/.openclaw/secrets/forseti/operator.env";
+if (!process.env.FORSETI_API_BASE_URL || !process.env.FORSETI_AGENT_TOKEN) {
+  try {
+    for (const rawLine of readFileSync(envFile, "utf8").split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("#")) continue;
+      const separator = line.indexOf("=");
+      if (separator < 1) continue;
+      const key = line.slice(0, separator).trim();
+      let value = line.slice(separator + 1).trim();
+      if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1);
+      }
+      if (!process.env[key]) process.env[key] = value;
+    }
+  } catch {
+    // The existing validation below reports missing configuration without exposing secrets.
+  }
+}
+
 const baseUrl = (process.env.FORSETI_API_BASE_URL || "").replace(/\/+$/, "");
 const token = process.env.FORSETI_AGENT_TOKEN || "";
 const operation = process.argv[2] || "";

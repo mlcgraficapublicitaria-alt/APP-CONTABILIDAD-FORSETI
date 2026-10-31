@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { isForsetiAgentAuthorized } from "@/lib/agent-auth";
+import { compareHours } from "@/lib/forseti-hours-compare";
+import { readMonthlyHoursPdfFromDrive } from "@/lib/forseti-hours-drive";
+import { extractPdfDebugRows, extractPdfHours } from "@/lib/forseti-hours-pdf";
+import { readSheetClientBillingInfo, readSheetClientTotalMinutes, readSheetMonthHours } from "@/lib/forseti-hours-sheet";
+import type { AuditClient } from "@/lib/forseti-hours-types";
 import { prisma } from "@/lib/renta-fiscal/prisma";
 
 type ClientUpsertInput = {
@@ -45,9 +50,14 @@ type InvoiceDraftInput = {
 type AgentRequestBody = {
   operation?: string;
   limit?: number;
+  month?: string;
+  auditClient?: AuditClient;
   client?: ClientUpsertInput;
   invoice?: InvoiceDraftInput;
 };
+
+const AUDIT_CLIENTS = new Set<AuditClient>(["SPANISH-CHEESE", "GRUPO DIM", "MLCDESIGN"]);
+const AUDIT_MONTH_PATTERN = /^(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE) \d{4}$/;
 
 function clean(value: string | undefined) {
   return value?.trim() || null;
@@ -168,6 +178,35 @@ export async function POST(request: Request) {
   if (body.operation === "services-list") {
     const data = await prisma.invoiceService.findMany({ select: { id: true, name: true, articleCode: true }, orderBy: { name: "asc" }, take: limit });
     return NextResponse.json({ ok: true, operation: body.operation, data });
+  }
+  if (body.operation === "hours-audit-compare") {
+    const month = body.month?.trim().toUpperCase() ?? "";
+    const auditClient = body.auditClient;
+    if (!AUDIT_MONTH_PATTERN.test(month)) {
+      return NextResponse.json({ ok: false, error: "El mes debe usar el formato OCTUBRE 2026." }, { status: 400 });
+    }
+    if (!auditClient || !AUDIT_CLIENTS.has(auditClient)) {
+      return NextResponse.json({ ok: false, error: "El cliente de la auditoría no es válido." }, { status: 400 });
+    }
+
+    try {
+      const pdf = await readMonthlyHoursPdfFromDrive(month);
+      const [pdfDays, sheetDays, sheetClientTotalMinutes, pdfDebugRows] = await Promise.all([
+        extractPdfHours(pdf.buffer, month),
+        readSheetMonthHours(month),
+        readSheetClientTotalMinutes(month, auditClient),
+        extractPdfDebugRows(pdf.buffer, month),
+      ]);
+      if (pdfDays.length === 0) {
+        return NextResponse.json({ ok: false, error: "No se pudieron extraer días o tramos del PDF mensual de horas." }, { status: 422 });
+      }
+      const pdfTotalMinutes = pdfDays.reduce((sum, day) => sum + day.totalMinutes, 0);
+      const billingInfo = await readSheetClientBillingInfo(month, auditClient, pdfTotalMinutes);
+      const data = compareHours(month, auditClient, pdfDays, sheetDays, sheetClientTotalMinutes, billingInfo, pdfDebugRows);
+      return NextResponse.json({ ok: true, operation: body.operation, sourcePdf: pdf.name, readOnly: true, data });
+    } catch (error) {
+      return errorResponse(error);
+    }
   }
   if (body.operation === "client-upsert") {
     const input = body.client ?? {};
