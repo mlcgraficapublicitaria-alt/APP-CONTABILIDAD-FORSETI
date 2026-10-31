@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import { getDefaultMonthLabel, MONTHS_2026 } from "@/app/navigation";
-import { applyHoursAction, compareHoursAction, type AuditActionState } from "./actions";
+import { applyHoursAction, type AuditActionState } from "./actions";
 
 const initialState: AuditActionState = {};
 const AUDIT_CLIENTS = ["SPANISH-CHEESE", "GRUPO DIM", "MLCDESIGN"] as const;
@@ -64,6 +64,7 @@ export function HoursAuditClient() {
   const [selectedInvoiceClientId, setSelectedInvoiceClientId] = useState("");
   const [clientStatus, setClientStatus] = useState("");
   const [selectedPdf, setSelectedPdf] = useState<{ name: string; size: number } | null>(null);
+  const [selectedPdfFile, setSelectedPdfFile] = useState<File | null>(null);
   const defaultMonth = getDefaultMonthLabel();
   const selectedInvoiceClient = useMemo(
     () => savedClients.find((client) => client.id === selectedInvoiceClientId),
@@ -119,27 +120,50 @@ export function HoursAuditClient() {
     );
   }, [selectedAuditClient, selectedInvoiceClientId]);
 
+  function handlePdfSelection(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.item(0) ?? null;
+    setSelectedPdfFile(file);
+    setSelectedPdf(file ? { name: file.name, size: file.size } : null);
+  }
+
+  async function handleCompare(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!selectedPdfFile) {
+      setCompareState({ error: "Selecciona un PDF y comprueba el aviso verde antes de comparar. No se ha consultado Drive." });
+      return;
+    }
+
+    setComparing(true);
+    try {
+      // Do not rebuild the upload from the file input at submit time. Some
+      // browsers/runtime transitions can replace that element and empty its
+      // FileList; the File retained on selection is the source of truth.
+      const formData = new FormData();
+      formData.set("month", new FormData(event.currentTarget).get("month")?.toString() ?? defaultMonth);
+      formData.set("client", selectedAuditClient);
+      formData.set("localPdfSelected", "1");
+      formData.set("pdf", selectedPdfFile, selectedPdfFile.name);
+
+      const response = await fetch("/api/forseti/horas-auditoria/compare", {
+        method: "POST",
+        body: formData,
+        cache: "no-store",
+      });
+      const state = (await response.json()) as AuditActionState;
+      setCompareState(state.error && !response.ok ? { error: state.error } : state);
+    } catch {
+      setCompareState({ error: "No se pudo enviar el PDF para su comparación. Inténtalo de nuevo." });
+    } finally {
+      setComparing(false);
+    }
+  }
+
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
       <form
         encType="multipart/form-data"
-        onSubmit={async (event) => {
-          event.preventDefault();
-          setComparing(true);
-          try {
-            const response = await fetch("/api/forseti/horas-auditoria/compare", {
-              method: "POST",
-              body: new FormData(event.currentTarget),
-              cache: "no-store",
-            });
-            const state = (await response.json()) as AuditActionState;
-            setCompareState(state.error && !response.ok ? { error: state.error } : state);
-          } catch {
-            setCompareState({ error: "No se pudo enviar el PDF para su comparación. Inténtalo de nuevo." });
-          } finally {
-            setComparing(false);
-          }
-        }}
+        onSubmit={handleCompare}
         className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur"
       >
         <h2 className="text-xl font-semibold text-white">Fuentes de auditoría</h2>
@@ -197,10 +221,7 @@ export function HoursAuditClient() {
               name="pdf"
               type="file"
               accept="application/pdf"
-              onChange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                setSelectedPdf(file ? { name: file.name, size: file.size } : null);
-              }}
+              onChange={handlePdfSelection}
               className="mt-2 w-full rounded-xl border border-dashed border-emerald-300/30 bg-slate-950/50 px-4 py-5 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-[#5ab94e] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-950"
             />
             <input type="hidden" name="localPdfSelected" value={selectedPdf ? "1" : "0"} />
