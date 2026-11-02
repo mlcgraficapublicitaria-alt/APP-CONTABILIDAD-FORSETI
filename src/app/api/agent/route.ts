@@ -22,6 +22,7 @@ type ClientUpsertInput = {
 };
 
 type DraftLineInput = {
+  serviceId?: string;
   articleCode?: string;
   description?: string;
   quantity?: number;
@@ -122,12 +123,16 @@ function invoiceDetailSelect() {
 function serializeInvoiceDetail(invoice: Awaited<ReturnType<typeof prisma.invoice.findUniqueOrThrow>>) {
   const metadata = invoiceMetadata((invoice as { renderedHtml?: string | null }).renderedHtml);
   const lineNotes = Array.isArray(metadata.lineNotes) ? metadata.lineNotes : [];
+  const lineServiceIds = Array.isArray(metadata.lineServiceIds) ? metadata.lineServiceIds : [];
   const lines = (invoice as { lines?: Array<Record<string, unknown>> }).lines ?? [];
+  const selectedClient = (invoice as { client?: { id?: string } }).client;
   return {
     ...invoice,
     issuerBankAccount: typeof metadata.issuerBankAccount === "string" ? metadata.issuerBankAccount : "",
+    selectedClientId: typeof metadata.selectedClientId === "string" ? metadata.selectedClientId : selectedClient?.id,
     lines: lines.map((line, index) => ({
       ...line,
+      serviceId: typeof lineServiceIds[index] === "string" ? lineServiceIds[index] : "",
       notes: typeof lineNotes[index] === "string" ? lineNotes[index] : "",
     })),
     renderedHtml: undefined,
@@ -272,8 +277,12 @@ export async function POST(request: Request) {
     if (Number.isNaN(issueDate.getTime())) {
       return NextResponse.json({ ok: false, error: "La fecha de factura no es válida." }, { status: 400 });
     }
-    if (!input.clientId?.trim() && !input.clientName?.trim()) {
-      return NextResponse.json({ ok: false, error: "El cliente de la factura es obligatorio." }, { status: 400 });
+    if (!input.clientId?.trim()) {
+      return NextResponse.json({ ok: false, error: "FORSETI debe seleccionar el cliente mediante clientId desde clients-list." }, { status: 400 });
+    }
+    const sourceLines = input.lines?.length ? input.lines : [];
+    if (!sourceLines.length || sourceLines.some((line) => !line.serviceId?.trim())) {
+      return NextResponse.json({ ok: false, error: "FORSETI debe seleccionar cada servicio mediante serviceId desde services-list." }, { status: 400 });
     }
 
     try {
@@ -282,12 +291,16 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true, operation: body.operation, created: false, data: duplicate });
       }
 
-      const client = input.clientId?.trim()
-        ? await prisma.invoiceClient.findUnique({ where: { id: input.clientId.trim() } })
-        : await prisma.invoiceClient.findFirst({ where: { legalName: input.clientName!.trim() } });
+      const client = await prisma.invoiceClient.findUnique({ where: { id: input.clientId.trim() } });
       if (!client) {
         return NextResponse.json({ ok: false, error: "No se encontró el cliente indicado." }, { status: 400 });
       }
+      const serviceIds = [...new Set(sourceLines.map((line) => line.serviceId!.trim()))];
+      const services = await prisma.invoiceService.findMany({ where: { id: { in: serviceIds } } });
+      if (services.length !== serviceIds.length) {
+        return NextResponse.json({ ok: false, error: "Uno o más servicios seleccionados no existen en el catálogo de FORSETI." }, { status: 400 });
+      }
+      const servicesById = new Map(services.map((service) => [service.id, service]));
 
       const issuerProfile = await prisma.invoiceIssuerProfile.upsert({
         where: { code: "MLC-DEFAULT" },
@@ -299,15 +312,16 @@ export async function POST(request: Request) {
         update: { isDefault: true },
         create: { code: "MLC-CLASSIC", name: "MLC Clásica", layoutKey: "mlc-classic", isDefault: true },
       });
-      const sourceLines = input.lines?.length ? input.lines : [{ description: serviceDescription }];
       const lines = sourceLines.map((line, sortOrder) => {
+        const service = servicesById.get(line.serviceId!.trim())!;
         const quantity = finiteNumber(line.quantity, 1) || 1;
         const unitPrice = finiteNumber(line.unitPrice);
         const discountAmount = finiteNumber(line.discountAmount);
         return {
           sortOrder,
-          articleCode: clean(line.articleCode) || "H",
-          description: clean(line.description) || serviceDescription,
+          serviceId: service.id,
+          articleCode: service.articleCode,
+          description: clean(line.description) || service.name,
           quantity,
           unitPrice,
           discountAmount,
@@ -342,7 +356,22 @@ export async function POST(request: Request) {
           irpfRate,
           irpfAmount,
           totalAmount,
-          lines: { create: lines },
+          renderedHtml: JSON.stringify({
+            selectedClientId: client.id,
+            lineServiceIds: lines.map((line) => line.serviceId),
+            lineNotes: sourceLines.map((line) => clean(line.notes) || ""),
+          }),
+          lines: {
+            create: lines.map((line) => ({
+              sortOrder: line.sortOrder,
+              articleCode: line.articleCode,
+              description: line.description,
+              quantity: line.quantity,
+              unitPrice: line.unitPrice,
+              discountAmount: line.discountAmount,
+              lineTotalAmount: line.lineTotalAmount,
+            })),
+          },
         },
         select: { id: true, documentName: true, series: true, numberLabel: true, issueDate: true, status: true, totalAmount: true },
       });
@@ -404,6 +433,12 @@ export async function POST(request: Request) {
     if (!input.lines?.length) {
       return NextResponse.json({ ok: false, error: "La edición debe incluir al menos una línea de factura." }, { status: 400 });
     }
+    if (!input.clientId?.trim()) {
+      return NextResponse.json({ ok: false, error: "FORSETI debe seleccionar el cliente mediante clientId desde clients-list." }, { status: 400 });
+    }
+    if (input.lines.some((line) => !line.serviceId?.trim())) {
+      return NextResponse.json({ ok: false, error: "FORSETI debe seleccionar cada servicio mediante serviceId desde services-list." }, { status: 400 });
+    }
     const bankAccount = clean(input.issuerBankAccount);
     if (!bankAccount) {
       return NextResponse.json({ ok: false, error: "La edición debe indicar una cuenta bancaria guardada." }, { status: 400 });
@@ -415,6 +450,16 @@ export async function POST(request: Request) {
       if (existing.status !== "ISSUED") {
         return NextResponse.json({ ok: false, error: `Solo se pueden editar facturas emitidas; estado actual: ${existing.status}.` }, { status: 409 });
       }
+      const client = await prisma.invoiceClient.findUnique({ where: { id: input.clientId.trim() } });
+      if (!client) {
+        return NextResponse.json({ ok: false, error: "No se encontró el cliente seleccionado." }, { status: 400 });
+      }
+      const serviceIds = [...new Set(input.lines.map((line) => line.serviceId!.trim()))];
+      const services = await prisma.invoiceService.findMany({ where: { id: { in: serviceIds } } });
+      if (services.length !== serviceIds.length) {
+        return NextResponse.json({ ok: false, error: "Uno o más servicios seleccionados no existen en el catálogo de FORSETI." }, { status: 400 });
+      }
+      const servicesById = new Map(services.map((service) => [service.id, service]));
       const savedBankAccount = await prisma.invoiceBankAccount.findFirst({ where: { value: bankAccount } });
       if (!savedBankAccount) {
         return NextResponse.json({ ok: false, error: "La cuenta bancaria indicada no está guardada en FORSETI." }, { status: 400 });
@@ -425,14 +470,16 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: false, error: "La descripción del servicio es obligatoria." }, { status: 400 });
       }
       const lines = input.lines.map((line, sortOrder) => {
-        const description = clean(line.description);
+        const service = servicesById.get(line.serviceId!.trim())!;
+        const description = clean(line.description) || service.name;
         if (!description) throw new Error(`La línea ${sortOrder + 1} no tiene descripción.`);
         const quantity = finiteNumber(line.quantity, 1) || 1;
         const unitPrice = finiteNumber(line.unitPrice);
         const discountAmount = finiteNumber(line.discountAmount);
         return {
           sortOrder,
-          articleCode: clean(line.articleCode) || "H",
+          serviceId: service.id,
+          articleCode: service.articleCode,
           description,
           quantity,
           unitPrice,
@@ -450,7 +497,9 @@ export async function POST(request: Request) {
       const metadata = invoiceMetadata(existing.renderedHtml);
       const renderedHtml = JSON.stringify({
         ...metadata,
+        selectedClientId: client.id,
         issuerBankAccount: bankAccount,
+        lineServiceIds: lines.map((line) => line.serviceId),
         lineNotes: lines.map((line) => line.notes),
       });
 
@@ -459,6 +508,8 @@ export async function POST(request: Request) {
           where: { id: invoiceId },
           data: {
             documentName: clean(input.documentName) || existing.documentName,
+            clientId: client.id,
+            articleCode: lines[0]?.articleCode || existing.lines[0]?.articleCode || "H",
             serviceDescription,
             notes: clean(input.notes),
             subtotalAmount,
