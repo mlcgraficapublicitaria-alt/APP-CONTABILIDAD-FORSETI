@@ -108,8 +108,8 @@ Notes:
 ### Production deployment
 
 The private FORSETI operator supports read-only catalogue/detail operations plus
-four narrowly scoped write operations: `client-upsert`, `invoice-draft-create`,
-`invoice-update`, and `invoice-issue`. Invoice creation and editing require a
+five narrowly scoped write operations: `client-upsert`, `service-upsert`,
+`invoice-draft-create`, `invoice-update`, and `invoice-issue`. Invoice creation and editing require a
 catalogue `clientId` and a `serviceId` for every line; free-text names do not
 replace those selections.
 Write payloads are passed as JSON in the third CLI argument. Draft creation never

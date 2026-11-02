@@ -8,6 +8,7 @@ import type { AuditClient } from "@/lib/forseti-hours-types";
 import { prisma } from "@/lib/renta-fiscal/prisma";
 
 type ClientUpsertInput = {
+  id?: string;
   legalName?: string;
   taxId?: string;
   addressLine1?: string;
@@ -19,6 +20,12 @@ type ClientUpsertInput = {
   email?: string;
   phone?: string;
   notes?: string;
+};
+
+type ServiceUpsertInput = {
+  id?: string;
+  name?: string;
+  articleCode?: string;
 };
 
 type DraftLineInput = {
@@ -55,6 +62,7 @@ type AgentRequestBody = {
   auditClient?: AuditClient;
   pdfBase64?: string;
   client?: ClientUpsertInput;
+  service?: ServiceUpsertInput;
   invoice?: InvoiceDraftInput;
 };
 
@@ -185,6 +193,36 @@ export async function POST(request: Request) {
     const data = await prisma.invoiceService.findMany({ select: { id: true, name: true, articleCode: true }, orderBy: { name: "asc" }, take: limit });
     return NextResponse.json({ ok: true, operation: body.operation, data });
   }
+  if (body.operation === "service-upsert") {
+    const input = body.service ?? {};
+    const name = clean(input.name);
+    const articleCode = clean(input.articleCode)?.toUpperCase();
+    if (!name) {
+      return NextResponse.json({ ok: false, error: "El nombre del servicio es obligatorio." }, { status: 400 });
+    }
+    if (!articleCode || !/^[A-Z0-9]{1,4}$/.test(articleCode)) {
+      return NextResponse.json({ ok: false, error: "El código de artículo debe contener entre 1 y 4 letras o números." }, { status: 400 });
+    }
+    try {
+      const requestedId = input.id?.trim();
+      const existing = requestedId
+        ? await prisma.invoiceService.findUnique({ where: { id: requestedId } })
+        : await prisma.invoiceService.findFirst({ where: { name } });
+      if (requestedId && !existing) {
+        return NextResponse.json({ ok: false, error: "No se encontró el servicio que quieres actualizar." }, { status: 404 });
+      }
+      const service = existing
+        ? await prisma.invoiceService.update({ where: { id: existing.id }, data: { name, articleCode } })
+        : await prisma.invoiceService.create({ data: { name, articleCode } });
+      const verified = await prisma.invoiceService.findUnique({ where: { id: service.id }, select: { id: true, name: true, articleCode: true, updatedAt: true } });
+      if (!verified || verified.name !== name || verified.articleCode !== articleCode) {
+        throw new Error("La verificación posterior del servicio no coincide con los datos solicitados.");
+      }
+      return NextResponse.json({ ok: true, operation: body.operation, created: !existing, data: verified }, { status: existing ? 200 : 201 });
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
   if (body.operation === "hours-audit-compare") {
     const month = body.month?.trim().toUpperCase() ?? "";
     const auditClient = body.auditClient;
@@ -230,9 +268,15 @@ export async function POST(request: Request) {
 
     try {
       const taxId = clean(input.taxId);
-      const existing = taxId
-        ? await prisma.invoiceClient.findFirst({ where: { OR: [{ taxId }, { legalName }] } })
-        : await prisma.invoiceClient.findFirst({ where: { legalName } });
+      const requestedId = input.id?.trim();
+      const existing = requestedId
+        ? await prisma.invoiceClient.findUnique({ where: { id: requestedId } })
+        : taxId
+          ? await prisma.invoiceClient.findFirst({ where: { OR: [{ taxId }, { legalName }] } })
+          : await prisma.invoiceClient.findFirst({ where: { legalName } });
+      if (requestedId && !existing) {
+        return NextResponse.json({ ok: false, error: "No se encontró el cliente que quieres actualizar." }, { status: 404 });
+      }
       const data = {
         legalName,
         taxId,
@@ -249,11 +293,18 @@ export async function POST(request: Request) {
       const client = existing
         ? await prisma.invoiceClient.update({ where: { id: existing.id }, data })
         : await prisma.invoiceClient.create({ data });
+      const verified = await prisma.invoiceClient.findUnique({
+        where: { id: client.id },
+        select: { id: true, legalName: true, taxId: true, email: true, phone: true, updatedAt: true },
+      });
+      if (!verified || verified.legalName !== legalName || verified.taxId !== taxId) {
+        throw new Error("La verificación posterior del cliente no coincide con los datos solicitados.");
+      }
       return NextResponse.json({
         ok: true,
         operation: body.operation,
         created: !existing,
-        data: { id: client.id, legalName: client.legalName, taxId: client.taxId, updatedAt: client.updatedAt },
+        data: verified,
       }, { status: existing ? 200 : 201 });
     } catch (error) {
       return errorResponse(error);
