@@ -2,6 +2,9 @@
 
 const nextConfig: NextConfig = {
   agentRules: false,
+  experimental: {
+    cpus: 2,
+  },
   allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.8.93"],
   outputFileTracingIncludes: {
     "/*": ["./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"],
