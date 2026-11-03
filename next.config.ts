@@ -3,7 +3,7 @@
 const nextConfig: NextConfig = {
   agentRules: false,
   experimental: {
-    cpus: 2,
+    cpus: 1,
   },
   allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.8.93"],
   outputFileTracingIncludes: {
