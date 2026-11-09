@@ -1,7 +1,6 @@
 ﻿import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdfkit"],
   agentRules: false,
   experimental: {
     cpus: 1,
@@ -9,7 +8,14 @@ const nextConfig: NextConfig = {
   },
   allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.8.93"],
   outputFileTracingIncludes: {
-    "/*": ["./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs", "./node_modules/pdfkit/**/*"],
+    "/*": [
+      "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
+      "./scripts/render-invoice-pdf.mjs",
+      "./node_modules/@sparticuz/chromium/**/*",
+      "./node_modules/puppeteer-core/**/*",
+      "./node_modules/follow-redirects/**/*",
+      "./node_modules/tar-fs/**/*",
+    ],
   },
 };
 

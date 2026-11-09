@@ -5,6 +5,9 @@ import { buildPrintableInvoiceDocument, type InvoiceFormState, type InvoiceLineD
 import { prisma } from "@/lib/renta-fiscal/prisma";
 
 export const runtime = "nodejs";
+// Cualquier cambio visual requiere regenerar: nunca se devuelve un PDF creado
+// por otro renderer como si fuese la plantilla canónica actual.
+const CANONICAL_RENDERER_KEY = "invoice-manual-print-chromium-v2";
 
 function asNumber(value: unknown) { return Number(value ?? 0); }
 
@@ -18,7 +21,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   if (!invoice) return NextResponse.json({ ok: false, error: "Factura inexistente." }, { status: 404 });
   if (invoice.status !== "ISSUED") return NextResponse.json({ ok: false, error: "Solo se exportan facturas emitidas." }, { status: 409 });
   const existing = await prisma.invoicePdfExport.findUnique({ where: { invoiceId: invoice.id } });
-  if (existing) {
+  if (existing && existing.rendererKey === CANONICAL_RENDERER_KEY && existing.pdfBytes.length >= 512) {
     const filename = `Factura-${invoice.series || "A"}-${invoice.numberLabel || String(invoice.number).padStart(6, "0")}.pdf`.replace(/[^a-zA-Z0-9._-]/g, "-");
     return new NextResponse(Uint8Array.from(existing.pdfBytes), { headers: { "content-type": "application/pdf", "content-disposition": `attachment; filename=\"${filename}\"`, "x-forseti-invoice-sha256": existing.sha256, "x-forseti-pdf-idempotent": "reused", "cache-control": "no-store" } });
   }
@@ -34,7 +37,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const pdf = await renderInvoicePdf(html);
   const sha256 = crypto.createHash("sha256").update(pdf).digest("hex");
   try {
-    await prisma.invoicePdfExport.create({ data: { invoiceId: invoice.id, sha256, rendererKey: "invoice-printable-document-v1", pdfBytes: Uint8Array.from(pdf) } });
+    if (existing) {
+      await prisma.invoicePdfExport.update({ where: { invoiceId: invoice.id }, data: { sha256, rendererKey: CANONICAL_RENDERER_KEY, pdfBytes: Uint8Array.from(pdf) } });
+    } else {
+      await prisma.invoicePdfExport.create({ data: { invoiceId: invoice.id, sha256, rendererKey: CANONICAL_RENDERER_KEY, pdfBytes: Uint8Array.from(pdf) } });
+    }
   } catch (error) {
     const concurrent = await prisma.invoicePdfExport.findUnique({ where: { invoiceId: invoice.id } });
     if (!concurrent) throw error;
