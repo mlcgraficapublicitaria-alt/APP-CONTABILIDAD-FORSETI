@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/*": [
       "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
+      // El renderer Chromium se ejecuta como proceso hijo: Next no puede
+      // inferir su grafo ESM dinámico. Trazamos el árbol completo para que el
+      // release standalone no omita dependencias en producción.
+      "./node_modules/**/*",
       "./scripts/render-invoice-pdf.mjs",
       "./node_modules/@sparticuz/chromium/**/*",
       "./node_modules/puppeteer-core/**/*",
