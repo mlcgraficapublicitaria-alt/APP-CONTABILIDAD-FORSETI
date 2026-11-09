@@ -9,7 +9,7 @@
     "dev": "next dev --webpack",
     "prebuild": "prisma generate",
     "build": "next build --webpack",
-    "postbuild": "npm run verify:prisma-runtime && npm run prisma:deploy",
+    "postbuild": "npm run verify:prisma-runtime && node scripts/verify-standalone-pdf-renderer.mjs && npm run prisma:deploy",
     "forseti:operator": "node scripts/run-forseti-operator.mjs",
     "start": "node server.js",
     "lint": "eslint",
