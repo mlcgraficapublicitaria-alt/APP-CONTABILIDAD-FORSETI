@@ -1,15 +1,11 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import chromium from "@sparticuz/chromium";
+import puppeteer from "puppeteer-core";
 
-const execFileAsync = promisify(execFile);
-
-function chromiumPath() {
-  return process.env.FORSETI_CHROMIUM_PATH || "/usr/bin/chromium";
-}
+const PDF_TIMEOUT_MS = 45_000;
 
 /** Renderiza HTML ya validado con Chromium sin navegador humano ni red. */
 export async function renderInvoicePdf(html: string): Promise<Buffer> {
@@ -17,17 +13,23 @@ export async function renderInvoicePdf(html: string): Promise<Buffer> {
   const directory = await mkdtemp(path.join(tmpdir(), "forseti-invoice-pdf-"));
   const id = randomUUID();
   const htmlPath = path.join(directory, `${id}.html`);
-  const pdfPath = path.join(directory, `${id}.pdf`);
   try {
     await writeFile(htmlPath, html, { mode: 0o600 });
-    await execFileAsync(chromiumPath(), [
-      "--headless=new", "--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage",
-      "--no-first-run", "--no-default-browser-check", "--disable-background-networking",
-      `--print-to-pdf=${pdfPath}`, `file://${htmlPath}`,
-    ], { timeout: 45_000, maxBuffer: 1024 * 1024 });
-    const pdf = await readFile(pdfPath);
-    if (pdf.length < 512 || !pdf.subarray(0, 5).equals(Buffer.from("%PDF-"))) throw new Error("Chromium no generó un PDF válido.");
-    return pdf;
+    const browser = await puppeteer.launch({
+      executablePath: process.env.FORSETI_CHROMIUM_PATH || await chromium.executablePath(),
+      headless: true,
+      args: [...chromium.args, "--disable-background-networking"],
+      timeout: PDF_TIMEOUT_MS,
+    });
+    try {
+      const page = await browser.newPage();
+      await page.goto(`file://${htmlPath}`, { waitUntil: "load", timeout: PDF_TIMEOUT_MS });
+      const pdf = Buffer.from(await page.pdf({ format: "A4", printBackground: true, margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" } }));
+      if (pdf.length < 512 || !pdf.subarray(0, 5).equals(Buffer.from("%PDF-"))) throw new Error("Chromium no generó un PDF válido.");
+      return pdf;
+    } finally {
+      await browser.close();
+    }
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

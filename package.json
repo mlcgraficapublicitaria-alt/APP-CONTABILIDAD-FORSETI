@@ -31,12 +31,14 @@
   "dependencies": {
     "@prisma/adapter-mariadb": "6.19.3",
     "@prisma/client": "6.19.3",
+    "@sparticuz/chromium": "^143.0.4",
     "@tesseract.js-data/spa": "^1.0.0",
     "jszip": "^3.10.1",
     "next": "^16.4.5",
     "pdf-parse": "^2.4.5",
     "pdfjs-dist": "^5.4.296",
     "prisma": "6.19.3",
+    "puppeteer-core": "^24.16.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tesseract.js": "^7.0.0"

@@ -18,6 +18,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   });
   if (!invoice) return NextResponse.json({ ok: false, error: "Factura inexistente." }, { status: 404 });
   if (invoice.status !== "ISSUED") return NextResponse.json({ ok: false, error: "Solo se exportan facturas emitidas." }, { status: 409 });
+  const existing = await prisma.invoicePdfExport.findUnique({ where: { invoiceId: invoice.id } });
+  if (existing) {
+    const filename = `Factura-${invoice.series || "A"}-${invoice.numberLabel || String(invoice.number).padStart(6, "0")}.pdf`.replace(/[^a-zA-Z0-9._-]/g, "-");
+    return new NextResponse(Uint8Array.from(existing.pdfBytes), { headers: { "content-type": "application/pdf", "content-disposition": `attachment; filename=\"${filename}\"`, "x-forseti-invoice-sha256": existing.sha256, "x-forseti-pdf-idempotent": "reused", "cache-control": "no-store" } });
+  }
   const form: InvoiceFormState = {
     documentName: invoice.documentName, invoiceDate: invoice.issueDate.toISOString().slice(0, 10), invoiceSeries: invoice.series || "A", invoiceNumber: invoice.numberLabel || String(invoice.number).padStart(6, "0"), articleCode: invoice.articleCode || "H",
     issuerName: invoice.issuerProfile.legalName, issuerTaxId: invoice.issuerProfile.taxId || "", issuerAddress: invoice.issuerProfile.addressLine1 || "", issuerPostalCode: invoice.issuerProfile.postalCode || "", issuerCity: invoice.issuerProfile.city || "", issuerEmail: invoice.issuerProfile.email || "", issuerPhone: invoice.issuerProfile.phone || "", issuerBankAccount: invoice.issuerProfile.bankAccount || "",
@@ -28,15 +33,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const html = buildPrintableInvoiceDocument(form, summary, lines);
   const pdf = await renderInvoicePdf(html);
   const sha256 = crypto.createHash("sha256").update(pdf).digest("hex");
-  const existing = await prisma.invoicePdfExport.findUnique({ where: { invoiceId: invoice.id } });
-  if (existing && existing.sha256 !== sha256) {
-    return NextResponse.json({ ok: false, error: "La exportación persistida no coincide con el renderer canónico actual; requiere revisión antes de sustituirla." }, { status: 409 });
+  try {
+    await prisma.invoicePdfExport.create({ data: { invoiceId: invoice.id, sha256, rendererKey: "invoice-printable-document-v1", pdfBytes: Uint8Array.from(pdf) } });
+  } catch (error) {
+    const concurrent = await prisma.invoicePdfExport.findUnique({ where: { invoiceId: invoice.id } });
+    if (!concurrent) throw error;
+    return new NextResponse(Uint8Array.from(concurrent.pdfBytes), { headers: { "content-type": "application/pdf", "x-forseti-invoice-sha256": concurrent.sha256, "x-forseti-pdf-idempotent": "reused", "cache-control": "no-store" } });
   }
-  await prisma.invoicePdfExport.upsert({
-    where: { invoiceId: invoice.id },
-    create: { invoiceId: invoice.id, sha256, rendererKey: "invoice-printable-document-v1" },
-    update: { rendererKey: "invoice-printable-document-v1" },
-  });
   const filename = `Factura-${form.invoiceSeries}-${form.invoiceNumber}.pdf`.replace(/[^a-zA-Z0-9._-]/g, "-");
-  return new NextResponse(new Uint8Array(pdf), { headers: { "content-type": "application/pdf", "content-disposition": `attachment; filename=\"${filename}\"`, "x-forseti-invoice-sha256": sha256, "x-forseti-pdf-idempotent": existing ? "reused" : "created", "cache-control": "no-store" } });
+  return new NextResponse(new Uint8Array(pdf), { headers: { "content-type": "application/pdf", "content-disposition": `attachment; filename=\"${filename}\"`, "x-forseti-invoice-sha256": sha256, "x-forseti-pdf-idempotent": "created", "cache-control": "no-store" } });
 }

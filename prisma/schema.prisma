@@ -518,6 +518,7 @@ model InvoicePdfExport {
   invoiceId   String   @unique
   sha256      String   @db.Char(64)
   rendererKey String
+  pdfBytes    Bytes    @db.LongBlob
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
