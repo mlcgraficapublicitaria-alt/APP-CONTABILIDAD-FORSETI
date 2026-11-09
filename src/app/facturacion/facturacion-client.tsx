@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { buildPrintableInvoiceDocument } from "@/lib/invoice-printable-document";
 
 type SavedInvoiceClient = {
   id: string;
@@ -389,7 +390,7 @@ function printableLines(form: InvoiceFormState, lines?: InvoiceLineDraft[]) {
   }];
 }
 
-function buildPrintableInvoiceDocument(
+function buildPrintableInvoiceDocumentLegacy(
   form: InvoiceFormState,
   summary: InvoiceSummary,
   lines?: InvoiceLineDraft[],
