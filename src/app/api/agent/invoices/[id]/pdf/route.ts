@@ -2,7 +2,6 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { isForsetiAgentAuthorized } from "@/lib/agent-auth";
 import { buildPrintableInvoiceDocument, type InvoiceFormState, type InvoiceLineDraft, type InvoiceSummary } from "@/lib/invoice-printable-document";
-import { renderInvoicePdf } from "@/lib/invoice-pdf-server";
 import { prisma } from "@/lib/renta-fiscal/prisma";
 
 export const runtime = "nodejs";
@@ -31,6 +30,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const lines: InvoiceLineDraft[] = invoice.lines.map((line) => ({ id: line.id, articleCode: line.articleCode || "H", description: line.description, unitPrice: String(line.unitPrice), discountRate: line.unitPrice.equals(0) ? "0" : String(asNumber(line.discountAmount) / asNumber(line.unitPrice) * 100), noCost: line.lineTotalAmount.equals(0), notes: "" }));
   const summary: InvoiceSummary = { grossBaseAmount: asNumber(invoice.subtotalAmount), totalDiscountRate: 0, totalDiscountAmount: 0, baseAmount: asNumber(invoice.subtotalAmount), vatRate: asNumber(invoice.vatRate), vatAmount: asNumber(invoice.vatAmount), irpfRate: asNumber(invoice.irpfRate), irpfAmount: asNumber(invoice.irpfAmount), totalAmount: asNumber(invoice.totalAmount) };
   const html = buildPrintableInvoiceDocument(form, summary, lines);
+  const { renderInvoicePdf } = await import("@/lib/invoice-pdf-server");
   const pdf = await renderInvoicePdf(html);
   const sha256 = crypto.createHash("sha256").update(pdf).digest("hex");
   try {
