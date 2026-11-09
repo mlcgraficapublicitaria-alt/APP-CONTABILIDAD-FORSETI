@@ -12,7 +12,17 @@ await mkdir(executableTmp, { recursive: true, mode: 0o700 });
 process.env.TMPDIR = executableTmp;
 process.env.TEMP = executableTmp;
 process.env.TMP = executableTmp;
-const browser = await puppeteer.launch({ executablePath: process.env.FORSETI_CHROMIUM_PATH || await chromium.executablePath(), headless: true, args: [...chromium.args, "--disable-background-networking"], timeout: 45_000 });
+const browser = await puppeteer.launch({
+  executablePath: process.env.FORSETI_CHROMIUM_PATH || await chromium.executablePath(),
+  // Puppeteer crea este perfil en /tmp por defecto. Hostinger lo monta noexec;
+  // mantenemos binario y perfil juntos en el directorio privado ejecutable.
+  userDataDir: path.join(executableTmp, "profile"),
+  headless: true,
+  // Hostinger bloquea TCP loopback para DevTools; el pipe evita red incluso local.
+  pipe: true,
+  args: [...chromium.args, "--disable-background-networking"],
+  timeout: 45_000,
+});
 try {
   const page = await browser.newPage();
   await page.goto(`file://${htmlPath}`, { waitUntil: "load", timeout: 45_000 });
