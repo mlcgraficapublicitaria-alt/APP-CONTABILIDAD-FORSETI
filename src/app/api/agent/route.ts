@@ -125,6 +125,11 @@ function invoiceDetailSelect() {
       select: { id: true, sortOrder: true, articleCode: true, description: true, quantity: true, unitPrice: true, discountAmount: true, lineTotalAmount: true },
       orderBy: { sortOrder: "asc" as const },
     },
+    pdfExports: {
+      select: { sha256: true, rendererKey: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" as const },
+      take: 1,
+    },
   };
 }
 
@@ -134,6 +139,7 @@ function serializeInvoiceDetail(invoice: Awaited<ReturnType<typeof prisma.invoic
   const lineServiceIds = Array.isArray(metadata.lineServiceIds) ? metadata.lineServiceIds : [];
   const lines = (invoice as { lines?: Array<Record<string, unknown>> }).lines ?? [];
   const selectedClient = (invoice as { client?: { id?: string } }).client;
+  const pdfExport = (invoice as { pdfExports?: Array<{ sha256: string; rendererKey: string; updatedAt: Date }> }).pdfExports?.[0];
   return {
     ...invoice,
     issuerBankAccount: typeof metadata.issuerBankAccount === "string" ? metadata.issuerBankAccount : "",
@@ -144,6 +150,12 @@ function serializeInvoiceDetail(invoice: Awaited<ReturnType<typeof prisma.invoic
       notes: typeof lineNotes[index] === "string" ? lineNotes[index] : "",
     })),
     renderedHtml: undefined,
+    pdfExport: pdfExport ? {
+      sha256: pdfExport.sha256,
+      rendererKey: pdfExport.rendererKey,
+      updatedAt: pdfExport.updatedAt,
+      downloadPath: `/api/agent/invoices/${invoice.id}/pdf`,
+    } : null,
   };
 }
 
