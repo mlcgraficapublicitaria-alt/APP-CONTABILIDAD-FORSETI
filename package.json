@@ -20,7 +20,7 @@
     "prisma:generate": "prisma generate",
     "verify:prisma-runtime": "prisma generate && node -e \"const fs=require('fs'); const client=fs.readFileSync('src/generated/prisma/internal/class.ts','utf8'); const runtime='node_modules/@prisma/client/runtime/query_compiler_bg.mysql.wasm-base64.mjs'; if (!client.includes('query_compiler_bg.mysql') || !fs.existsSync(runtime)) process.exit(1)\"",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy",
+    "prisma:deploy": "chmod +x node_modules/@prisma/engines/schema-engine-* && prisma migrate deploy",
     "db:init": "prisma migrate deploy && npm run db:seed",
     "db:prod": "prisma migrate deploy && prisma db seed",
     "db:seed": "prisma db seed"
