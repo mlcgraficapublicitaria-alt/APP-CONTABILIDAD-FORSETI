@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
@@ -12,8 +12,13 @@ await mkdir(executableTmp, { recursive: true, mode: 0o700 });
 process.env.TMPDIR = executableTmp;
 process.env.TEMP = executableTmp;
 process.env.TMP = executableTmp;
+const executablePath = process.env.FORSETI_CHROMIUM_PATH || await chromium.executablePath();
+// La extracción de Chromium en el filesystem de Hostinger conserva el binario
+// como 0644. No delegamos este permiso en el proceso padre: se garantiza justo
+// antes del spawn y el renderer falla cerrado si no se puede aplicar.
+await chmod(executablePath, 0o700);
 const browser = await puppeteer.launch({
-  executablePath: process.env.FORSETI_CHROMIUM_PATH || await chromium.executablePath(),
+  executablePath,
   // Puppeteer crea este perfil en /tmp por defecto. Hostinger lo monta noexec;
   // mantenemos binario y perfil juntos en el directorio privado ejecutable.
   userDataDir: path.join(executableTmp, "profile"),
