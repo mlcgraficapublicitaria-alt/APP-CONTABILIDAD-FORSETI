@@ -11,6 +11,15 @@ const CANONICAL_RENDERER_KEY = "invoice-manual-print-chromium-v2";
 
 function asNumber(value: unknown) { return Number(value ?? 0); }
 
+// Excepción deliberadamente cerrada para la validación E2E solicitada. No abre
+// la exportación de borradores comerciales ni puede usarse para emitirlos.
+function isApprovedPdfTestDraft(invoice: { status: string; series: string | null; numberLabel: string; documentName: string }) {
+  return invoice.status === "DRAFT"
+    && invoice.series === "TEST"
+    && invoice.numberLabel === "000001"
+    && invoice.documentName === "PRUEBA EXPORTACIÓN PDF — NO EMITIR";
+}
+
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   if (!isForsetiAgentAuthorized(request)) return NextResponse.json({ ok: false, error: "Operador FORSETI no autorizado." }, { status: 401 });
   const { id } = await context.params;
@@ -19,7 +28,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     include: { issuerProfile: true, client: true, lines: { orderBy: { sortOrder: "asc" } } },
   });
   if (!invoice) return NextResponse.json({ ok: false, error: "Factura inexistente." }, { status: 404 });
-  if (invoice.status !== "ISSUED") return NextResponse.json({ ok: false, error: "Solo se exportan facturas emitidas." }, { status: 409 });
+  if (invoice.status !== "ISSUED" && !isApprovedPdfTestDraft(invoice)) {
+    return NextResponse.json({ ok: false, error: "Solo se exportan facturas emitidas; el único borrador autorizado es el fixture TEST/000001." }, { status: 409 });
+  }
   const existing = await prisma.invoicePdfExport.findUnique({ where: { invoiceId: invoice.id } });
   if (existing && existing.rendererKey === CANONICAL_RENDERER_KEY && existing.pdfBytes.length >= 512) {
     const filename = `Factura-${invoice.series || "A"}-${invoice.numberLabel || String(invoice.number).padStart(6, "0")}.pdf`.replace(/[^a-zA-Z0-9._-]/g, "-");
